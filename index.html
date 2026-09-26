@@ -4,13 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The System</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="The System">
-<meta name="theme-color" content="#050810">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -821,8 +814,7 @@
         <div class="stat-chip"><div class="stat-name">END</div><div class="stat-val">+1</div></div>
         <div class="stat-chip"><div class="stat-name">AGI</div><div class="stat-val">+1</div></div>
       </div>
-      <textarea class="reward-input" id="rewardInput" placeholder="What do you actually get for clearing the quest? e.g. an extra hour of guilt-free gaming, your favorite takeout, $10 to a fun fund, sleep in tomorrow.">An extra hour of guilt-free gaming, favorite takeout for dinner, and $10 to the fun fund.</textarea>
-      <div class="stakes-note">STAT POINTS ARE ALLOCATED AUTOMATICALLY ON CLEAR. THE REWARD ABOVE IS PAID OUT BY YOU, TO YOU.</div>
+      <div class="stakes-note">Stat points and gold are granted automatically the moment the quest is cleared.</div>
 
       <div class="loot-section">
         <div class="loot-label">DAILY LOOT DROP</div>
@@ -994,7 +986,7 @@
     if (raw) { try { state = JSON.parse(raw); } catch(e) { state = null; } }
     var key = todayKey();
     if (!state || state.day !== key) {
-      state = { day: key, values: { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 }, penalty: state && state.penalty ? state.penalty : null, reward: state && state.reward ? state.reward : null, lootOpened: false, goldEarnedToday: 0 };
+      state = { day: key, values: { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 }, penalty: state && state.penalty ? state.penalty : null, lootOpened: false, goldEarnedToday: 0 };
     }
     return state;
   }
@@ -1043,14 +1035,6 @@
   penaltyInput.addEventListener('input', function() {
     state.penalty = penaltyInput.value;
     saveState();
-  });
-
-  var rewardInput = document.getElementById('rewardInput');
-  if (state.reward) { rewardInput.value = state.reward; }
-  rewardInput.addEventListener('input', function() {
-    state.reward = rewardInput.value;
-    saveState();
-    updateBanner();
   });
 
   function render() {
@@ -1144,9 +1128,8 @@
     if (finished) {
       grantDailyLoot();
       renderLootArea();
-      var reward = (state.reward || rewardInput.value || 'the reward you set').trim();
       banner.className = 'status-banner panel show success';
-      banner.innerHTML = 'QUEST CLEARED — REWARD ISSUED<span class="sub">+1 STR &middot; +1 VIT &middot; +1 END &middot; +1 AGI &middot; +' + state.goldEarnedToday + ' GOLD</span><span class="sub">' + escapeHtml(reward) + '</span>';
+      banner.innerHTML = 'QUEST CLEARED — REWARD ISSUED<span class="sub">+1 STR &middot; +1 VIT &middot; +1 END &middot; +1 AGI &middot; +' + state.goldEarnedToday + ' GOLD</span>';
     } else if (msLeft <= 0) {
       renderLootArea();
       banner.className = 'status-banner panel show fail';
@@ -1518,12 +1501,6 @@
   updateSaveStatus(checkStorageAvailable());
   tick();
   setInterval(tick, 1000);
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js').catch(function() {});
-    });
-  }
 })();
 </script>
 </body>
