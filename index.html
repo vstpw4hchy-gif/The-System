@@ -62,3 +62,1704 @@
     clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   }
   .panel::before, .panel::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .panel::before {
+    top: -1px; left: -1px;
+    border-top: 2px solid var(--line-bright);
+    border-left: 2px solid var(--line-bright);
+  }
+  .panel::after {
+    bottom: -1px; right: -1px;
+    border-bottom: 2px solid var(--line-bright);
+    border-right: 2px solid var(--line-bright);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .kicker {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 0.35em;
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 30px;
+    margin: 0;
+    letter-spacing: 0.06em;
+    color: #eaf6ff;
+    text-shadow: 0 0 14px rgba(79,216,255,0.55), 0 0 40px rgba(79,216,255,0.15);
+  }
+  .h1-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .clock-card {
+    padding: 26px 18px 22px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .clock-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .clock {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 46px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--cyan);
+    text-shadow: 0 0 16px rgba(79,216,255,0.6);
+  }
+  .clock.warn { color: #ffcf4f; text-shadow: 0 0 16px rgba(255,207,79,0.6); }
+  .clock.crit { color: var(--red); text-shadow: 0 0 20px rgba(255,59,92,0.75); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .clock-sub {
+    margin-top: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .status-banner {
+    display: none;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .status-banner.show { display: block; }
+  .status-banner.success {
+    border-color: rgba(61,255,176,0.5);
+    color: var(--green);
+    background: linear-gradient(180deg, rgba(61,255,176,0.10), rgba(10,18,36,0.4));
+  }
+  .status-banner.success::before, .status-banner.success::after { border-color: var(--green); }
+  .status-banner.fail {
+    border-color: rgba(255,59,92,0.6);
+    color: var(--red);
+    background: linear-gradient(180deg, rgba(255,59,92,0.12), rgba(10,18,36,0.4));
+  }
+  .status-banner.fail::before, .status-banner.fail::after { border-color: var(--red); }
+  .status-banner .sub {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  section.block { margin-bottom: 20px; }
+  .block-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cyan);
+    letter-spacing: 0.25em;
+    margin: 0 0 10px 4px;
+    opacity: 0.9;
+  }
+
+  .exercise {
+    padding: 14px 16px 15px;
+    margin-bottom: 10px;
+  }
+  .exercise.done { border-color: rgba(61,255,176,0.55); }
+  .exercise.done::before, .exercise.done::after { border-color: var(--green); }
+  .ex-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .ex-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #eaf6ff;
+  }
+  .ex-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .ex-count b { color: var(--cyan); font-weight: 500; }
+  .done .ex-count b { color: var(--green); }
+  .bar-track {
+    height: 7px;
+    background: #0a1220;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    box-shadow: 0 0 8px rgba(79,216,255,0.6);
+    transition: width 0.25s ease;
+  }
+  .done .bar-fill { background: var(--green); box-shadow: 0 0 8px rgba(61,255,176,0.7); }
+  .ex-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .stepper-btn {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 38px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+    border: 1px solid var(--line);
+    background: #0d1830;
+    color: var(--cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .stepper-btn:active { background: #14213d; border-color: var(--line-bright); }
+  .stepper-btn.big { flex: 1; font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; }
+  .run-input-row { display: flex; align-items: center; gap: 10px; }
+  .run-input {
+    flex: 1;
+    background: #0d1830;
+    border: 1px solid var(--line);
+    color: var(--cyan);
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+    padding: 10px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    width: 100%;
+  }
+  .run-input:focus { outline: none; border-color: var(--line-bright); }
+  .unit { color: var(--text-dim); font-size: 13px; font-family: 'Share Tech Mono', monospace; }
+
+  .stakes {
+    padding: 16px 16px 14px;
+    border-color: rgba(255,59,92,0.4);
+  }
+  .stakes::before, .stakes::after { border-color: var(--red); }
+  .stakes-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: var(--red);
+    margin: 0 0 10px;
+  }
+  .reward {
+    padding: 16px 16px 14px;
+    border-color: rgba(61,255,176,0.4);
+    margin-bottom: 10px;
+  }
+  .reward::before, .reward::after { border-color: var(--green); }
+  .reward-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: var(--green);
+    margin: 0 0 10px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .stat-chip {
+    background: #0a1220;
+    border: 1px solid var(--line);
+    text-align: center;
+    padding: 8px 4px;
+  }
+  .stat-chip .stat-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  .stat-chip .stat-val {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green);
+    margin-top: 2px;
+  }
+
+  /* --- Loot box + item rarity system --- */
+  .loot-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .loot-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .loot-box-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px;
+    background: #0a0f1c;
+    border: 1px dashed var(--line);
+  }
+  .loot-box-icon {
+    font-size: 26px;
+    filter: drop-shadow(0 0 8px rgba(61,255,176,0.5));
+    animation: floaty 2.4s ease-in-out infinite;
+  }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  .loot-box-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    background: #0a0f1c;
+    border: 1px solid var(--line);
+  }
+  .item-icon { font-size: 24px; flex: 0 0 auto; }
+  .item-body { flex: 1; min-width: 0; }
+  .item-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .item-rarity {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 1px 7px;
+    margin-left: 8px;
+    border: 1px solid currentColor;
+    vertical-align: middle;
+  }
+  .item-flavor {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 3px;
+    line-height: 1.35;
+  }
+  .item-buff {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  .item-buff b { color: inherit; }
+  .rarity-common { color: #9aa8b8; }
+  .rarity-rare { color: #4fd8ff; }
+  .rarity-heroic { color: #b28bff; }
+  .rarity-legendary { color: #ffd76a; }
+  .rarity-shop { color: #ffb454; }
+  .item-card.rarity-legendary { box-shadow: 0 0 16px rgba(255,215,106,0.4); border-color: rgba(255,215,106,0.65); }
+  .item-card.rarity-heroic { border-color: rgba(178,139,255,0.5); }
+  .item-card.rarity-shop { box-shadow: 0 0 16px rgba(255,180,84,0.3); border-color: rgba(255,180,84,0.55); }
+
+  /* --- Inventory --- */
+  .inv-btn {
+    position: relative;
+    margin: 14px auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: fit-content;
+    background: #0d1830;
+    border: 1px solid var(--line);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    padding: 9px 16px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .inv-btn:active { border-color: var(--line-bright); }
+  .inv-badge {
+    background: var(--green);
+    color: #04160f;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+  }
+  .gold-badge {
+    background: #ffb454;
+    color: #2a1600;
+  }
+  .header-btn-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .header-btn-row .inv-btn { margin: 0; }
+  .penalty-open-btn {
+    border-color: rgba(255,59,92,0.5);
+    color: var(--red);
+  }
+  .shop-item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    background: #0a0f1c;
+    border: 1px solid var(--line);
+  }
+  .shop-item-card.clickable { cursor: pointer; }
+  .shop-item-card.clickable:active { border-color: var(--line-bright); }
+  .shop-item-body { flex: 1; min-width: 0; }
+  .shop-cost {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffb454;
+    white-space: nowrap;
+  }
+  .buy-btn {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid rgba(255,180,84,0.5);
+    color: #ffb454;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 6px 12px;
+    clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+  }
+  .buy-btn:active { border-color: #ffb454; }
+  .buy-btn:disabled { opacity: 0.35; }
+  .inv-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(1,3,10,0.88);
+    z-index: 50;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .inv-overlay.show { display: block; }
+  #detailOverlay { z-index: 60; }
+  .inv-panel {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 22px 18px 50px;
+  }
+  .inv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .inv-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #eaf6ff;
+  }
+  .inv-close {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 7px 14px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .inv-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .item-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .item-use-btn {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 5px 11px;
+    clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+  }
+  .item-use-btn:active { border-color: var(--line-bright); }
+  .item-card.used { opacity: 0.45; }
+  .item-card.used .item-name::after {
+    content: " — REDEEMED";
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  .item-card.clickable { cursor: pointer; }
+  .item-card.clickable:active { border-color: var(--line-bright); }
+
+  /* --- Loot reveal (unopened box + decision step) --- */
+  .loot-tap-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 14px;
+    background: #0a0f1c;
+    border: 1px dashed var(--line-bright);
+    cursor: pointer;
+  }
+  .loot-tap-box:active { background: #0d1830; }
+  .loot-tap-icon {
+    font-size: 40px;
+    filter: drop-shadow(0 0 10px rgba(61,255,176,0.6));
+    animation: floaty 1.6s ease-in-out infinite;
+  }
+  .loot-tap-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--green);
+  }
+  .loot-tap-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .loot-decision-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .loot-decision-row button {
+    flex: 1;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    padding: 10px 8px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+    border: 1px solid var(--line);
+    background: #0d1830;
+    color: var(--text);
+  }
+  .loot-decision-row .use-btn { color: var(--red); border-color: rgba(255,59,92,0.4); }
+  .loot-decision-row .use-btn:active { border-color: var(--red); }
+  .loot-decision-row .stash-btn { color: var(--cyan); border-color: rgba(79,216,255,0.4); }
+  .loot-decision-row .stash-btn:active { border-color: var(--cyan); }
+  .loot-resolved-tag {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* --- Item detail modal --- */
+  .item-detail-icon {
+    font-size: 54px;
+    text-align: center;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 12px rgba(79,216,255,0.4));
+  }
+  .item-detail-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .item-detail-rarity {
+    display: block;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    margin: 6px auto 14px;
+  }
+  .item-detail-flavor {
+    font-family: 'Rajdhani', sans-serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .item-detail-effect {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: #0a0f1c;
+    border: 1px solid var(--line);
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  .item-detail-cost {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffb454;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .item-detail-status {
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  textarea.penalty-input, textarea.reward-input {
+    width: 100%;
+    min-height: 64px;
+    background: #0a0f1c;
+    border: 1px solid var(--line);
+    color: var(--text);
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+    padding: 10px 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    resize: vertical;
+  }
+  textarea.penalty-input:focus { outline: none; border-color: var(--red); }
+  textarea.reward-input:focus { outline: none; border-color: var(--green); }
+  .penalty-text {
+    background: #0a0f1c;
+    border: 1px solid rgba(255,59,92,0.35);
+    padding: 12px 14px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.45;
+  }
+  .stakes-note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+  }
+
+  /* --- Full-screen penalty enforcement overlay --- */
+  .penalty-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: radial-gradient(ellipse at 50% 30%, rgba(120,10,25,0.55), rgba(15,2,5,0.94) 70%);
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .penalty-overlay.show { display: flex; align-items: center; justify-content: center; }
+  .penalty-box {
+    max-width: 420px;
+    width: calc(100% - 40px);
+    margin: 20px;
+    padding: 32px 24px 28px;
+    text-align: center;
+    border-color: rgba(255,59,92,0.7);
+    animation: penaltyPulse 1.6s ease-in-out infinite;
+  }
+  .penalty-box::before, .penalty-box::after { border-color: var(--red); }
+  @keyframes penaltyPulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(255,59,92,0); }
+    50% { box-shadow: 0 0 30px rgba(255,59,92,0.45); }
+  }
+  .penalty-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 12px rgba(255,59,92,0.7));
+  }
+  .penalty-heading {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: 0.05em;
+    color: var(--red);
+    text-shadow: 0 0 14px rgba(255,59,92,0.6);
+    margin-bottom: 4px;
+  }
+  .penalty-subheading {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+  }
+  .penalty-desc {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff0f0;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    padding: 14px 16px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,59,92,0.35);
+  }
+  .penalty-countdown-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .penalty-countdown-num {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 56px;
+    color: var(--red);
+    text-shadow: 0 0 22px rgba(255,59,92,0.8);
+    line-height: 1;
+  }
+  .penalty-footer-note {
+    margin-top: 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  .penalty-close-btn {
+    margin-top: 20px;
+    color: var(--red);
+    border-color: rgba(255,59,92,0.5);
+  }
+  .penalty-close-btn:active { border-color: var(--red); }
+
+  .reset-row {
+    text-align: center;
+    margin-top: 24px;
+  }
+  .save-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+  .save-status.warn { color: var(--amber, #ffcf4f); }
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    padding: 9px 18px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .reset-btn:active { background: #0d1830; border-color: var(--line-bright); color: var(--cyan); }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef3f8;
+      --panel: #ffffff;
+      --panel-2: #f3f7fb;
+      --line: #b9cbe0;
+      --text: #16222e;
+      --text-dim: #5a7590;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #050810;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">SYSTEM ALERT</div>
+    <h1>THE SYSTEM</h1>
+    <div class="h1-sub">// DAILY QUEST HAS BEEN ISSUED</div>
+    <div class="header-btn-row">
+      <button class="inv-btn" id="invOpenBtn">🎒 INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
+      <button class="inv-btn" id="shopOpenBtn">🛒 SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
+      <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;">⚠️ PENALTY</button>
+    </div>
+  </header>
+
+  <div class="clock-card panel">
+    <div class="clock-label" id="clockLabel">Time remaining to complete quest</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="clock-sub" id="clockSub">WINDOW OPENS 00:01 &nbsp;/&nbsp; DEADLINE 00:00</div>
+  </div>
+
+  <div class="status-banner panel" id="banner"></div>
+
+  <section class="block">
+    <div class="block-title">DAILY QUEST — REQUIREMENTS</div>
+
+    <div class="exercise panel" id="ex-pushups" data-target="100" data-step="10">
+      <div class="ex-top">
+        <div class="ex-name">Push-ups</div>
+        <div class="ex-count"><b id="ex-pushups-val">0</b> / 100</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="ex-pushups-bar" style="width:0%"></div></div>
+      <div class="ex-controls">
+        <button class="stepper-btn" data-action="dec" data-target-id="ex-pushups">&minus;</button>
+        <button class="stepper-btn big" data-action="add" data-target-id="ex-pushups">+10</button>
+        <button class="stepper-btn" data-action="inc" data-target-id="ex-pushups">+</button>
+      </div>
+    </div>
+
+    <div class="exercise panel" id="ex-situps" data-target="100" data-step="10">
+      <div class="ex-top">
+        <div class="ex-name">Sit-ups</div>
+        <div class="ex-count"><b id="ex-situps-val">0</b> / 100</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="ex-situps-bar" style="width:0%"></div></div>
+      <div class="ex-controls">
+        <button class="stepper-btn" data-action="dec" data-target-id="ex-situps">&minus;</button>
+        <button class="stepper-btn big" data-action="add" data-target-id="ex-situps">+10</button>
+        <button class="stepper-btn" data-action="inc" data-target-id="ex-situps">+</button>
+      </div>
+    </div>
+
+    <div class="exercise panel" id="ex-squats" data-target="100" data-step="10">
+      <div class="ex-top">
+        <div class="ex-name">Squats</div>
+        <div class="ex-count"><b id="ex-squats-val">0</b> / 100</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="ex-squats-bar" style="width:0%"></div></div>
+      <div class="ex-controls">
+        <button class="stepper-btn" data-action="dec" data-target-id="ex-squats">&minus;</button>
+        <button class="stepper-btn big" data-action="add" data-target-id="ex-squats">+10</button>
+        <button class="stepper-btn" data-action="inc" data-target-id="ex-squats">+</button>
+      </div>
+    </div>
+
+    <div class="exercise panel" id="ex-run" data-target="10">
+      <div class="ex-top">
+        <div class="ex-name">Run</div>
+        <div class="ex-count"><b id="ex-run-val">0.0</b> / 10 km</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="ex-run-bar" style="width:0%"></div></div>
+      <div class="run-input-row">
+        <input class="run-input" id="run-input" type="number" min="0" max="10" step="0.1" value="0" inputmode="decimal">
+        <span class="unit">km</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="reward panel">
+      <div class="reward-title">REWARD FOR COMPLETION</div>
+      <div class="stat-grid">
+        <div class="stat-chip"><div class="stat-name">STR</div><div class="stat-val">+1</div></div>
+        <div class="stat-chip"><div class="stat-name">VIT</div><div class="stat-val">+1</div></div>
+        <div class="stat-chip"><div class="stat-name">END</div><div class="stat-val">+1</div></div>
+        <div class="stat-chip"><div class="stat-name">AGI</div><div class="stat-val">+1</div></div>
+      </div>
+      <div class="stakes-note">Stat points and gold are granted automatically the moment the quest is cleared.</div>
+
+      <div class="loot-section">
+        <div class="loot-label">DAILY LOOT DROP</div>
+        <div id="lootArea">
+          <div class="loot-box-visual" id="lootLocked">
+            <div class="loot-box-icon">🔒</div>
+            <div class="loot-box-text">Clear today's quest to unlock a random item drop.</div>
+          </div>
+        </div>
+        <button class="inv-btn" id="codexOpenBtn" style="margin-top:12px; width:100%;">📖 VIEW ITEM CODEX</button>
+      </div>
+    </div>
+
+    <div class="stakes panel">
+      <div class="stakes-title">PENALTY FOR FAILURE</div>
+      <div class="penalty-text" id="penaltyText">Loading today's penalty&hellip;</div>
+      <div class="stakes-note">THE SYSTEM DECIDES THE PENALTY, NOT YOU. IF THE COUNTER REACHES ZERO WITH ANY REQUIREMENT INCOMPLETE, IT IS ENFORCED.</div>
+    </div>
+  </section>
+
+  <div class="reset-row">
+    <div class="save-status" id="saveStatus">Checking storage&hellip;</div>
+    <button class="reset-btn" id="resetBtn">RESET QUEST PROGRESS</button>
+  </div>
+</div>
+
+<div class="inv-overlay" id="invOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">HUNTER INVENTORY</div>
+      <button class="inv-close" id="invCloseBtn">CLOSE</button>
+    </div>
+    <div id="invList"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="codexOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">ITEM CODEX</div>
+      <button class="inv-close" id="codexCloseBtn">CLOSE</button>
+    </div>
+    <div class="loot-box-text" style="margin-bottom:14px;">Every item that can drop from the daily loot box, with its drop odds and effect.</div>
+    <div id="codexList"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="detailOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">ITEM</div>
+      <button class="inv-close" id="detailCloseBtn">CLOSE</button>
+    </div>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="shopOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">HUNTER SHOP</div>
+      <button class="inv-close" id="shopCloseBtn">CLOSE</button>
+    </div>
+    <div class="loot-box-text" style="margin-bottom:14px;">Spend gold earned from cleared quests on stronger, guaranteed items. Balance: <span id="shopGoldLine">0</span> gold.</div>
+    <div id="shopList"></div>
+  </div>
+</div>
+
+<div class="penalty-overlay" id="penaltyOverlay">
+  <div class="penalty-box panel">
+    <div class="penalty-icon">⚠️</div>
+    <div class="penalty-heading" id="penaltyHeading">PENALTY ENFORCEMENT INITIATED</div>
+    <div class="penalty-subheading" id="penaltySubheading">DAILY QUEST FAILED</div>
+    <div class="penalty-desc" id="penaltyOverlayText">—</div>
+    <div id="penaltyCountdownBlock">
+      <div class="penalty-countdown-label">PENALTY BEGINS IN</div>
+      <div class="penalty-countdown-num" id="penaltyCountdownNum">30</div>
+    </div>
+    <div class="penalty-footer-note" id="penaltyFooterNote">THE SYSTEM DOES NOT NEGOTIATE.</div>
+    <button class="reset-btn penalty-close-btn" id="penaltyCloseBtn" style="display:none;">CLOSE</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  var EXS = [
+    { id: 'ex-pushups', target: 100, kind: 'int' },
+    { id: 'ex-situps',  target: 100, kind: 'int' },
+    { id: 'ex-squats',  target: 100, kind: 'int' },
+    { id: 'ex-run',     target: 10,  kind: 'float' }
+  ];
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  }
+
+  var STORE_KEY = 'the-system-state';
+  var INV_KEY = 'the-system-inventory';
+  var GOLD_KEY = 'the-system-gold';
+
+  var RANK_LABELS = { common: 'COMMON', rare: 'RARE', heroic: 'HEROIC', legendary: 'LEGENDARY', shop: 'SHOP' };
+
+  var ITEM_POOL = [
+    { rank: 'common', icon: '🔩', weight: 60, name: 'Cracked Stamina Charm',
+      flavor: 'A dull trinket that still hums faintly, like it remembers being useful.',
+      buff: 'Redeem for one free skipped set on any exercise, no questions asked.' },
+    { rank: 'rare', icon: '🧪', weight: 25, name: 'Vial of Swift Recovery',
+      flavor: 'The liquid inside never stops swirling, even when the vial is still.',
+      buff: 'Redeem to knock 1 km off tomorrow\'s run requirement.' },
+    { rank: 'heroic', icon: '🧥', weight: 12, name: 'Cloak of the Quiet Step',
+      flavor: 'Wrapped around the shoulders, the rest of the world gets a little quieter.',
+      buff: 'Redeem for one full guilt-free rest day — the quest pauses, no penalty.' },
+    { rank: 'legendary', icon: '🗝️', weight: 3, name: 'Fragment of the Ascendant Will',
+      flavor: 'Vanishingly rare. Holding it makes tomorrow feel optional.',
+      buff: 'Redeem to waive the entire daily quest once, with zero penalty.' }
+  ];
+
+  var SHOP_ITEMS = [
+    { id: 'shop-amulet', rank: 'shop', icon: '🧿', cost: 120, name: 'Amulet of the Unyielding',
+      flavor: 'Worn smooth by hunters who never once turned back.',
+      buff: 'Redeem to skip the entire run requirement for one day.' },
+    { id: 'shop-emblem', rank: 'shop', icon: '🏵️', cost: 260, name: 'Emblem of the Apex Hunter',
+      flavor: 'Marks its bearer as someone who finishes what they start.',
+      buff: 'Redeem to halve every exercise\'s requirement for one day.' },
+    { id: 'shop-elixir', rank: 'shop', icon: '⚗️', cost: 400, name: 'Elixir of Total Recovery',
+      flavor: 'One sip and the body forgets it was ever tired.',
+      buff: 'Redeem for a full rest day pass — the entire quest is waived, no penalty, and still counts as cleared for stats and gold.' },
+    { id: 'shop-seal', rank: 'shop', icon: '🔱', cost: 700, name: 'Seal of Absolute Will',
+      flavor: 'Said to grant a single day on which failure isn\'t possible.',
+      buff: 'Redeem to waive the entire quest for the day and still count it as fully cleared — stat points and gold included.' }
+  ];
+
+  var PENALTY_POOL = [
+    "100 burpees, broken into sets if needed, before you eat anything tomorrow.",
+    "A 10-minute ice-cold shower, timed, right now.",
+    "No sugar, snacks, or dessert of any kind for the next 48 hours.",
+    "Up at 5 AM tomorrow for a 5 km run before anything else happens.",
+    "200 push-ups today, spread across as many sets as it takes — but they get done.",
+    "No social media or entertainment apps for the next 24 hours.",
+    "A 5-minute plank held before you're allowed dinner tonight.",
+    "Tomorrow's entire quest requirement is doubled.",
+    "A 3-minute cold plunge or ice bath tonight.",
+    "Water only — no food — until dinner tomorrow.",
+    "A 15-minute wall sit, broken into sets, completed tonight.",
+    "Tell someone, out loud or in writing, exactly why you missed today's quest. No softening it.",
+    "No caffeine of any kind for the next 48 hours.",
+    "500 squats, spread throughout tomorrow, on top of the next quest.",
+    "Cold showers only for the next 3 days.",
+    "A 45-minute run with no music, podcasts, or distractions.",
+    "Sleep on the floor tonight instead of your bed.",
+    "Up on the very first alarm tomorrow. No snoozing, no exceptions.",
+    "3 rounds of push-ups to total failure, done in front of someone else.",
+    "A second full workout today, mirroring everything in today's quest, on top of tomorrow's."
+  ];
+
+  function pickRandomPenalty() {
+    return PENALTY_POOL[Math.floor(Math.random() * PENALTY_POOL.length)];
+  }
+
+  function rollLootItem() {
+    var total = ITEM_POOL.reduce(function(sum, it) { return sum + it.weight; }, 0);
+    var roll = Math.random() * total;
+    for (var i = 0; i < ITEM_POOL.length; i++) {
+      roll -= ITEM_POOL[i].weight;
+      if (roll <= 0) return ITEM_POOL[i];
+    }
+    return ITEM_POOL[0];
+  }
+
+  function loadGold() {
+    var raw = null;
+    try { raw = localStorage.getItem(GOLD_KEY); } catch (e) {}
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function saveGold() {
+    var ok = false;
+    try {
+      localStorage.setItem(GOLD_KEY, String(goldBalance));
+      ok = true;
+    } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var goldBalance = loadGold();
+
+  function loadInventory() {
+    var raw = null;
+    try { raw = localStorage.getItem(INV_KEY); } catch (e) {}
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch (e) { return []; }
+  }
+
+  function saveInventory() {
+    var ok = false;
+    try {
+      localStorage.setItem(INV_KEY, JSON.stringify(inventory));
+      ok = true;
+    } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var inventory = loadInventory();
+
+  function freshDayState() {
+    var now = new Date();
+    return {
+      day: todayKey(),
+      deadline: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime(),
+      values: { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 },
+      penalty: pickRandomPenalty(),
+      lootOpened: false,
+      goldEarnedToday: 0,
+      penaltyCountdownEnd: null,
+      penaltyActive: false,
+      pendingItem: null,
+      pendingRevealed: false,
+      lastLootId: null
+    };
+  }
+
+  function loadState() {
+    var raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (e) {}
+    var state = null;
+    if (raw) { try { state = JSON.parse(raw); } catch(e) { state = null; } }
+    // Only build a fresh state if there's nothing usable stored yet.
+    // Day-to-day transitions (success or failure) are handled explicitly
+    // in tick()/resolveDayTransition(), not here — this avoids silently
+    // wiping an unfinished, already-expired day before its failure has
+    // been shown to the person.
+    if (!state || typeof state.deadline !== 'number' || !state.values) {
+      state = freshDayState();
+    }
+    if (!state.penalty) state.penalty = pickRandomPenalty();
+    return state;
+  }
+
+  var state = loadState();
+
+  function saveState() {
+    var ok = false;
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      ok = (localStorage.getItem(STORE_KEY) !== null);
+    } catch (e) { ok = false; }
+    updateSaveStatus(ok);
+  }
+
+  function updateSaveStatus(ok) {
+    var el = document.getElementById('saveStatus');
+    if (!el) return;
+    if (ok) {
+      var t = new Date();
+      var hh = String(t.getHours()).padStart(2, '0');
+      var mm = String(t.getMinutes()).padStart(2, '0');
+      var ss = String(t.getSeconds()).padStart(2, '0');
+      el.textContent = 'Progress saved on this device \u00b7 ' + hh + ':' + mm + ':' + ss;
+      el.classList.remove('warn');
+    } else {
+      el.textContent = '\u26a0 Could not save — progress may be lost when this closes. Try opening this page in Safari/Chrome directly instead of an in-app preview.';
+      el.classList.add('warn');
+    }
+  }
+
+  function checkStorageAvailable() {
+    try {
+      var testKey = '__the-system-test__';
+      localStorage.setItem(testKey, '1');
+      var readBack = localStorage.getItem(testKey) === '1';
+      localStorage.removeItem(testKey);
+      return readBack;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function renderPenaltyText() {
+    var el = document.getElementById('penaltyText');
+    if (el) el.textContent = state.penalty;
+  }
+
+  function render() {
+    EXS.forEach(function(ex) {
+      var val = state.values[ex.id] || 0;
+      var pct = Math.min(100, (val / ex.target) * 100);
+      var display = ex.kind === 'float' ? val.toFixed(1) : String(val);
+      var valEl = document.getElementById(ex.id + '-val');
+      var barEl = document.getElementById(ex.id + '-bar');
+      var cardEl = document.getElementById(ex.id);
+      if (valEl) valEl.textContent = display;
+      if (barEl) barEl.style.width = pct + '%';
+      if (cardEl) {
+        if (val >= ex.target) cardEl.classList.add('done');
+        else cardEl.classList.remove('done');
+      }
+    });
+    var runInput = document.getElementById('run-input');
+    if (document.activeElement !== runInput) {
+      runInput.value = state.values['ex-run'] || 0;
+    }
+  }
+
+  function allDone() {
+    return EXS.every(function(ex) { return (state.values[ex.id] || 0) >= ex.target; });
+  }
+
+  document.querySelectorAll('.stepper-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var targetId = btn.getAttribute('data-target-id');
+      var action = btn.getAttribute('data-action');
+      var ex = EXS.find(function(e) { return e.id === targetId; });
+      var val = state.values[targetId] || 0;
+      var step = action === 'add' ? 10 : 1;
+      if (action === 'dec') {
+        val = Math.max(0, val - 1);
+      } else if (action === 'inc') {
+        val = Math.min(ex.target, val + 1);
+      } else if (action === 'add') {
+        val = Math.min(ex.target, val + step);
+      }
+      state.values[targetId] = val;
+      saveState();
+      render();
+      updateBanner();
+    });
+  });
+
+  var runInput = document.getElementById('run-input');
+  runInput.addEventListener('input', function() {
+    var v = parseFloat(runInput.value);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > 10) v = 10;
+    state.values['ex-run'] = v;
+    saveState();
+    render();
+    updateBanner();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function() {
+    state.values = { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 };
+    state.lootOpened = false;
+    state.lastLootId = null;
+    state.pendingItem = null;
+    state.pendingRevealed = false;
+    state.penaltyCountdownEnd = null;
+    state.penaltyActive = false;
+    saveState();
+    render();
+    renderLootArea();
+    document.getElementById('penaltyOverlay').classList.remove('show');
+    renderPenaltyButtonVisibility();
+    updateBanner();
+  });
+
+  var clockEl = document.getElementById('clock');
+  var clockLabel = document.getElementById('clockLabel');
+  var clockSub = document.getElementById('clockSub');
+  var banner = document.getElementById('banner');
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function updateBanner() {
+    var msLeft = state.deadline - Date.now();
+    var finished = allDone();
+
+    if (finished) {
+      grantDailyLoot();
+      renderLootArea();
+      banner.className = 'status-banner panel show success';
+      banner.innerHTML = 'QUEST CLEARED — REWARD ISSUED<span class="sub">+1 STR &middot; +1 VIT &middot; +1 END &middot; +1 AGI &middot; +' + state.goldEarnedToday + ' GOLD</span>';
+    } else if (msLeft <= 0) {
+      // Failure is surfaced by the full-screen penalty overlay (see
+      // resolveDayTransition/updatePenaltyOverlay), not this inline banner.
+      banner.className = 'status-banner panel';
+      banner.innerHTML = '';
+    } else {
+      banner.className = 'status-banner panel';
+      banner.innerHTML = '';
+    }
+  }
+
+  function escapeHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function renderItemCardHtml(item, extraClass, footerHtml) {
+    return '<div class="item-card rarity-' + item.rank + (extraClass ? ' ' + extraClass : '') + '">' +
+      '<div class="item-icon">' + item.icon + '</div>' +
+      '<div class="item-body">' +
+        '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="item-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+        '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
+        '<div class="item-buff"><b>EFFECT:</b> ' + escapeHtml(item.buff) + '</div>' +
+        (footerHtml || '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function grantDailyLoot() {
+    if (state.lootOpened) return;
+    var item = rollLootItem();
+    var gold = 30 + Math.floor(Math.random() * 21);
+    state.goldEarnedToday = gold;
+    goldBalance += gold;
+    saveGold();
+    renderGoldDisplays();
+    state.pendingItem = { rank: item.rank, icon: item.icon, name: item.name, flavor: item.flavor, buff: item.buff };
+    state.pendingRevealed = false;
+    state.lootOpened = true;
+    saveState();
+    renderLootArea();
+  }
+
+  function resolvePendingItem(useNow) {
+    if (!state.pendingItem) return;
+    var entry = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      rank: state.pendingItem.rank, icon: state.pendingItem.icon, name: state.pendingItem.name,
+      flavor: state.pendingItem.flavor, buff: state.pendingItem.buff,
+      acquired: new Date().toISOString(),
+      used: !!useNow
+    };
+    inventory.unshift(entry);
+    saveInventory();
+    state.lastLootId = entry.id;
+    state.pendingItem = null;
+    state.pendingRevealed = false;
+    saveState();
+    renderLootArea();
+    renderInventoryBadge();
+  }
+
+  function renderLootArea() {
+    var lootArea = document.getElementById('lootArea');
+    if (!allDone()) {
+      lootArea.innerHTML = '<div class="loot-box-visual" id="lootLocked"><div class="loot-box-icon">🔒</div><div class="loot-box-text">Clear today\'s quest to unlock a random item drop.</div></div>';
+      return;
+    }
+
+    if (state.pendingItem && !state.pendingRevealed) {
+      lootArea.innerHTML =
+        '<div class="loot-tap-box" id="lootTapBox">' +
+          '<div class="loot-tap-icon">📦</div>' +
+          '<div class="loot-tap-label">TAP TO OPEN TODAY\'S DROP</div>' +
+          '<div class="loot-tap-sub">Quest cleared — a reward is waiting</div>' +
+        '</div>';
+      var box = document.getElementById('lootTapBox');
+      if (box) box.addEventListener('click', function() {
+        state.pendingRevealed = true;
+        saveState();
+        renderLootArea();
+      });
+      return;
+    }
+
+    if (state.pendingItem && state.pendingRevealed) {
+      var card = renderItemCardHtml(state.pendingItem, '');
+      lootArea.innerHTML = card +
+        '<div class="loot-decision-row">' +
+          '<button class="use-btn" id="lootUseBtn">USE NOW</button>' +
+          '<button class="stash-btn" id="lootStashBtn">STASH IN INVENTORY</button>' +
+        '</div>';
+      document.getElementById('lootUseBtn').addEventListener('click', function() { resolvePendingItem(true); });
+      document.getElementById('lootStashBtn').addEventListener('click', function() { resolvePendingItem(false); });
+      return;
+    }
+
+    if (state.lastLootId) {
+      var found = inventory.find(function(it) { return it.id === state.lastLootId; });
+      if (found) {
+        var tag = found.used ? 'Used immediately' : 'Stashed in inventory';
+        lootArea.innerHTML = renderItemCardHtml(found, found.used ? 'used' : '') +
+          '<div class="loot-resolved-tag">' + tag + ' &middot; tap Inventory above to view it anytime</div>';
+        return;
+      }
+    }
+
+    lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">📦</div><div class="loot-box-text">Quest cleared. Rolling for loot&hellip;</div></div>';
+  }
+
+  function renderInventoryBadge() {
+    var badge = document.getElementById('invBadge');
+    if (badge) badge.textContent = String(inventory.length);
+  }
+
+  function renderGoldDisplays() {
+    var goldBadge = document.getElementById('goldBadge');
+    if (goldBadge) goldBadge.textContent = String(goldBalance);
+    var shopLine = document.getElementById('shopGoldLine');
+    if (shopLine) shopLine.textContent = String(goldBalance);
+  }
+
+  function renderInventoryList() {
+    var list = document.getElementById('invList');
+    if (!inventory.length) {
+      list.innerHTML = '<div class="inv-empty">No items yet.<br>Clear a daily quest to earn your first drop.</div>';
+      return;
+    }
+    var rankOrder = { legendary: 0, shop: 0, heroic: 1, rare: 2, common: 3 };
+    var sorted = inventory.slice().sort(function(a, b) {
+      return rankOrder[a.rank] - rankOrder[b.rank];
+    });
+    list.innerHTML = sorted.map(function(item) {
+      var dateStr = new Date(item.acquired).toLocaleDateString();
+      var meta = '<div class="item-meta">Acquired ' + dateStr + '</div>';
+      return renderItemCardHtml(item, (item.used ? 'used ' : '') + 'clickable', meta).replace(
+        'class="item-card', 'data-item-id="' + item.id + '" class="item-card'
+      );
+    }).join('');
+
+    list.querySelectorAll('.item-card').forEach(function(cardEl) {
+      cardEl.addEventListener('click', function() {
+        var id = cardEl.getAttribute('data-item-id');
+        var it = inventory.find(function(i) { return i.id === id; });
+        if (it) openItemDetail(it);
+      });
+    });
+  }
+
+  function openItemDetail(item, context) {
+    context = context || 'inventory';
+    var body = document.getElementById('detailBody');
+
+    var costHtml = (typeof item.cost === 'number')
+      ? '<div class="item-detail-cost">' + item.cost + ' GOLD</div>'
+      : '';
+
+    var statusHtml = '';
+    var actionsHtml = '';
+
+    if (context === 'shop') {
+      var affordable = goldBalance >= item.cost;
+      actionsHtml =
+        '<div class="loot-decision-row">' +
+          '<button class="use-btn" id="detailPurchaseBtn"' + (affordable ? '' : ' disabled') + '>' +
+            (affordable ? 'PURCHASE' : 'NOT ENOUGH GOLD') +
+          '</button>' +
+          '<button class="stash-btn" id="detailCloseBottomBtn">CLOSE</button>' +
+        '</div>';
+    } else if (context === 'codex') {
+      actionsHtml =
+        '<div class="loot-decision-row">' +
+          '<button class="stash-btn" id="detailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button>' +
+        '</div>';
+    } else {
+      if (item.used) {
+        statusHtml = '<div class="item-detail-status">✅ Already redeemed</div>';
+        actionsHtml =
+          '<div class="loot-decision-row">' +
+            '<button class="stash-btn" id="detailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button>' +
+          '</div>';
+      } else {
+        actionsHtml =
+          '<div class="loot-decision-row">' +
+            '<button class="use-btn" id="detailUseBtn">USE NOW</button>' +
+            '<button class="stash-btn" id="detailCloseBottomBtn">KEEP STASHED &amp; CLOSE</button>' +
+          '</div>';
+      }
+    }
+
+    body.innerHTML =
+      '<div class="item-detail-icon">' + item.icon + '</div>' +
+      '<div class="item-detail-name">' + escapeHtml(item.name) + '</div>' +
+      '<span class="item-detail-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+      '<div class="item-detail-flavor">' + escapeHtml(item.flavor) + '</div>' +
+      '<div class="item-detail-effect"><b>EFFECT:</b> ' + escapeHtml(item.buff) + '</div>' +
+      costHtml + statusHtml + actionsHtml;
+
+    if (context === 'shop') {
+      var purchaseBtn = document.getElementById('detailPurchaseBtn');
+      if (purchaseBtn && !purchaseBtn.disabled) {
+        purchaseBtn.addEventListener('click', function() {
+          buyShopItem(item);
+          document.getElementById('detailOverlay').classList.remove('show');
+        });
+      }
+    } else if (context === 'inventory' && !item.used) {
+      document.getElementById('detailUseBtn').addEventListener('click', function() {
+        item.used = true;
+        saveInventory();
+        document.getElementById('detailOverlay').classList.remove('show');
+        renderInventoryList();
+        renderLootArea();
+      });
+    }
+
+    var closeBottomBtn = document.getElementById('detailCloseBottomBtn');
+    if (closeBottomBtn) {
+      closeBottomBtn.addEventListener('click', function() {
+        document.getElementById('detailOverlay').classList.remove('show');
+      });
+    }
+
+    document.getElementById('detailOverlay').classList.add('show');
+  }
+
+  document.getElementById('detailCloseBtn').addEventListener('click', function() {
+    document.getElementById('detailOverlay').classList.remove('show');
+  });
+
+  document.getElementById('invOpenBtn').addEventListener('click', function() {
+    renderInventoryList();
+    document.getElementById('invOverlay').classList.add('show');
+  });
+  document.getElementById('invCloseBtn').addEventListener('click', function() {
+    document.getElementById('invOverlay').classList.remove('show');
+  });
+
+  function buyShopItem(item) {
+    if (!item || goldBalance < item.cost) return false;
+    goldBalance -= item.cost;
+    saveGold();
+    var entry = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      rank: 'shop', icon: item.icon, name: item.name, flavor: item.flavor, buff: item.buff, cost: item.cost,
+      acquired: new Date().toISOString(),
+      used: false
+    };
+    inventory.unshift(entry);
+    saveInventory();
+    renderInventoryBadge();
+    renderGoldDisplays();
+    return true;
+  }
+
+  function renderShopList() {
+    renderGoldDisplays();
+    var list = document.getElementById('shopList');
+    list.innerHTML = SHOP_ITEMS.map(function(item) {
+      return '<div class="shop-item-card clickable" data-shop-id="' + item.id + '">' +
+        '<div class="item-icon">' + item.icon + '</div>' +
+        '<div class="shop-item-body">' +
+          '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
+          '<span class="item-rarity rarity-shop">SHOP</span>' +
+          '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
+          '<div class="shop-cost">' + item.cost + ' GOLD</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    list.querySelectorAll('.shop-item-card').forEach(function(cardEl) {
+      cardEl.addEventListener('click', function() {
+        var id = cardEl.getAttribute('data-shop-id');
+        var item = SHOP_ITEMS.find(function(i) { return i.id === id; });
+        if (item) openItemDetail(item, 'shop');
+      });
+    });
+  }
+
+  document.getElementById('shopOpenBtn').addEventListener('click', function() {
+    renderShopList();
+    document.getElementById('shopOverlay').classList.add('show');
+  });
+  document.getElementById('shopCloseBtn').addEventListener('click', function() {
+    document.getElementById('shopOverlay').classList.remove('show');
+  });
+
+  function renderCodexList() {
+    var list = document.getElementById('codexList');
+    var total = ITEM_POOL.reduce(function(sum, it) { return sum + it.weight; }, 0);
+    var sorted = ITEM_POOL.slice().sort(function(a, b) { return b.weight - a.weight; });
+    list.innerHTML = sorted.map(function(item) {
+      var odds = ((item.weight / total) * 100).toFixed(1) + '% drop chance';
+      var footer = '<div class="item-meta">' + odds + '</div>';
+      return renderItemCardHtml(item, 'clickable', footer).replace(
+        'class="item-card', 'data-codex-rank="' + item.rank + '" class="item-card'
+      );
+    }).join('');
+
+    list.querySelectorAll('.item-card').forEach(function(cardEl) {
+      cardEl.addEventListener('click', function() {
+        var rank = cardEl.getAttribute('data-codex-rank');
+        var item = ITEM_POOL.find(function(i) { return i.rank === rank; });
+        if (item) openItemDetail(item, 'codex');
+      });
+    });
+  }
+
+  document.getElementById('codexOpenBtn').addEventListener('click', function() {
+    renderCodexList();
+    document.getElementById('codexOverlay').classList.add('show');
+  });
+  document.getElementById('codexCloseBtn').addEventListener('click', function() {
+    document.getElementById('codexOverlay').classList.remove('show');
+  });
+
+  function startNewQuestDay() {
+    state = freshDayState();
+    saveState();
+    render();
+    renderLootArea();
+    renderPenaltyText();
+    renderInventoryBadge();
+    renderGoldDisplays();
+    var overlay = document.getElementById('penaltyOverlay');
+    if (overlay) overlay.classList.remove('show');
+    renderPenaltyButtonVisibility();
+    updateBanner();
+  }
+
+  function renderPenaltyButtonVisibility() {
+    var btn = document.getElementById('penaltyOpenBtn');
+    if (btn) btn.style.display = state.penaltyActive ? 'flex' : 'none';
+  }
+
+  function showPenaltyCountdownPhase() {
+    var overlay = document.getElementById('penaltyOverlay');
+    document.getElementById('penaltyHeading').textContent = 'PENALTY ENFORCEMENT INITIATED';
+    document.getElementById('penaltySubheading').textContent = 'DAILY QUEST FAILED';
+    document.getElementById('penaltyOverlayText').textContent = state.penalty;
+    document.getElementById('penaltyCountdownBlock').style.display = '';
+    document.getElementById('penaltyFooterNote').textContent = 'THE SYSTEM DOES NOT NEGOTIATE.';
+    document.getElementById('penaltyCloseBtn').style.display = 'none';
+    if (overlay) overlay.classList.add('show');
+  }
+
+  function showPenaltyActivePhase() {
+    var overlay = document.getElementById('penaltyOverlay');
+    document.getElementById('penaltyHeading').textContent = 'PENALTY IN EFFECT';
+    document.getElementById('penaltySubheading').textContent = 'COMPLETE THIS BEFORE THE NEXT QUEST BEGINS';
+    document.getElementById('penaltyOverlayText').textContent = state.penalty;
+    document.getElementById('penaltyCountdownBlock').style.display = 'none';
+    document.getElementById('penaltyFooterNote').textContent = 'TAP THE ⚠️ PENALTY BUTTON ANYTIME TO REVIEW THIS.';
+    document.getElementById('penaltyCloseBtn').style.display = 'inline-block';
+    if (overlay) overlay.classList.add('show');
+  }
+
+  function updatePenaltyOverlay() {
+    var overlay = document.getElementById('penaltyOverlay');
+    if (!overlay) return;
+
+    if (state.penaltyActive) {
+      // Content is only (re)rendered here; visibility is controlled by
+      // the open/close buttons once in this phase, not by tick().
+      return;
+    }
+
+    if (!state.penaltyCountdownEnd) {
+      overlay.classList.remove('show');
+      return;
+    }
+
+    var numEl = document.getElementById('penaltyCountdownNum');
+    document.getElementById('penaltyOverlayText').textContent = state.penalty;
+    var remainingMs = state.penaltyCountdownEnd - Date.now();
+    var remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+    if (numEl) numEl.textContent = String(remainingSec);
+    showPenaltyCountdownPhase();
+
+    if (remainingMs <= 0) {
+      state.penaltyActive = true;
+      state.penaltyCountdownEnd = null;
+      saveState();
+      showPenaltyActivePhase();
+      renderPenaltyButtonVisibility();
+    }
+  }
+
+  document.getElementById('penaltyOpenBtn').addEventListener('click', function() {
+    if (state.penaltyActive) showPenaltyActivePhase();
+  });
+  document.getElementById('penaltyCloseBtn').addEventListener('click', function() {
+    document.getElementById('penaltyOverlay').classList.remove('show');
+  });
+
+  function resolveDayTransition() {
+    var now = Date.now();
+    if (now < state.deadline) return;
+
+    if (allDone()) {
+      startNewQuestDay();
+      return;
+    }
+
+    if (state.penaltyActive) {
+      // Waiting for the next real calendar day before issuing a new quest.
+      if (todayKey() !== state.day) {
+        startNewQuestDay();
+      }
+      return;
+    }
+
+    if (!state.penaltyCountdownEnd) {
+      state.penaltyCountdownEnd = now + 30000;
+      saveState();
+    }
+  }
+
+  function tick() {
+    resolveDayTransition();
+
+    var msLeft = Math.max(0, state.deadline - Date.now());
+    var finished = allDone();
+
+    if (finished) {
+      clockEl.textContent = '00:00:00';
+      clockEl.className = 'clock';
+      clockLabel.textContent = 'Quest complete';
+      clockSub.textContent = 'A NEW QUEST WILL BE ISSUED AT 00:01';
+      document.body.classList.remove('armed');
+    } else {
+      var totalSec = Math.floor(msLeft / 1000);
+      var h = Math.floor(totalSec / 3600);
+      var m = Math.floor((totalSec % 3600) / 60);
+      var s = totalSec % 60;
+      clockEl.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+      clockLabel.textContent = msLeft <= 0 ? 'DEADLINE PASSED' : 'Time remaining to complete quest';
+      clockSub.textContent = 'WINDOW OPENS 00:01  /  DEADLINE 00:00';
+
+      clockEl.className = 'clock';
+      if (msLeft <= 0) {
+        clockEl.classList.add('crit');
+        document.body.classList.add('armed');
+      } else if (msLeft < 60 * 60 * 1000) {
+        clockEl.classList.add('crit');
+        document.body.classList.add('armed');
+      } else if (msLeft < 3 * 60 * 60 * 1000) {
+        clockEl.classList.add('warn');
+        document.body.classList.add('armed');
+      } else {
+        document.body.classList.remove('armed');
+      }
+    }
+
+    updateBanner();
+    updatePenaltyOverlay();
+  }
+
+  render();
+  renderLootArea();
+  renderInventoryBadge();
+  renderGoldDisplays();
+  renderPenaltyText();
+  renderPenaltyButtonVisibility();
+  updateSaveStatus(checkStorageAvailable());
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
