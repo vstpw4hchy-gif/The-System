@@ -1136,6 +1136,21 @@
   .penalty-countdown-num { text-shadow: 0 0 22px rgba(255,59,92,0.95), 0 0 60px rgba(255,40,70,0.6); }
   .owed-item { background: linear-gradient(180deg, rgba(120,12,32,0.30), rgba(30,3,10,0.66)); border: 1px solid rgba(255,90,110,0.5); }
 
+  .code-box {
+    display: block; width: 100%; min-height: 92px; resize: vertical; padding: 10px; margin-bottom: 10px;
+    background: rgba(5,16,52,0.7); border: 1px solid rgba(150,206,255,0.5); color: #cfe6ff;
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.4; word-break: break-all;
+    box-shadow: inset 0 0 12px rgba(80,160,255,0.16);
+  }
+  .code-box:focus { outline: none; border-color: #a9dcff; }
+  .backup-note { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; line-height: 1.55; color: var(--text-dim); margin-bottom: 12px; }
+  .backup-msg { font-family: 'Share Tech Mono', monospace; font-size: 12px; line-height: 1.5; color: #a9dcff; margin: 12px 0 4px; min-height: 18px; }
+  .backup-msg.bad { color: #ff9aa8; }
+  .snap-row { padding: 10px 12px; margin-bottom: 8px; background: linear-gradient(180deg, rgba(20,56,138,0.30), rgba(4,14,46,0.66)); border: 1px solid rgba(125,192,255,0.38); }
+  .snap-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.08em; color: #eaf6ff; }
+  .snap-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); margin: 3px 0 8px; line-height: 1.4; }
+  .reset-row .reset-btn { margin: 4px 4px 0; }
+
   /* windows open the way the System's do: a line that unfolds */
   @keyframes sysOpen {
     0%   { opacity: 0; transform: scaleY(0.05) scaleX(0.94); filter: brightness(2.4); }
@@ -1263,6 +1278,7 @@
 
   <div class="reset-row">
     <div class="save-status" id="saveStatus">Checking storage&hellip;</div>
+    <button class="reset-btn" id="backupOpenBtn">💾 BACKUP / RESTORE</button>
     <button class="reset-btn" id="resetBtn">RESET QUEST PROGRESS</button>
   </div>
 </div>
@@ -1321,6 +1337,24 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="inv-overlay" id="backupOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">SAVE DATA</div>
+      <button class="inv-close" id="backupCloseBtn">CLOSE</button>
+    </div>
+    <div class="backup-note">Your progress is saved on this device only. Copy the code below into your Notes app now and then. If you ever use a new icon, a new phone or a different browser, paste it into RESTORE to get everything back.</div>
+    <div class="stats-section-title"><span>BACKUP</span></div>
+    <textarea class="code-box" id="backupCode" readonly></textarea>
+    <div class="loot-decision-row"><button class="stash-btn" id="backupCopyBtn">COPY CODE</button></div>
+    <div class="stats-section-title"><span>RESTORE</span></div>
+    <textarea class="code-box" id="restoreCode" placeholder="Paste a backup code here"></textarea>
+    <div class="loot-decision-row"><button class="use-btn" id="restoreBtn">RESTORE FROM CODE</button></div>
+    <div class="backup-msg" id="backupMsg"></div>
+    <div id="snapshotList"></div>
+  </div>
+</div>
 
 <div class="penalty-overlay" id="penaltyOverlay">
   <div class="penalty-box panel">
@@ -1602,6 +1636,84 @@
     return PENALTY_POOL[Math.floor(Math.random() * PENALTY_POOL.length)];
   }
 
+  // ---- Backup, restore and automatic snapshots -------------------------------
+  // Bump this on every release: the first time a new version opens, the
+  // progress that was saved by the old one is snapshotted before anything else runs.
+  var APP_VERSION = '2026-09-28-backup';
+  var VERSION_KEY = 'the-system-version';
+  var SNAP_KEY = 'the-system-snapshot';
+  var SNAP_PREV_KEY = 'the-system-snapshot-prev';
+  var restoring = false;
+
+  function isProgressKey(k) {
+    return !!k && k.indexOf('the-system-') === 0 && k !== VERSION_KEY && k !== SNAP_KEY && k !== SNAP_PREV_KEY;
+  }
+
+  function collectProgress() {
+    var out = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (isProgressKey(k)) out[k] = localStorage.getItem(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  function encodeBackup(data) {
+    var json = JSON.stringify({ v: 1, app: 'the-system', at: Date.now(), data: data });
+    return 'SYSTEM1:' + btoa(unescape(encodeURIComponent(json)));
+  }
+
+  function decodeBackup(code) {
+    var text = String(code || '').replace(/\s+/g, '');
+    if (text.indexOf('SYSTEM1:') !== 0) throw new Error('That does not look like a System backup code.');
+    var parsed;
+    try { parsed = JSON.parse(decodeURIComponent(escape(atob(text.slice(8))))); }
+    catch (e) { throw new Error('That code is damaged or incomplete. Copy it again.'); }
+    var ok = parsed && parsed.app === 'the-system' && parsed.data && typeof parsed.data === 'object';
+    if (ok) {
+      Object.keys(parsed.data).forEach(function(k) {
+        if (!isProgressKey(k) || typeof parsed.data[k] !== 'string') ok = false;
+      });
+    }
+    if (!ok) throw new Error('That code is damaged or incomplete. Copy it again.');
+    return parsed;
+  }
+
+  function takeSnapshot(reason) {
+    var data = collectProgress();
+    if (!Object.keys(data).length) return;
+    try {
+      var prev = localStorage.getItem(SNAP_KEY);
+      if (prev) localStorage.setItem(SNAP_PREV_KEY, prev);
+      localStorage.setItem(SNAP_KEY, JSON.stringify({ at: Date.now(), reason: reason, code: encodeBackup(data) }));
+    } catch (e) {}
+  }
+
+  function applyProgress(data) {
+    var remove = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (isProgressKey(k)) remove.push(k);
+    }
+    remove.forEach(function(k) { localStorage.removeItem(k); });
+    Object.keys(data).forEach(function(k) { localStorage.setItem(k, data[k]); });
+  }
+
+  function reloadApp() {
+    try { location.reload(); } catch (e) {}
+  }
+
+  (function versionGuard() {
+    var last = null;
+    try { last = localStorage.getItem(VERSION_KEY); } catch (e) {}
+    if (last !== APP_VERSION) {
+      takeSnapshot(last ? 'Before updating from ' + last : 'Before the first snapshot-enabled update');
+      try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch (e) {}
+    }
+  })();
+
   function rollTier() {
     var roll = Math.random() * 100;
     for (var i = 0; i < TIER_ORDER.length; i++) {
@@ -1632,6 +1744,7 @@
   }
 
   function saveGold() {
+    if (restoring) return;
     var ok = false;
     try {
       localStorage.setItem(GOLD_KEY, String(goldBalance));
@@ -1656,6 +1769,7 @@
   }
 
   function saveStats() {
+    if (restoring) return;
     var ok = false;
     try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); ok = true; } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
@@ -1677,6 +1791,7 @@
     return start;
   }
   function saveLevel() {
+    if (restoring) return;
     var ok = false;
     try { localStorage.setItem(LEVEL_KEY, String(hunterLevel)); ok = true; } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
@@ -1692,6 +1807,7 @@
     try { var arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
   }
   function saveOwed() {
+    if (restoring) return;
     var ok = false;
     try { localStorage.setItem(OWED_KEY, JSON.stringify(owed)); ok = true; } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
@@ -1721,6 +1837,7 @@
     return out;
   }
   function saveBuffs() {
+    if (restoring) return;
     var ok = false;
     try { localStorage.setItem(BUFFS_KEY, JSON.stringify(buffs)); ok = true; } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
@@ -1748,6 +1865,11 @@
     if (!entry) return entry;
     var c = catalogFind(entry.name);
     if (c) { entry.buff = c.buff; entry.effect = c.effect; entry.mystery = !!c.mystery; }
+    // Items saved by very early versions used letter ranks (E to S).
+    if (!RANK_LABELS[entry.rank]) {
+      var legacy = { E: 'common', D: 'common', C: 'rare', B: 'heroic', A: 'heroic', S: 'legendary' };
+      entry.rank = c ? c.rank : (legacy[entry.rank] || 'common');
+    }
     return entry;
   }
 
@@ -1768,6 +1890,7 @@
   }
 
   function saveInventory() {
+    if (restoring) return;
     var ok = false;
     try {
       localStorage.setItem(INV_KEY, JSON.stringify(inventory));
@@ -1837,6 +1960,7 @@
   var state = loadState();
 
   function saveState() {
+    if (restoring) return;
     var ok = false;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
@@ -2905,6 +3029,120 @@
   });
   document.getElementById('statsCloseBtn').addEventListener('click', function() {
     document.getElementById('statsOverlay').classList.remove('show');
+  });
+
+  // ---- Save Data screen ---------------------------------------------------------
+  var restoreArmed = false;
+
+  function summarizeProgress(data) {
+    var lvl = data['the-system-level'] ? 'LEVEL ' + data['the-system-level'] : 'LEVEL —';
+    var gold = parseInt(data['the-system-gold'] || '0', 10) || 0;
+    var items = 0;
+    try { items = JSON.parse(data['the-system-inventory'] || '[]').length; } catch (e) {}
+    return lvl + ' · ' + gold + ' GOLD · ' + items + ' ITEM' + (items === 1 ? '' : 'S');
+  }
+
+  function fmtWhen(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function flushAll() {
+    saveState(); saveInventory(); saveGold(); saveStats(); saveLevel(); saveOwed(); saveBuffs();
+  }
+
+  function backupMsg(text, bad) {
+    var el = document.getElementById('backupMsg');
+    el.textContent = text;
+    el.className = 'backup-msg' + (bad ? ' bad' : '');
+  }
+
+  function restoreFromCode(code) {
+    var parsed;
+    try { parsed = decodeBackup(code); } catch (e) { return { ok: false, msg: e.message }; }
+    flushAll();
+    takeSnapshot('Before restoring a backup');
+    restoring = true;      // nothing may save over the restored data while the page reloads
+    try { applyProgress(parsed.data); } catch (e) { restoring = false; return { ok: false, msg: 'Could not write the restored data.' }; }
+    reloadApp();
+    return { ok: true };
+  }
+
+  function renderBackupScreen() {
+    flushAll();
+    document.getElementById('backupCode').value = encodeBackup(collectProgress());
+    document.getElementById('restoreCode').value = '';
+    restoreArmed = false;
+    document.getElementById('restoreBtn').textContent = 'RESTORE FROM CODE';
+    backupMsg('');
+
+    var list = document.getElementById('snapshotList');
+    var snaps = [SNAP_KEY, SNAP_PREV_KEY].map(function(k) {
+      try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; }
+    }).filter(Boolean);
+    if (!snaps.length) { list.innerHTML = ''; return; }
+    list.innerHTML =
+      '<div class="stats-section-title"><span>SNAPSHOTS</span></div>' +
+      '<div class="backup-note">Saved automatically each time the app updates. Load one into the restore box if an update ever goes wrong.</div>' +
+      snaps.map(function(sn, i) {
+        var sum;
+        try { sum = summarizeProgress(decodeBackup(sn.code).data); } catch (e) { sum = 'unreadable'; }
+        return '<div class="snap-row">' +
+          '<div class="snap-title">' + escapeHtml(fmtWhen(sn.at)) + '</div>' +
+          '<div class="snap-sub">' + escapeHtml(sn.reason || '') + '<br>' + escapeHtml(sum) + '</div>' +
+          '<div class="loot-decision-row" style="margin-top:0;"><button class="stash-btn snap-btn" data-snap="' + i + '">LOAD INTO RESTORE BOX</button></div>' +
+        '</div>';
+      }).join('');
+    list.querySelectorAll('.snap-btn').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var sn = snaps[parseInt(b.getAttribute('data-snap'), 10)];
+        document.getElementById('restoreCode').value = sn.code;
+        restoreArmed = false;
+        document.getElementById('restoreBtn').textContent = 'RESTORE FROM CODE';
+        backupMsg('Snapshot loaded into the box above. Tap RESTORE FROM CODE to apply it.');
+      });
+    });
+  }
+
+  document.getElementById('backupOpenBtn').addEventListener('click', function() {
+    renderBackupScreen();
+    document.getElementById('backupOverlay').classList.add('show');
+  });
+  document.getElementById('backupCloseBtn').addEventListener('click', function() {
+    document.getElementById('backupOverlay').classList.remove('show');
+  });
+  document.getElementById('backupCopyBtn').addEventListener('click', function() {
+    var box = document.getElementById('backupCode');
+    function done() { backupMsg('Copied. Paste it into Notes or message it to yourself.'); }
+    function fallback() {
+      try {
+        box.focus(); box.select(); box.setSelectionRange(0, box.value.length);
+        if (document.execCommand && document.execCommand('copy')) { done(); return; }
+      } catch (e) {}
+      backupMsg('Tap and hold the code, choose Select All, then Copy.', true);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(box.value).then(done, fallback);
+    else fallback();
+  });
+  document.getElementById('restoreCode').addEventListener('input', function() {
+    restoreArmed = false;
+    document.getElementById('restoreBtn').textContent = 'RESTORE FROM CODE';
+  });
+  document.getElementById('restoreBtn').addEventListener('click', function() {
+    var btn = document.getElementById('restoreBtn');
+    var code = document.getElementById('restoreCode').value;
+    if (!String(code).trim()) { backupMsg('Paste a backup code into the box first.', true); return; }
+    var parsed;
+    try { parsed = decodeBackup(code); }
+    catch (e) { restoreArmed = false; btn.textContent = 'RESTORE FROM CODE'; backupMsg(e.message, true); return; }
+    if (!restoreArmed) {
+      restoreArmed = true;
+      btn.textContent = 'TAP AGAIN TO CONFIRM';
+      backupMsg('This backup holds: ' + summarizeProgress(parsed.data) + '. Tapping again replaces the progress on THIS device with it.');
+      return;
+    }
+    var res = restoreFromCode(code);
+    backupMsg(res.ok ? 'Restored. Reloading…' : res.msg, !res.ok);
   });
 
   function startNewQuestDay() {
