@@ -3,23 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#010614">
 <title>The System</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The System">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #050810;
-    --bg-deep: #01030a;
-    --panel: #0a1224;
-    --panel-2: #0d1830;
-    --line: #1c3a5e;
-    --line-bright: #3ddcff;
-    --cyan: #4fd8ff;
-    --cyan-dim: #1e4a63;
-    --purple: #8b6bff;
-    --text: #d9e8f5;
-    --text-dim: #5f7d96;
+    --bg: #010614;
+    --bg-deep: #000309;
+    --panel: rgba(6,20,62,0.78);
+    --panel-2: rgba(22,62,150,0.40);
+    --line: rgba(125,192,255,0.45);
+    --line-bright: #a9dcff;
+    --cyan: #7cc4ff;
+    --cyan-dim: #1d4f9e;
+    --purple: #b28bff;
+    --text: #e6f2ff;
+    --text-dim: #86a9d4;
     --red: #ff3b5c;
     --red-dim: #4a1420;
     --green: #3dffb0;
@@ -39,8 +48,8 @@
   }
   body {
     background-image:
-      radial-gradient(ellipse 700px 400px at 50% -5%, rgba(79,216,255,0.10), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(79,216,255,0.025) 0px, rgba(79,216,255,0.025) 1px, transparent 1px, transparent 3px);
+      radial-gradient(ellipse 700px 400px at 50% -5%, rgba(110,180,255,0.10), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(110,180,255,0.025) 0px, rgba(110,180,255,0.025) 1px, transparent 1px, transparent 3px);
     background-attachment: fixed;
   }
   body.armed {
@@ -92,13 +101,13 @@
     opacity: 0.85;
   }
   h1 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-weight: 800;
     font-size: 30px;
     margin: 0;
     letter-spacing: 0.06em;
     color: #eaf6ff;
-    text-shadow: 0 0 14px rgba(79,216,255,0.55), 0 0 40px rgba(79,216,255,0.15);
+    text-shadow: 0 0 14px rgba(110,180,255,0.55), 0 0 40px rgba(110,180,255,0.15);
   }
   .h1-sub {
     font-family: 'Share Tech Mono', monospace;
@@ -129,7 +138,7 @@
     letter-spacing: 0.04em;
     font-variant-numeric: tabular-nums;
     color: var(--cyan);
-    text-shadow: 0 0 16px rgba(79,216,255,0.6);
+    text-shadow: 0 0 16px rgba(110,180,255,0.6);
   }
   .clock.warn { color: #ffcf4f; text-shadow: 0 0 16px rgba(255,207,79,0.6); }
   .clock.crit { color: var(--red); text-shadow: 0 0 20px rgba(255,59,92,0.75); animation: pulse 1s infinite; }
@@ -147,7 +156,7 @@
     padding: 16px 18px;
     margin-bottom: 20px;
     text-align: center;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.03em;
@@ -199,7 +208,7 @@
     margin-bottom: 10px;
   }
   .ex-name {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.03em;
@@ -215,7 +224,7 @@
   .done .ex-count b { color: var(--green); }
   .bar-track {
     height: 7px;
-    background: #0a1220;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
     overflow: hidden;
     margin-bottom: 12px;
@@ -223,7 +232,7 @@
   .bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
-    box-shadow: 0 0 8px rgba(79,216,255,0.6);
+    box-shadow: 0 0 8px rgba(110,180,255,0.6);
     transition: width 0.25s ease;
   }
   .done .bar-fill { background: var(--green); box-shadow: 0 0 8px rgba(61,255,176,0.7); }
@@ -238,9 +247,9 @@
     height: 38px;
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
     border: 1px solid var(--line);
-    background: #0d1830;
+    background: rgba(18,48,120,0.5);
     color: var(--cyan);
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 17px;
     font-weight: 600;
     display: flex;
@@ -249,12 +258,12 @@
     -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
-  .stepper-btn:active { background: #14213d; border-color: var(--line-bright); }
+  .stepper-btn:active { background: rgba(40,96,200,0.45); border-color: var(--line-bright); }
   .stepper-btn.big { flex: 1; font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; }
   .run-input-row { display: flex; align-items: center; gap: 10px; }
   .run-input {
     flex: 1;
-    background: #0d1830;
+    background: rgba(18,48,120,0.5);
     border: 1px solid var(--line);
     color: var(--cyan);
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
@@ -300,7 +309,7 @@
     margin-bottom: 12px;
   }
   .stat-chip {
-    background: #0a1220;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
     text-align: center;
     padding: 8px 4px;
@@ -338,7 +347,7 @@
     justify-content: center;
     gap: 12px;
     padding: 14px;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px dashed var(--line);
   }
   .loot-box-icon {
@@ -359,13 +368,13 @@
     gap: 12px;
     padding: 12px 14px;
     margin-top: 10px;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
   }
   .item-icon { font-size: 24px; flex: 0 0 auto; }
   .item-body { flex: 1; min-width: 0; }
   .item-name {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -414,7 +423,7 @@
     justify-content: center;
     gap: 8px;
     width: fit-content;
-    background: #0d1830;
+    background: rgba(18,48,120,0.5);
     border: 1px solid var(--line);
     color: var(--cyan);
     font-family: 'Share Tech Mono', monospace;
@@ -455,7 +464,7 @@
     gap: 12px;
     padding: 12px 14px;
     margin-top: 10px;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
   }
   .shop-item-card.clickable { cursor: pointer; }
@@ -485,7 +494,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(1,3,10,0.88);
+    background: rgba(1,6,24,0.74);
     z-index: 50;
     padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
     overflow-y: auto;
@@ -505,7 +514,7 @@
     margin-bottom: 18px;
   }
   .inv-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -564,18 +573,18 @@
     align-items: center;
     gap: 10px;
     padding: 22px 14px;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px dashed var(--line-bright);
     cursor: pointer;
   }
-  .loot-tap-box:active { background: #0d1830; }
+  .loot-tap-box:active { background: rgba(18,48,120,0.5); }
   .loot-tap-icon {
     font-size: 40px;
     filter: drop-shadow(0 0 10px rgba(61,255,176,0.6));
     animation: floaty 1.6s ease-in-out infinite;
   }
   .loot-tap-label {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -599,13 +608,17 @@
     padding: 10px 8px;
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
     border: 1px solid var(--line);
-    background: #0d1830;
+    background: rgba(18,48,120,0.5);
     color: var(--text);
   }
   .loot-decision-row .use-btn { color: var(--red); border-color: rgba(255,59,92,0.4); }
   .loot-decision-row .use-btn:active { border-color: var(--red); }
-  .loot-decision-row .stash-btn { color: var(--cyan); border-color: rgba(79,216,255,0.4); }
+  .loot-decision-row .stash-btn { color: var(--cyan); border-color: rgba(110,180,255,0.4); }
   .loot-decision-row .stash-btn:active { border-color: var(--cyan); }
+  .loot-decision-row .sell-btn { color: #ffb454; border-color: rgba(255,180,84,0.5); }
+  .loot-decision-row .sell-btn:active { border-color: #ffb454; background: rgba(255,180,84,0.08); }
+  .item-detail-cost.sell { font-size: 13px; margin-top: -6px; }
+  .item-detail-cost.paid { color: var(--text-dim); font-size: 12px; }
   .loot-resolved-tag {
     display: inline-block;
     font-family: 'Share Tech Mono', monospace;
@@ -620,10 +633,10 @@
     font-size: 54px;
     text-align: center;
     margin-bottom: 10px;
-    filter: drop-shadow(0 0 12px rgba(79,216,255,0.4));
+    filter: drop-shadow(0 0 12px rgba(110,180,255,0.4));
   }
   .item-detail-name {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 19px;
     font-weight: 700;
     text-align: center;
@@ -650,7 +663,7 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 12.5px;
     line-height: 1.6;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
     padding: 12px;
     margin-bottom: 16px;
@@ -674,7 +687,7 @@
   textarea.penalty-input, textarea.reward-input {
     width: 100%;
     min-height: 64px;
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px solid var(--line);
     color: var(--text);
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
@@ -687,7 +700,7 @@
   textarea.penalty-input:focus { outline: none; border-color: var(--red); }
   textarea.reward-input:focus { outline: none; border-color: var(--green); }
   .penalty-text {
-    background: #0a0f1c;
+    background: rgba(5,16,52,0.66);
     border: 1px solid rgba(255,59,92,0.35);
     padding: 12px 14px;
     font-family: 'Rajdhani', sans-serif;
@@ -737,7 +750,7 @@
     filter: drop-shadow(0 0 12px rgba(255,59,92,0.7));
   }
   .penalty-heading {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
     font-weight: 800;
     font-size: 19px;
     letter-spacing: 0.05em;
@@ -791,6 +804,73 @@
     border-color: rgba(255,59,92,0.5);
   }
   .penalty-close-btn:active { border-color: var(--red); }
+  .owed-item {
+    text-align: left; padding: 14px 16px; margin-bottom: 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,59,92,0.35);
+  }
+  .owed-text { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 600; color: #fff0f0; line-height: 1.45; }
+  .owed-meta { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; color: var(--text-dim); margin-top: 8px; letter-spacing: 0.08em; }
+  .owed-done-btn {
+    margin-top: 12px; width: 100%; background: none;
+    border: 1px solid rgba(61,255,176,0.5); color: var(--green);
+    font-family: 'Share Tech Mono', monospace; font-size: 11.5px; letter-spacing: 0.08em; padding: 10px;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .owed-done-btn:active { border-color: var(--green); background: rgba(61,255,176,0.08); }
+
+  /* --- Stats screen --- */
+  .stats-level-card { padding: 26px 18px 20px; text-align: center; margin-bottom: 16px; }
+  .stats-level-card.leveled { border-color: rgba(61,255,176,0.6); }
+  .stats-level-card.leveled::before, .stats-level-card.leveled::after { border-color: var(--green); }
+  .stats-level-label { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 0.4em; color: var(--cyan); }
+  .stats-level-num {
+    font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 104px; line-height: 1.05;
+    color: #eaf6ff; text-shadow: 0 0 26px rgba(110,180,255,0.75), 0 0 60px rgba(110,180,255,0.3); margin: 8px 0 6px;
+  }
+  .stats-level-card.leveled .stats-level-num { color: #eafff6; text-shadow: 0 0 26px rgba(61,255,176,0.8), 0 0 60px rgba(61,255,176,0.35); }
+  .stats-level-status { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--cyan); margin-bottom: 4px; }
+  .stats-level-card.leveled .stats-level-status { color: var(--green); }
+  .stats-level-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 0.05em; margin: 6px 0 12px; }
+  .stat-row { padding: 12px 14px; margin-bottom: 8px; background: rgba(5,16,52,0.66); border: 1px solid var(--line); }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .stat-row-name { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700; color: #eaf6ff; letter-spacing: 0.03em; }
+  .stat-row-name span { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; font-weight: 400; color: var(--text-dim); margin-left: 8px; letter-spacing: 0.05em; }
+  .stat-row-val { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; color: var(--cyan); text-shadow: 0 0 10px rgba(110,180,255,0.5); }
+  .stat-row-desc { font-family: 'Rajdhani', sans-serif; font-size: 12.5px; color: var(--text-dim); margin-top: 7px; line-height: 1.35; }
+  .stats-section-title { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.25em; color: var(--cyan); margin: 22px 0 10px 4px; opacity: 0.9; }
+  .stats-today { padding: 14px 16px; }
+  .stats-today-line { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text); line-height: 1.7; }
+  .stats-mod { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #ffb454; margin-top: 6px; line-height: 1.5; }
+  .stats-source { padding: 10px 14px; margin-bottom: 8px; background: rgba(5,16,52,0.66); border: 1px solid var(--line); }
+  .stats-source-name { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; color: #eaf6ff; }
+  .stats-source-muscles { font-family: 'Rajdhani', sans-serif; font-size: 12.5px; color: var(--text-dim); font-style: italic; margin-top: 2px; }
+  .stats-source-gain { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; color: var(--green); margin-top: 5px; }
+  .stats-note { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 8px; }
+  .exercise.waived { opacity: 0.6; }
+  .codex-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .codex-tab {
+    background: rgba(18,48,120,0.5); border: 1px solid var(--line);
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0.06em; padding: 8px 10px;
+    clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px); opacity: 0.5;
+  }
+  .codex-tab.active { opacity: 1; border-color: currentColor; box-shadow: 0 0 10px rgba(110,180,255,0.2); }
+  .codex-tier-info { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5; }
+  .item-card.mystery .item-icon, .item-detail-icon.mystery {
+    filter: hue-rotate(232deg) saturate(1.3) brightness(1.45) drop-shadow(0 0 8px rgba(150,170,255,0.9)); animation: floaty 2.4s ease-in-out infinite;
+  }
+  .stats-title { font-family: 'Rajdhani', sans-serif; font-size: 13px; letter-spacing: 0.08em; color: #ffd76a; text-shadow: 0 0 10px rgba(255,215,106,0.5); margin-bottom: 6px; }
+  .stat-boost { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #ffb454; margin-left: 6px; }
+  .stats-buff { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; color: var(--cyan); margin-top: 6px; line-height: 1.5; }
+  .ex-count .mod { color: #ffb454; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(20px); max-width: 420px; width: calc(100% - 40px);
+    z-index: 200; padding: 12px 16px; background: rgba(10,18,36,0.96); border: 1px solid var(--line-bright);
+    color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 12px; line-height: 1.45; text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .reset-row {
     text-align: center;
@@ -814,37 +894,282 @@
     padding: 9px 18px;
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
   }
-  .reset-btn:active { background: #0d1830; border-color: var(--line-bright); color: var(--cyan); }
+  .reset-btn:active { background: rgba(18,48,120,0.5); border-color: var(--line-bright); color: var(--cyan); }
 
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #eef3f8;
-      --panel: #ffffff;
-      --panel-2: #f3f7fb;
-      --line: #b9cbe0;
-      --text: #16222e;
-      --text-dim: #5a7590;
-    }
+  /* =====================================================================
+     THE SYSTEM: blue holographic window theme
+     ===================================================================== */
+  body {
+    background-image:
+      radial-gradient(ellipse 900px 520px at 50% -8%, rgba(60,130,255,0.30), transparent 62%),
+      radial-gradient(ellipse 700px 500px at 50% 112%, rgba(30,80,200,0.20), transparent 70%);
+    background-attachment: fixed;
   }
-  :root[data-theme="dark"] {
-    --bg: #050810;
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(110,180,255,0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,180,255,0.055) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 28%, #000 0%, transparent 80%);
+    mask-image: radial-gradient(ellipse at 50% 28%, #000 0%, transparent 80%);
+  }
+  .wrap { position: relative; z-index: 1; }
+
+  /* window frame: thin bright border, a second outer line, glow and corner ticks */
+  .panel, .inv-panel {
+    position: relative;
+    background:
+      repeating-linear-gradient(0deg, rgba(170,215,255,0.028) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, rgba(24,66,158,0.42) 0%, rgba(5,18,60,0.80) 62%, rgba(4,14,48,0.86) 100%);
+    border: 1px solid rgba(150,206,255,0.92);
+    border-radius: 2px;
+    clip-path: none;
+    box-shadow:
+      0 0 0 3px rgba(2,10,36,0.6),
+      0 0 0 4px rgba(125,192,255,0.32),
+      0 0 24px 5px rgba(60,140,255,0.34),
+      inset 0 0 28px rgba(80,160,255,0.16),
+      inset 0 1px 0 rgba(200,232,255,0.5);
+  }
+  .panel::before, .panel::after, .inv-panel::before, .inv-panel::after {
+    content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
+  }
+  .panel::before, .inv-panel::before { top: -5px; left: -5px; border-top: 2px solid #dff0ff; border-left: 2px solid #dff0ff; }
+  .panel::after, .inv-panel::after { bottom: -5px; right: -5px; border-bottom: 2px solid #dff0ff; border-right: 2px solid #dff0ff; }
+
+  /* window titles, written like the System's own: [ TITLE ] with lines either side */
+  .sys-title, .stats-section-title {
+    display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 0; opacity: 1;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: #dff0ff; text-shadow: 0 0 10px rgba(110,180,255,0.95);
+  }
+  .sys-title::before, .sys-title::after, .stats-section-title::before, .stats-section-title::after {
+    content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(150,206,255,0.9));
+  }
+  .sys-title::after, .stats-section-title::after { background: linear-gradient(270deg, transparent, rgba(150,206,255,0.9)); }
+  .sys-title span::before, .stats-section-title span::before { content: "[\00a0"; }
+  .sys-title span::after, .stats-section-title span::after { content: "\00a0]"; }
+  .stats-section-title { margin: 24px 0 12px; }
+  .sys-title.danger { color: #ffd9de; text-shadow: 0 0 10px rgba(255,59,92,0.95); }
+  .sys-title.danger::before { background: linear-gradient(90deg, transparent, rgba(255,110,130,0.95)); }
+  .sys-title.danger::after { background: linear-gradient(270deg, transparent, rgba(255,110,130,0.95)); }
+
+  /* header notification */
+  header { margin-bottom: 26px; }
+  .sys-notice { padding: 16px 16px 18px; text-align: center; margin-bottom: 4px; }
+  .sys-notice .sys-title { margin-bottom: 10px; }
+  h1 {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(26px, 8.2vw, 40px); line-height: 1.05; white-space: nowrap;
+    letter-spacing: 0.24em; padding-left: 0.24em; color: #fff;
+    text-shadow: 0 0 8px rgba(190,225,255,0.95), 0 0 26px rgba(70,150,255,0.85), 0 0 60px rgba(60,140,255,0.5);
+  }
+  .h1-sub { font-size: 12px; color: #a9dcff; letter-spacing: 0.16em; margin-top: 10px; }
+
+  /* timer */
+  .clock-card { padding: 20px 18px 18px; margin-bottom: 26px; }
+  .clock-label { color: #a9dcff; letter-spacing: 0.14em; }
+  .clock { color: #eaf6ff; text-shadow: 0 0 16px rgba(110,180,255,0.95), 0 0 42px rgba(60,140,255,0.6); }
+  .clock-sub { color: var(--text-dim); }
+
+  /* daily quest window */
+  .quest-window { padding: 18px 18px 16px; margin-bottom: 4px; }
+  .quest-goal { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; text-align: center; margin: -4px 0 8px; }
+  .quest-window .exercise { padding: 14px 2px 13px; margin: 0; background: none; border: 0; border-top: 1px solid rgba(125,192,255,0.24); }
+  .ex-name { font-size: 19px; letter-spacing: 0.12em; text-transform: uppercase; color: #eaf6ff; text-shadow: 0 0 8px rgba(110,180,255,0.55); }
+  .ex-count { color: #a9dcff; }
+  .ex-count::before { content: "[\00a0"; color: var(--text-dim); }
+  .ex-count::after { content: "\00a0]"; color: var(--text-dim); }
+  .exercise.done .ex-name { color: var(--green); text-shadow: 0 0 10px rgba(61,255,176,0.6); }
+  .quest-window .exercise.done { border-top-color: rgba(61,255,176,0.45); }
+  .quest-caution {
+    margin-top: 6px; padding-top: 13px; border-top: 1px solid rgba(255,59,92,0.4);
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.55; letter-spacing: 0.07em; text-align: center;
+    color: #ff9aa8; text-shadow: 0 0 8px rgba(255,59,92,0.5);
+  }
+  .bar-track { height: 8px; background: rgba(2,10,36,0.85); border: 1px solid rgba(125,192,255,0.5); box-shadow: inset 0 0 6px rgba(0,0,0,0.6); }
+  .bar-fill { background: linear-gradient(90deg, #1d5fe0, #8fd0ff); box-shadow: 0 0 10px rgba(110,180,255,0.9); }
+  .done .bar-fill { background: linear-gradient(90deg, #1fbf88, #6dffcf); box-shadow: 0 0 10px rgba(61,255,176,0.85); }
+
+  /* buttons: glowing blue slabs */
+  .inv-btn, .stepper-btn, .reset-btn, .inv-close, .codex-tab, .item-use-btn, .loot-decision-row button {
+    background: linear-gradient(180deg, rgba(48,110,230,0.42), rgba(10,32,96,0.72));
+    border: 1px solid rgba(150,206,255,0.7);
+    color: #eaf5ff;
+    text-shadow: 0 0 8px rgba(110,180,255,0.85);
+    box-shadow: inset 0 0 14px rgba(90,165,255,0.25), 0 0 10px rgba(60,140,255,0.22);
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    transition: box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .inv-btn:active, .stepper-btn:active, .reset-btn:active, .inv-close:active, .codex-tab:active, .item-use-btn:active, .loot-decision-row button:active {
+    background: linear-gradient(180deg, rgba(90,160,255,0.62), rgba(20,50,130,0.85));
+    box-shadow: inset 0 0 18px rgba(170,215,255,0.5), 0 0 18px rgba(90,165,255,0.55);
+  }
+  .inv-btn { font-size: 13px; }
+  .stepper-btn { font-size: 20px; }
+  .stepper-btn.big, .reset-btn { font-size: 13px; }
+  .loot-decision-row button { font-size: 13px; }
+  .codex-tab { font-size: 12px; }
+  .inv-close { color: #cfe6ff; }
+  .loot-decision-row .use-btn { background: linear-gradient(180deg, rgba(255,59,92,0.24), rgba(60,8,20,0.72)); text-shadow: 0 0 8px rgba(255,59,92,0.8); }
+  .loot-decision-row .sell-btn { background: linear-gradient(180deg, rgba(255,180,84,0.22), rgba(56,32,4,0.72)); text-shadow: 0 0 8px rgba(255,180,84,0.8); }
+  .inv-btn.penalty-open-btn, .penalty-open-btn { background: linear-gradient(180deg, rgba(255,59,92,0.24), rgba(60,8,20,0.72)); border-color: rgba(255,90,110,0.75); color: #ffd0d6; text-shadow: 0 0 8px rgba(255,59,92,0.85); box-shadow: inset 0 0 14px rgba(255,59,92,0.22), 0 0 10px rgba(255,59,92,0.28); }
+  .penalty-close-btn { background: linear-gradient(180deg, rgba(255,59,92,0.24), rgba(60,8,20,0.72)); border-color: rgba(255,90,110,0.75); color: #ffd0d6; text-shadow: 0 0 8px rgba(255,59,92,0.85); box-shadow: inset 0 0 14px rgba(255,59,92,0.22), 0 0 10px rgba(255,59,92,0.28); }
+  .owed-done-btn { background: linear-gradient(180deg, rgba(61,255,176,0.18), rgba(4,40,30,0.72)); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-shadow: 0 0 8px rgba(61,255,176,0.7); }
+  .buy-btn { background: linear-gradient(180deg, rgba(255,180,84,0.2), rgba(56,32,4,0.72)); font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+  .codex-tab.active { box-shadow: inset 0 0 14px rgba(90,165,255,0.35), 0 0 12px rgba(60,140,255,0.4); }
+  .run-input { border-color: rgba(150,206,255,0.6); box-shadow: inset 0 0 12px rgba(80,160,255,0.2); }
+  .stepper-btn.big { font-family: 'Rajdhani', sans-serif; }
+
+  /* cards inside windows */
+  .item-card, .shop-item-card, .stat-row, .stats-source, .stat-chip, .item-detail-effect {
+    background: linear-gradient(180deg, rgba(20,56,138,0.30), rgba(4,14,46,0.66));
+    border: 1px solid rgba(125,192,255,0.38);
+    box-shadow: inset 0 0 16px rgba(80,160,255,0.10);
+  }
+  .item-card, .shop-item-card { border-left: 3px solid currentColor; }
+  .shop-item-card { color: #ffb454; }
+  .shop-item-card .item-name, .item-card .item-name { color: #eaf6ff; text-shadow: 0 0 8px rgba(110,180,255,0.5); }
+  .item-name { font-size: 15px; letter-spacing: 0.06em; }
+  .item-flavor { font-size: 14px; }
+  .item-buff, .item-meta { font-size: 11.5px; }
+  .item-card.rarity-legendary { box-shadow: 0 0 16px rgba(255,215,106,0.4), inset 0 0 16px rgba(255,215,106,0.08); border-color: rgba(255,215,106,0.65); border-left-color: #ffd76a; }
+  .item-card.rarity-heroic { border-color: rgba(178,139,255,0.5); border-left-color: #b28bff; }
+  .item-card.rarity-shop { box-shadow: 0 0 16px rgba(255,180,84,0.3), inset 0 0 16px rgba(255,180,84,0.06); border-color: rgba(255,180,84,0.55); border-left-color: #ffb454; }
+  .stat-chip { padding: 9px 4px; }
+  .stat-chip .stat-name { color: #a9dcff; }
+  .stat-chip .stat-val { color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.9); }
+  .loot-tap-box { border-color: rgba(150,206,255,0.8); box-shadow: 0 0 18px rgba(60,140,255,0.3), inset 0 0 18px rgba(80,160,255,0.14); }
+  .loot-tap-label { color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.95); letter-spacing: 0.14em; text-transform: uppercase; }
+  .loot-box-visual { border-color: rgba(125,192,255,0.4); }
+  .inv-badge { color: #021030; background: #a9dcff; box-shadow: 0 0 8px rgba(110,180,255,0.8); }
+  .inv-badge.gold-badge { background: #ffb454; box-shadow: 0 0 8px rgba(255,180,84,0.8); color: #2a1600; }
+  .status-banner { font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .status-banner .sub { text-transform: none; }
+
+  /* reward / penalty windows */
+  .reward.panel { border-color: rgba(150,206,255,0.92); }
+  .stakes.panel {
+    border-color: rgba(255,100,120,0.95);
+    background:
+      repeating-linear-gradient(0deg, rgba(255,190,200,0.028) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, rgba(150,16,40,0.42) 0%, rgba(40,4,14,0.82) 70%, rgba(30,3,10,0.88) 100%);
+    box-shadow:
+      0 0 0 3px rgba(30,2,8,0.65), 0 0 0 4px rgba(255,90,110,0.38),
+      0 0 24px 5px rgba(255,50,80,0.34), inset 0 0 28px rgba(255,60,90,0.16), inset 0 1px 0 rgba(255,210,216,0.45);
+  }
+  .stakes.panel::before, .stakes.panel::after { border-color: #ffd0d6; }
+  .penalty-text {
+    background: linear-gradient(180deg, rgba(120,12,32,0.30), rgba(30,3,10,0.66));
+    border: 1px solid rgba(255,90,110,0.5); color: #ffe6ea; font-size: 16px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .stakes-note { color: #d99aa5; }
+
+  /* overlays: the System's windows floating over the scene */
+  .inv-overlay { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .inv-panel {
+    width: calc(100% - 36px); max-width: 480px; margin: 20px auto 30px; padding: 18px 16px 22px;
+    background:
+      repeating-linear-gradient(0deg, rgba(170,215,255,0.028) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, rgba(18,52,128,0.95) 0%, rgba(4,16,54,0.97) 60%, rgba(3,12,42,0.98) 100%);
+  }
+  .inv-header { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(125,192,255,0.3); }
+  .inv-title { font-size: 15px; letter-spacing: 0.2em; white-space: nowrap; text-transform: uppercase; color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.95); }
+  .inv-title::before { content: "[\00a0"; color: var(--text-dim); }
+  .inv-title::after { content: "\00a0]"; color: var(--text-dim); }
+  .inv-header { gap: 10px; }
+  .inv-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .inv-close { flex: 0 0 auto; }
+  @media (max-width: 360px) {
+    .inv-title { font-size: 13px; letter-spacing: 0.12em; }
+    h1 { letter-spacing: 0.16em; padding-left: 0.16em; }
+    .sys-title, .stats-section-title { letter-spacing: 0.22em; }
+  }
+  .item-detail-name { font-size: 22px; letter-spacing: 0.1em; text-transform: uppercase; text-shadow: 0 0 12px rgba(110,180,255,0.7); }
+  .item-detail-icon { filter: drop-shadow(0 0 14px rgba(110,180,255,0.7)); }
+
+  /* level-up card and status window on the Stats screen */
+  .stats-level-card { padding: 18px 18px 18px; }
+  .stats-level-card .sys-title { margin-bottom: 8px; }
+  .stats-level-label { font-size: 12px; letter-spacing: 0.5em; padding-left: 0.5em; color: #a9dcff; }
+  .stats-level-num { color: #fff; text-shadow: 0 0 10px rgba(190,225,255,0.95), 0 0 30px rgba(70,150,255,0.85), 0 0 70px rgba(60,140,255,0.5); }
+  .stats-level-status { margin: 2px 0 8px; letter-spacing: 0.12em; }
+  .status-ids { margin: 14px 0 4px; text-align: left; }
+  .status-line { display: flex; justify-content: space-between; gap: 12px; padding: 6px 2px; border-bottom: 1px dotted rgba(125,192,255,0.3); font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+  .status-line b { font-weight: 400; color: var(--text-dim); letter-spacing: 0.22em; }
+  .status-line span { color: #eaf6ff; text-align: right; text-shadow: 0 0 8px rgba(110,180,255,0.6); }
+  .stat-row-name { font-size: 16px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .stat-row-val { color: #fff; text-shadow: 0 0 10px rgba(150,205,255,0.9); }
+  .stats-source-name { letter-spacing: 0.1em; text-transform: uppercase; }
+  .stats-buff { color: #a9dcff; }
+
+  /* notifications */
+  .toast {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.04em; clip-path: none;
+    padding: 10px 16px 14px;
+    background: linear-gradient(180deg, rgba(24,66,158,0.7), rgba(5,18,60,0.94));
+    border: 1px solid rgba(150,206,255,0.92);
+    box-shadow: 0 0 0 3px rgba(2,10,36,0.6), 0 0 0 4px rgba(125,192,255,0.32), 0 0 24px 5px rgba(60,140,255,0.42), inset 0 0 20px rgba(80,160,255,0.2);
+  }
+  .toast::before {
+    content: "[ NOTIFICATION ]"; display: block; margin-bottom: 6px;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.32em; color: #a9dcff; text-shadow: 0 0 8px rgba(110,180,255,0.95);
+  }
+
+  /* penalty warning window */
+  .penalty-overlay { background: radial-gradient(ellipse at 50% 30%, rgba(140,10,30,0.55), rgba(20,2,6,0.93) 70%); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  .penalty-box.panel {
+    border-color: rgba(255,110,130,0.98);
+    background:
+      repeating-linear-gradient(0deg, rgba(255,190,200,0.03) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, rgba(150,16,40,0.5) 0%, rgba(38,3,12,0.92) 100%);
+    box-shadow:
+      0 0 0 3px rgba(30,2,8,0.7), 0 0 0 4px rgba(255,90,110,0.42),
+      0 0 36px 8px rgba(255,40,70,0.45), inset 0 0 30px rgba(255,60,90,0.2), inset 0 1px 0 rgba(255,210,216,0.5);
+  }
+  .penalty-box.panel::before, .penalty-box.panel::after { border-color: #ffd0d6; }
+  .penalty-box .sys-title { margin-bottom: 12px; }
+  .penalty-icon { font-size: 34px; margin-bottom: 8px; }
+  .penalty-heading { font-size: 20px; letter-spacing: 0.1em; text-transform: uppercase; animation: sysFlicker 3.4s infinite; }
+  .penalty-subheading { color: #d99aa5; letter-spacing: 0.2em; }
+  .penalty-desc { font-size: 19px; }
+  .penalty-countdown-num { text-shadow: 0 0 22px rgba(255,59,92,0.95), 0 0 60px rgba(255,40,70,0.6); }
+  .owed-item { background: linear-gradient(180deg, rgba(120,12,32,0.30), rgba(30,3,10,0.66)); border: 1px solid rgba(255,90,110,0.5); }
+
+  /* windows open the way the System's do: a line that unfolds */
+  @keyframes sysOpen {
+    0%   { opacity: 0; transform: scaleY(0.05) scaleX(0.94); filter: brightness(2.4); }
+    55%  { opacity: 1; transform: scaleY(1.02) scaleX(1); filter: brightness(1.45); }
+    100% { opacity: 1; transform: none; filter: none; }
+  }
+  @keyframes sysFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes sysFlicker { 0%, 90%, 100% { opacity: 1; } 92% { opacity: 0.5; } 94% { opacity: 1; } 96% { opacity: 0.7; } }
+  .inv-overlay.show .inv-panel { animation: sysOpen 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: 50% 0; }
+  .penalty-overlay.show .penalty-box { animation: sysOpen 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both, penaltyPulse 1.6s ease-in-out 0.42s infinite; transform-origin: 50% 40%; }
+  .wrap .panel { animation: sysFade 0.5s ease-out both; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="kicker">SYSTEM ALERT</div>
-    <h1>THE SYSTEM</h1>
-    <div class="h1-sub">// DAILY QUEST HAS BEEN ISSUED</div>
+    <div class="sys-notice panel">
+      <div class="sys-title"><span>Notification</span></div>
+      <h1>THE SYSTEM</h1>
+      <div class="h1-sub">A DAILY QUEST HAS ARRIVED.</div>
+    </div>
     <div class="header-btn-row">
       <button class="inv-btn" id="invOpenBtn">🎒 INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
       <button class="inv-btn" id="shopOpenBtn">🛒 SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
+      <button class="inv-btn" id="statsOpenBtn">📊 STATS</button>
       <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;">⚠️ PENALTY</button>
     </div>
   </header>
 
   <div class="clock-card panel">
+    <div class="sys-title"><span>Quest Timer</span></div>
     <div class="clock-label" id="clockLabel">Time remaining to complete quest</div>
     <div class="clock" id="clock">--:--:--</div>
     <div class="clock-sub" id="clockSub">WINDOW OPENS 00:01 &nbsp;/&nbsp; DEADLINE 00:00</div>
@@ -853,12 +1178,14 @@
   <div class="status-banner panel" id="banner"></div>
 
   <section class="block">
-    <div class="block-title">DAILY QUEST — REQUIREMENTS</div>
+    <div class="quest-window panel">
+      <div class="sys-title"><span>Daily Quest</span></div>
+      <div class="quest-goal">GOAL &middot; COMPLETE EVERY REQUIREMENT BEFORE THE DEADLINE</div>
 
-    <div class="exercise panel" id="ex-pushups" data-target="100" data-step="10">
+    <div class="exercise" id="ex-pushups" data-target="100" data-step="10">
       <div class="ex-top">
         <div class="ex-name">Push-ups</div>
-        <div class="ex-count"><b id="ex-pushups-val">0</b> / 100</div>
+        <div class="ex-count"><b id="ex-pushups-val">0</b> / <span id="ex-pushups-target">100</span></div>
       </div>
       <div class="bar-track"><div class="bar-fill" id="ex-pushups-bar" style="width:0%"></div></div>
       <div class="ex-controls">
@@ -868,10 +1195,10 @@
       </div>
     </div>
 
-    <div class="exercise panel" id="ex-situps" data-target="100" data-step="10">
+    <div class="exercise" id="ex-situps" data-target="100" data-step="10">
       <div class="ex-top">
         <div class="ex-name">Sit-ups</div>
-        <div class="ex-count"><b id="ex-situps-val">0</b> / 100</div>
+        <div class="ex-count"><b id="ex-situps-val">0</b> / <span id="ex-situps-target">100</span></div>
       </div>
       <div class="bar-track"><div class="bar-fill" id="ex-situps-bar" style="width:0%"></div></div>
       <div class="ex-controls">
@@ -881,10 +1208,10 @@
       </div>
     </div>
 
-    <div class="exercise panel" id="ex-squats" data-target="100" data-step="10">
+    <div class="exercise" id="ex-squats" data-target="100" data-step="10">
       <div class="ex-top">
         <div class="ex-name">Squats</div>
-        <div class="ex-count"><b id="ex-squats-val">0</b> / 100</div>
+        <div class="ex-count"><b id="ex-squats-val">0</b> / <span id="ex-squats-target">100</span></div>
       </div>
       <div class="bar-track"><div class="bar-fill" id="ex-squats-bar" style="width:0%"></div></div>
       <div class="ex-controls">
@@ -894,10 +1221,10 @@
       </div>
     </div>
 
-    <div class="exercise panel" id="ex-run" data-target="10">
+    <div class="exercise" id="ex-run" data-target="10">
       <div class="ex-top">
         <div class="ex-name">Run</div>
-        <div class="ex-count"><b id="ex-run-val">0.0</b> / 10 km</div>
+        <div class="ex-count"><b id="ex-run-val">0.0</b> / <span id="ex-run-target">10 km</span></div>
       </div>
       <div class="bar-track"><div class="bar-fill" id="ex-run-bar" style="width:0%"></div></div>
       <div class="run-input-row">
@@ -905,18 +1232,15 @@
         <span class="unit">km</span>
       </div>
     </div>
+      <div class="quest-caution">CAUTION: FAILING THE DAILY QUEST ENFORCES A PENALTY.</div>
+    </div>
   </section>
 
   <section class="block">
     <div class="reward panel">
-      <div class="reward-title">REWARD FOR COMPLETION</div>
-      <div class="stat-grid">
-        <div class="stat-chip"><div class="stat-name">STR</div><div class="stat-val">+1</div></div>
-        <div class="stat-chip"><div class="stat-name">VIT</div><div class="stat-val">+1</div></div>
-        <div class="stat-chip"><div class="stat-name">END</div><div class="stat-val">+1</div></div>
-        <div class="stat-chip"><div class="stat-name">AGI</div><div class="stat-val">+1</div></div>
-      </div>
-      <div class="stakes-note">Stat points and gold are granted automatically the moment the quest is cleared.</div>
+      <div class="sys-title"><span>Reward</span></div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="stakes-note" id="rewardNote">Stat points are earned in proportion to the work required today (items that cut work cut points). Gold and a loot drop are granted when the quest is cleared.</div>
 
       <div class="loot-section">
         <div class="loot-label">DAILY LOOT DROP</div>
@@ -931,7 +1255,7 @@
     </div>
 
     <div class="stakes panel">
-      <div class="stakes-title">PENALTY FOR FAILURE</div>
+      <div class="sys-title danger"><span>Penalty</span></div>
       <div class="penalty-text" id="penaltyText">Loading today's penalty&hellip;</div>
       <div class="stakes-note">THE SYSTEM DECIDES THE PENALTY, NOT YOU. IF THE COUNTER REACHES ZERO WITH ANY REQUIREMENT INCOMPLETE, IT IS ENFORCED.</div>
     </div>
@@ -959,7 +1283,8 @@
       <div class="inv-title">ITEM CODEX</div>
       <button class="inv-close" id="codexCloseBtn">CLOSE</button>
     </div>
-    <div class="loot-box-text" style="margin-bottom:14px;">Every item that can drop from the daily loot box, with its drop odds and effect.</div>
+    <div class="codex-tabs" id="codexTabs"></div>
+    <div class="codex-tier-info" id="codexTierInfo"></div>
     <div id="codexList"></div>
   </div>
 </div>
@@ -985,12 +1310,26 @@
   </div>
 </div>
 
+<div class="inv-overlay" id="statsOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">STATUS</div>
+      <button class="inv-close" id="statsCloseBtn">CLOSE</button>
+    </div>
+    <div id="statsBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <div class="penalty-overlay" id="penaltyOverlay">
   <div class="penalty-box panel">
+    <div class="sys-title danger"><span>Warning</span></div>
     <div class="penalty-icon">⚠️</div>
     <div class="penalty-heading" id="penaltyHeading">PENALTY ENFORCEMENT INITIATED</div>
     <div class="penalty-subheading" id="penaltySubheading">DAILY QUEST FAILED</div>
     <div class="penalty-desc" id="penaltyOverlayText">—</div>
+    <div id="penaltyOwedList" style="display:none;"></div>
     <div id="penaltyCountdownBlock">
       <div class="penalty-countdown-label">PENALTY BEGINS IN</div>
       <div class="penalty-countdown-num" id="penaltyCountdownNum">30</div>
@@ -1017,37 +1356,223 @@
   var STORE_KEY = 'the-system-state';
   var INV_KEY = 'the-system-inventory';
   var GOLD_KEY = 'the-system-gold';
+  var STATS_KEY = 'the-system-stats';
+
+  var STAT_KEYS = ['STR', 'VIT', 'END', 'AGI'];
+  var STAT_INFO = {
+    STR: { name: 'STRENGTH', desc: 'Raw power. Built mostly by push-ups and squats.' },
+    VIT: { name: 'VITALITY', desc: 'Core strength and recovery capacity. Built by sit-ups, squats and running.' },
+    END: { name: 'ENDURANCE', desc: 'Stamina and work capacity. Built mostly by the run.' },
+    AGI: { name: 'AGILITY', desc: 'Speed and leg drive. Built by running and squats.' }
+  };
+  // Stat points earned for completing 100% of each exercise's requirement,
+  // based on the main muscle groups each exercise trains.
+  var EXERCISE_INFO = {
+    'ex-pushups': { name: 'Push-ups', muscles: 'Chest, shoulders, triceps', stats: { STR: 3, END: 1 } },
+    'ex-situps':  { name: 'Sit-ups',  muscles: 'Abs and core',              stats: { VIT: 2, STR: 1, END: 1 } },
+    'ex-squats':  { name: 'Squats',   muscles: 'Quads, glutes, hamstrings', stats: { STR: 2, VIT: 2, AGI: 1 } },
+    'ex-run':     { name: 'Run',      muscles: 'Cardio and legs',           stats: { END: 3, AGI: 2, VIT: 1 } }
+  };
 
   var RANK_LABELS = { common: 'COMMON', rare: 'RARE', heroic: 'HEROIC', legendary: 'LEGENDARY', shop: 'SHOP' };
 
-  var ITEM_POOL = [
-    { rank: 'common', icon: '🔩', weight: 60, name: 'Cracked Stamina Charm',
-      flavor: 'A dull trinket that still hums faintly, like it remembers being useful.',
-      buff: 'Redeem for one free skipped set on any exercise, no questions asked.' },
-    { rank: 'rare', icon: '🧪', weight: 25, name: 'Vial of Swift Recovery',
-      flavor: 'The liquid inside never stops swirling, even when the vial is still.',
-      buff: 'Redeem to knock 1 km off tomorrow\'s run requirement.' },
-    { rank: 'heroic', icon: '🧥', weight: 12, name: 'Cloak of the Quiet Step',
-      flavor: 'Wrapped around the shoulders, the rest of the world gets a little quieter.',
-      buff: 'Redeem for one full guilt-free rest day — the quest pauses, no penalty.' },
-    { rank: 'legendary', icon: '🗝️', weight: 3, name: 'Fragment of the Ascendant Will',
-      flavor: 'Vanishingly rare. Holding it makes tomorrow feel optional.',
-      buff: 'Redeem to waive the entire daily quest once, with zero penalty.' }
-  ];
+  // Small constructors that keep the item tables below readable.
+  var FX = {
+    temp: function(stat, amount, hours) { return { type: 'tempStat', stat: stat, amount: amount, hours: hours }; },
+    gold: function(amount) { return { type: 'instantGold', amount: amount }; },
+    extend: function(hours) { return { type: 'extendDeadline', hours: hours }; },
+    pct: function(pct) { return { type: 'shavePct', pct: pct }; },
+    onePct: function(pct) { return { type: 'shaveOnePct', pct: pct }; },
+    reps: function(reps) { return { type: 'shaveReps', reps: reps }; },
+    km: function(km) { return { type: 'shaveRun', km: km }; },
+    skipOne: function() { return { type: 'skipOne' }; },
+    gain: function(pct, clears) { return { type: 'gainMult', pct: pct, clears: clears }; },
+    goldMult: function(pct, clears) { return { type: 'goldMult', pct: pct, clears: clears }; },
+    luck: function(rolls) { return { type: 'luck', rolls: rolls }; },
+    reroll: function() { return { type: 'penaltyReroll' }; },
+    shield: function(charges) { return { type: 'penaltyShield', charges: charges }; },
+    clear: function(count) { return { type: 'clearOwed', count: count }; },
+    grant: function(stat, amount) { return { type: 'statGrant', stat: stat, amount: amount }; },
+    loot: function(count) { return { type: 'grantLoot', count: count }; },
+    title: function(title) { return { type: 'title', title: title }; },
+    waive: function(rewards) { return { type: 'waiveAll', rewards: !!rewards }; },
+    combo: function() { return { type: 'combo', effects: Array.prototype.slice.call(arguments) }; },
+    mystery: function() { return { type: 'mystery', pool: Array.prototype.slice.call(arguments) }; }
+  };
+
+  var TIER_ORDER = ['common', 'rare', 'heroic', 'legendary'];
+  // Share of all drops that land in each rarity. The rarity is rolled first,
+  // then one item from that rarity is picked at random.
+  var TIER_WEIGHTS = { common: 60, rare: 25, heroic: 12, legendary: 3 };
+
+  // What a loot item sells for, by rarity: the rarer, the more it is worth.
+  // Anything bought from the shop resells for only 80% of its price, because
+  // once you own it, it is no longer new.
+  var LOOT_VALUES = { common: 10, rare: 30, heroic: 80, legendary: 250 };
+  var SHOP_RESALE = 0.8;
+
+  // [icon, name, flavor text, effect]. Mystery items show no picture and hide their effect until used.
+  var TIER_ITEMS = {
+    common: [
+      ['🔩', 'Cracked Stamina Charm', 'A dull trinket that still hums faintly, like it remembers being useful.', FX.reps(10)],
+      ['🧵', 'Frayed Grip Tape', 'Peeling at the edges, but your hands stop slipping.', FX.temp('STR', 1, 12)],
+      ['🥤', 'Dented Canteen', 'Whatever is inside is lukewarm and somehow exactly enough.', FX.temp('END', 1, 12)],
+      ['👟', 'Worn Lucky Laces', 'Knotted so many times they remember your stride.', FX.temp('AGI', 1, 12)],
+      ['📿', 'Chipped Vitality Bead', 'One bead off a broken string, still warm to the touch.', FX.temp('VIT', 1, 12)],
+      ['👝', 'Pouch of Old Coins', 'Light, jingling, and probably worth more than it looks.', FX.gold(15)],
+      ['💰', 'Tarnished Coin Purse', "Somebody's savings, now yours.", FX.gold(25)],
+      ['🧭', 'Bent Compass', 'The needle wobbles, but it always points toward a little more time.', FX.extend(1)],
+      ['🧣', 'Sweat-Stained Wrap', 'It has soaked up a hundred hard sessions and kept the worst of them.', FX.pct(10)],
+      ['🔔', "Pacer's Bell", 'Its dull chime makes the last kilometer feel a bit shorter.', FX.km(0.5)],
+      ['🪵', 'Splintered Training Staff', 'Rough enough to remind you that hard work leaves marks.', FX.onePct(20)],
+      ['🍙', 'Stale Ration Ball', 'Not tasty, but it gets the job done.', FX.gain(10, 1)],
+      ['🌿', 'Bitter Herb Bundle', 'Chew slowly. The taste is a reminder that patience pays.', FX.goldMult(20, 1)],
+      ['🐇', "Dull Rabbit's Foot", 'Worn smooth by too many wishes.', FX.luck(1)],
+      ['⏳', 'Cracked Hourglass', 'The sand still falls, just in a different order every time.', FX.reroll()],
+      ['🧤', 'Scuffed Practice Gloves', 'The leather is thin, but it remembers your grip.', FX.grant('STR', 0.5)],
+      ['⏱️', 'Wobbly Stopwatch', 'Loses a second here, gains one there, and somehow always leaves you fitter.', FX.grant('END', 0.5)],
+      ['🧰', 'Battered Toolbox', 'The lid rattles. Something inside is worth keeping.', FX.loot(1)],
+      ['🎗️', 'Faded Victory Ribbon', 'Awarded for something long forgotten, yet it still feels lucky.', FX.combo(FX.gold(10), FX.gain(5, 1))],
+      ['❓', 'Unmarked Vial', 'No label, no smell. Just a faint hum when you shake it.',
+        FX.mystery(FX.temp('STR', 1, 12), FX.temp('AGI', 1, 12), FX.gold(20), FX.gain(10, 1), FX.goldMult(20, 1), FX.luck(1), FX.grant('VIT', 0.5), FX.loot(1))],
+      ['❓', 'Sealed Paper Charm', 'The seal has never been broken. Something shifts inside when you hold it.',
+        FX.mystery(FX.extend(1), FX.pct(10), FX.km(0.5), FX.reps(10), FX.onePct(20), FX.reroll())]
+    ],
+    rare: [
+      ['🧪', 'Vial of Swift Recovery', 'The liquid inside never stops swirling, even when the vial is still.', FX.km(1)],
+      ['🥊', 'Iron-Banded Wristguard', 'Heavy on the arm, lighter on the mind.', FX.temp('STR', 2, 24)],
+      ['🪶', "Windrunner's Anklet", 'Every step feels like a downhill one.', FX.temp('AGI', 2, 24)],
+      ['🔥', 'Ember Flask', 'Sip it and the fire in your lungs stops feeling like a warning.', FX.temp('END', 2, 24)],
+      ['🌱', 'Heartroot Tonic', 'Bitter, green, and oddly reassuring.', FX.temp('VIT', 2, 24)],
+      ['🗃️', "Merchant's Lockbox", 'The lock is broken, so the coins spill out easily.', FX.gold(45)],
+      ['📒', 'Gilded Ledger', 'Every page is a receipt marked "paid in full".', FX.gold(70)],
+      ['🕰️', "Traveler's Pocketwatch", 'It runs slow whenever you need it to.', FX.extend(2)],
+      ['🎽', 'Tailwind Sash', 'A little wind at your back turns every rep lighter.', FX.pct(15)],
+      ['🗡️', 'Whetstone of the Relentless', 'Every edge it touches forgets what it means to be dull.', FX.reps(20)],
+      ['🪞', 'Silver Mirror', "It shows tomorrow's face and asks you to choose again.", FX.combo(FX.reroll(), FX.extend(1))],
+      ['🕯️', 'Focus Incense', 'The smoke curls into the shape of a plan.', FX.gain(20, 1)],
+      ['🪙', "Fortune's Coin", 'Heads or tails, it lands in your favor.', FX.goldMult(40, 1)],
+      ['🍀', 'Four-Leaf Clover', 'Found where no clover should grow.', FX.luck(2)],
+      ['🔷', 'Rune of Might', 'It warms your palm the moment you close your fist.', FX.grant('STR', 1)],
+      ['🔶', 'Rune of Endurance', 'You breathe easier just holding it.', FX.grant('END', 1)],
+      ['🪓', "Hunter's Whetted Axe", 'Chops through the toughest part of the day.', FX.onePct(35)],
+      ['🎒', "Scout's Satchel", "Stuffed with whatever the last scout couldn't carry.", FX.loot(2)],
+      ['🗺️', "Cartographer's Chart", 'Every route on it is a little shorter than the real one.', FX.combo(FX.pct(10), FX.temp('AGI', 1, 12))],
+      ['❓', 'Veiled Idol', 'A faceless figure. It seems to lean closer when you look away.',
+        FX.mystery(FX.temp('STR', 2, 24), FX.temp('END', 2, 24), FX.gold(60), FX.gain(20, 1), FX.goldMult(40, 1), FX.luck(2), FX.grant('AGI', 1), FX.loot(2))],
+      ['❓', 'Locked Reliquary', 'No keyhole. The lid opens only when it decides to.',
+        FX.mystery(FX.extend(2), FX.pct(15), FX.km(1), FX.reps(20), FX.onePct(35), FX.reroll())]
+    ],
+    heroic: [
+      ['🧥', 'Cloak of the Quiet Step', 'Wrapped around the shoulders, the rest of the world gets a little quieter.', FX.waive(false)],
+      ['🛡️', "Titan's Bracer", 'Forged for someone twice your size, and it fits perfectly.', FX.temp('STR', 3, 48)],
+      ['👢', 'Phantom Greaves', 'Your footsteps no longer make a sound.', FX.temp('AGI', 3, 48)],
+      ['🐉', 'Dragonheart Ember', 'A coal that never cools, glowing in your chest.', FX.temp('END', 3, 48)],
+      ['🕊️', 'Sanctuary Dove', 'Where it perches, nothing hurts as much.', FX.temp('VIT', 3, 48)],
+      ['🏺', 'Amphora of Coin', 'Sealed with wax, heavy with gold.', FX.gold(100)],
+      ['👑', 'Royal Purse', 'Embroidered with the crest of a kingdom that no longer exists.', FX.gold(150)],
+      ['⌛', 'Chrono Sand', 'Pour it out and the evening stretches.', FX.extend(3)],
+      ['🌩️', "Stormcaller's Mantle", 'The thunder does some of the heavy lifting for you.', FX.pct(25)],
+      ['⚔️', "Berserker's Oath", 'Swear it and the last thirty reps no longer feel necessary.', FX.reps(30)],
+      ['🦊', 'Twin-Tailed Talisman', 'The fox grins and one whole task simply vanishes.', FX.skipOne()],
+      ['💎', "Sage's Mindstone", 'Your thoughts come out crisp and your gains come in faster.', FX.gain(35, 2)],
+      ['💍', "Merchant King's Signet", 'Stamp it on any deal and the profit doubles back.', FX.goldMult(60, 2)],
+      ['🎲', 'Star-Woven Dice', 'Every roll seems to land exactly where you hoped.', FX.luck(3)],
+      ['🔰', 'Aegis Sigil', 'A quiet promise that the next fall will not hurt.', FX.shield(1)],
+      ['🔮', 'Absolution Orb', 'It clouds, clears, and shows a debt already forgiven.', FX.clear(1)],
+      ['🎖️', 'Mark of the Unbroken', 'Pinned over the heart, worn by those who kept going.', FX.title('The Unbroken')],
+      ['🎁', 'Overflowing Cache', 'Every time you open it there is somehow more inside.', FX.loot(3)],
+      ['🔺', 'Rune of Titans', 'Heavy as a mountain, warm as a forge.', FX.grant('STR', 2)],
+      ['❓', 'Veilbound Tome', 'The pages rewrite themselves every time you look away.',
+        FX.mystery(FX.temp('STR', 3, 48), FX.temp('AGI', 3, 48), FX.gold(120), FX.gain(35, 2), FX.goldMult(60, 2), FX.luck(3), FX.grant('VIT', 2), FX.loot(3))],
+      ['❓', 'Whispering Lantern', "It glows only when you're not looking directly at it.",
+        FX.mystery(FX.extend(3), FX.pct(25), FX.reps(30), FX.skipOne(), FX.reroll(), FX.shield(1), FX.clear(1))]
+    ],
+    legendary: [
+      ['🗝️', 'Fragment of the Ascendant Will', 'Vanishingly rare. Holding it makes tomorrow feel optional.', FX.waive(true)],
+      ['🪨', 'Colossus Heartstone', 'It beats once a minute, and the ground trembles.', FX.temp('STR', 5, 72)],
+      ['🥾', 'Stormstep Boots', 'You outrun the thunder every time.', FX.temp('AGI', 5, 72)],
+      ['🌋', 'Eternal Furnace', 'A forge that never dims and never asks for fuel.', FX.temp('END', 5, 72)],
+      ['🦅', 'Phoenix Plume', 'Wounds close as if they were never there.', FX.temp('VIT', 5, 72)],
+      ['🐲', "Dragon's Hoard", 'One coin at a time, a mountain of them.', FX.gold(300)],
+      ['🏦', "Sovereign's Vault", 'Only opens for someone who has earned it.', FX.gold(500)],
+      ['🌌', 'Timeless Hourglass', 'The stars stop turning while you catch your breath.', FX.extend(4)],
+      ['⛈️', 'Tempest Regalia', 'Armor woven from a storm that never ends.', FX.pct(40)],
+      ['🚩', "Warlord's Standard", 'Raise it and the army marches for you.', FX.reps(50)],
+      ['🎭', 'Mask of a Thousand Faces', 'Wear it and the day looks a lot less like a challenge.', FX.combo(FX.pct(20), FX.extend(2))],
+      ['👁️', "Oracle's Third Eye", 'It shows you exactly where the gains are hiding.', FX.gain(75, 3)],
+      ['🥇', 'Midas Gauntlet', 'Everything you touch turns to profit.', FX.goldMult(150, 3)],
+      ['🎰', 'Cosmic Dice', 'Loaded by something older than luck.', FX.luck(5)],
+      ['🏰', 'Bulwark of Ages', 'A wall that has held for a thousand years and will hold for a thousand more.', FX.shield(3)],
+      ['⚖️', 'Grand Absolution', 'Every debt weighed, every scale balanced.', FX.clear('all')],
+      ['🔻', 'Rune of the Colossus', 'Carved by a giant who never once rested.', FX.grant('STR', 3)],
+      ['🏆', "Emperor's Reliquary", 'Every treasure that ever mattered, all in one chest.', FX.loot(5)],
+      ['🌟', 'Star of the Sovereign', 'Worn by those who answer to no one.', FX.title('The Sovereign')],
+      ['❓', 'Voidbound Relic', 'It feels heavier every time you look at it.',
+        FX.mystery(FX.temp('STR', 5, 72), FX.temp('AGI', 5, 72), FX.gold(400), FX.gain(75, 3), FX.goldMult(150, 3), FX.luck(5), FX.grant('END', 3), FX.loot(5))],
+      ['❓', 'Whisper of the Abyss', 'You hear it, but it never quite says the same thing twice.',
+        FX.mystery(FX.extend(4), FX.pct(40), FX.reps(50), FX.skipOne(), FX.shield(3), FX.clear('all'), FX.waive(true))]
+    ]
+  };
+
+  // Plain-language description of an effect, so item text always matches what the item does.
+  function effectText(eff) {
+    switch (eff.type) {
+      case 'shaveReps': return 'Shave ' + eff.reps + ' reps off one rep-based exercise of your choice today (push-ups, sit-ups or squats). You earn proportionally fewer stat points from it.';
+      case 'shaveRun': return 'Knock ' + fmt(eff.km) + ' km off today\'s run. You earn proportionally fewer stat points from the run.';
+      case 'skipRun': return 'Skip today\'s entire run requirement. You forfeit the stat points the run would have earned.';
+      case 'halveAll': return 'Halve every exercise requirement in force today. Stat points are halved to match.';
+      case 'shavePct': return 'Cut every exercise requirement in force today by ' + eff.pct + '%. Stat points shrink to match.';
+      case 'shaveOnePct': return 'Cut one exercise of your choice by ' + eff.pct + '% today. You earn proportionally fewer stat points from it.';
+      case 'skipOne': return 'Waive one exercise of your choice today. You forfeit the stat points it would have earned.';
+      case 'waiveAll': return eff.rewards
+        ? 'Waive today\'s entire quest with no penalty. You still receive gold and a loot drop, but no stat points (no work was done).'
+        : 'Waive today\'s entire quest with no penalty. A pure rest day: no stat points, gold, or loot are earned.';
+      case 'extendDeadline': return 'Extend today\'s deadline by ' + eff.hours + ' hour' + (eff.hours === 1 ? '' : 's') + '.';
+      case 'penaltyReroll': return 'Reroll today\'s penalty into a different random one.';
+      case 'penaltyShield': return 'Absorb the penalty of your next failed quest' + (eff.charges > 1 ? ' (' + eff.charges + ' charges).' : '.');
+      case 'clearOwed': return eff.count === 'all' ? 'Clear every penalty you currently owe.' : 'Clear the oldest penalty you currently owe. It no longer has to be completed.';
+      case 'tempStat': return 'Gain +' + eff.amount + ' ' + eff.stat + ' for ' + eff.hours + ' hours. A temporary boost shown on your Status screen.';
+      case 'gainMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% stat points.';
+      case 'goldMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% gold.';
+      case 'luck': return 'Your next ' + (eff.rolls > 1 ? eff.rolls + ' loot rolls are' : 'loot roll is') + ' rolled twice, and the rarer result wins.';
+      case 'instantGold': return 'Gain ' + eff.amount + ' gold immediately.';
+      case 'grantLoot': return 'Roll ' + eff.count + ' extra loot drop' + (eff.count > 1 ? 's' : '') + ' immediately and stash ' + (eff.count > 1 ? 'them' : 'it') + ' in your inventory.';
+      case 'statGrant': return 'Permanently gain +' + fmt(eff.amount) + ' ' + eff.stat + '.';
+      case 'title': return 'Take the title "' + eff.title + '", shown on your Status screen.';
+      case 'combo': return eff.effects.map(effectText).join(' Also: ');
+      case 'mystery': return 'Unknown. Its effect is revealed when used.';
+    }
+    return '';
+  }
+
+  var ITEM_POOL = [];
+  TIER_ORDER.forEach(function(rank) {
+    TIER_ITEMS[rank].forEach(function(row) {
+      ITEM_POOL.push({
+        rank: rank, icon: row[0], name: row[1], flavor: row[2], effect: row[3],
+        mystery: row[3].type === 'mystery', buff: effectText(row[3])
+      });
+    });
+  });
 
   var SHOP_ITEMS = [
     { id: 'shop-amulet', rank: 'shop', icon: '🧿', cost: 120, name: 'Amulet of the Unyielding',
       flavor: 'Worn smooth by hunters who never once turned back.',
-      buff: 'Redeem to skip the entire run requirement for one day.' },
+      buff: 'Redeem to skip today\'s entire run requirement. You forfeit the stat points the run would have earned.',
+      effect: { type: 'skipRun' } },
     { id: 'shop-emblem', rank: 'shop', icon: '🏵️', cost: 260, name: 'Emblem of the Apex Hunter',
       flavor: 'Marks its bearer as someone who finishes what they start.',
-      buff: 'Redeem to halve every exercise\'s requirement for one day.' },
+      buff: 'Redeem to halve every exercise requirement today. Stat points are halved to match.',
+      effect: { type: 'halveAll' } },
     { id: 'shop-elixir', rank: 'shop', icon: '⚗️', cost: 400, name: 'Elixir of Total Recovery',
       flavor: 'One sip and the body forgets it was ever tired.',
-      buff: 'Redeem for a full rest day pass — the entire quest is waived, no penalty, and still counts as cleared for stats and gold.' },
+      buff: 'Redeem to waive today\'s entire quest with no penalty. A pure rest day: no stat points, gold, or loot are earned.',
+      effect: { type: 'waiveAll', rewards: false } },
     { id: 'shop-seal', rank: 'shop', icon: '🔱', cost: 700, name: 'Seal of Absolute Will',
       flavor: 'Said to grant a single day on which failure isn\'t possible.',
-      buff: 'Redeem to waive the entire quest for the day and still count it as fully cleared — stat points and gold included.' }
+      buff: 'Redeem to waive today\'s entire quest with no penalty. You still receive gold and a loot drop, but no stat points.',
+      effect: { type: 'waiveAll', rewards: true } }
   ];
 
   var PENALTY_POOL = [
@@ -1077,14 +1602,26 @@
     return PENALTY_POOL[Math.floor(Math.random() * PENALTY_POOL.length)];
   }
 
-  function rollLootItem() {
-    var total = ITEM_POOL.reduce(function(sum, it) { return sum + it.weight; }, 0);
-    var roll = Math.random() * total;
-    for (var i = 0; i < ITEM_POOL.length; i++) {
-      roll -= ITEM_POOL[i].weight;
-      if (roll <= 0) return ITEM_POOL[i];
+  function rollTier() {
+    var roll = Math.random() * 100;
+    for (var i = 0; i < TIER_ORDER.length; i++) {
+      roll -= TIER_WEIGHTS[TIER_ORDER[i]];
+      if (roll < 0) return TIER_ORDER[i];
     }
-    return ITEM_POOL[0];
+    return TIER_ORDER[0];
+  }
+
+  function rollLootItem() {
+    var tier = rollTier();
+    // A luck buff rolls the rarity twice and keeps the rarer result.
+    if (typeof buffs !== 'undefined' && buffs.luck > 0) {
+      var second = rollTier();
+      if (TIER_ORDER.indexOf(second) > TIER_ORDER.indexOf(tier)) tier = second;
+      buffs.luck--;
+      saveBuffs();
+    }
+    var pool = ITEM_POOL.filter(function(it) { return it.rank === tier; });
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   function loadGold() {
@@ -1105,11 +1642,129 @@
 
   var goldBalance = loadGold();
 
+  function loadStats() {
+    var out = { STR: 0, VIT: 0, END: 0, AGI: 0 };
+    var raw = null;
+    try { raw = localStorage.getItem(STATS_KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        STAT_KEYS.forEach(function(k) { if (typeof parsed[k] === 'number') out[k] = parsed[k]; });
+      } catch (e) {}
+    }
+    return out;
+  }
+
+  function saveStats() {
+    var ok = false;
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var stats = loadStats();
+
+  // Hunter level: every cleared daily quest raises it by exactly one.
+  // Players from before this rule keep the level their stat points had earned.
+  var LEVEL_KEY = 'the-system-level';
+  function loadLevel() {
+    var raw = null;
+    try { raw = localStorage.getItem(LEVEL_KEY); } catch (e) {}
+    var n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= 1) return n;
+    var total = STAT_KEYS.reduce(function(sum, k) { return sum + stats[k]; }, 0);
+    var start = 1 + Math.floor(total / 20);
+    try { localStorage.setItem(LEVEL_KEY, String(start)); } catch (e) {}
+    return start;
+  }
+  function saveLevel() {
+    var ok = false;
+    try { localStorage.setItem(LEVEL_KEY, String(hunterLevel)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+  var hunterLevel = loadLevel();
+
+  // Penalties that were enforced and still need to be completed.
+  var OWED_KEY = 'the-system-penalties-owed';
+  function loadOwed() {
+    var raw = null;
+    try { raw = localStorage.getItem(OWED_KEY); } catch (e) {}
+    if (!raw) return [];
+    try { var arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
+  }
+  function saveOwed() {
+    var ok = false;
+    try { localStorage.setItem(OWED_KEY, JSON.stringify(owed)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+  var owed = loadOwed();
+
+  // Buffs that outlive a single day: temporary stat boosts, multipliers, luck, shields, title.
+  var BUFFS_KEY = 'the-system-buffs';
+  function defaultBuffs() {
+    return { shields: 0, luck: 0, gainMults: [], goldMults: [], temp: [], title: null };
+  }
+  function loadBuffs() {
+    var out = defaultBuffs();
+    var raw = null;
+    try { raw = localStorage.getItem(BUFFS_KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        if (typeof p.shields === 'number') out.shields = p.shields;
+        if (typeof p.luck === 'number') out.luck = p.luck;
+        if (Array.isArray(p.gainMults)) out.gainMults = p.gainMults;
+        if (Array.isArray(p.goldMults)) out.goldMults = p.goldMults;
+        if (Array.isArray(p.temp)) out.temp = p.temp;
+        if (typeof p.title === 'string') out.title = p.title;
+      } catch (e) {}
+    }
+    return out;
+  }
+  function saveBuffs() {
+    var ok = false;
+    try { localStorage.setItem(BUFFS_KEY, JSON.stringify(buffs)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+  var buffs = loadBuffs();
+
+  function pruneBuffs() {
+    var now = Date.now();
+    var before = buffs.temp.length;
+    buffs.temp = buffs.temp.filter(function(t) { return t.expiresAt > now; });
+    if (buffs.temp.length !== before) saveBuffs();
+  }
+
+  function catalogFind(name) {
+    var all = ITEM_POOL.concat(SHOP_ITEMS);
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].name === name) return all[i];
+    }
+    return null;
+  }
+
+  // Refresh an item's description/effect from the current catalog so items
+  // saved by older versions of the app pick up their real effects.
+  function withCatalog(entry) {
+    if (!entry) return entry;
+    var c = catalogFind(entry.name);
+    if (c) { entry.buff = c.buff; entry.effect = c.effect; entry.mystery = !!c.mystery; }
+    return entry;
+  }
+
+  function getEffect(item) {
+    if (item && item.effect) return item.effect;
+    var c = item ? catalogFind(item.name) : null;
+    return c ? c.effect : null;
+  }
+
   function loadInventory() {
     var raw = null;
     try { raw = localStorage.getItem(INV_KEY); } catch (e) {}
     if (!raw) return [];
-    try { return JSON.parse(raw); } catch (e) { return []; }
+    try {
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.map(withCatalog) : [];
+    } catch (e) { return []; }
   }
 
   function saveInventory() {
@@ -1123,6 +1778,16 @@
 
   var inventory = loadInventory();
 
+  function defaultMods() {
+    return {
+      targets: { 'ex-pushups': 100, 'ex-situps': 100, 'ex-squats': 100, 'ex-run': 10 },
+      halved: false,
+      waivedAll: false,
+      waiveRewards: false,
+      log: []
+    };
+  }
+
   function freshDayState() {
     var now = new Date();
     return {
@@ -1133,10 +1798,12 @@
       lootOpened: false,
       goldEarnedToday: 0,
       penaltyCountdownEnd: null,
-      penaltyActive: false,
       pendingItem: null,
       pendingRevealed: false,
-      lastLootId: null
+      lastLootId: null,
+      mods: defaultMods(),
+      statsEarnedToday: null,
+      leveledUp: null
     };
   }
 
@@ -1150,10 +1817,20 @@
     // in tick()/resolveDayTransition(), not here — this avoids silently
     // wiping an unfinished, already-expired day before its failure has
     // been shown to the person.
+    // Older versions kept an enforced penalty on the day's state; move it to the ledger.
+    if (state && state.penaltyActive) {
+      owed.push({ id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), text: state.penalty || 'Penalty', day: state.day, failedAt: Date.now() });
+      saveOwed();
+      state = null;
+    }
     if (!state || typeof state.deadline !== 'number' || !state.values) {
       state = freshDayState();
     }
     if (!state.penalty) state.penalty = pickRandomPenalty();
+    if (!state.mods || !state.mods.targets) state.mods = defaultMods();
+    if (!state.mods.log) state.mods.log = [];
+    if (typeof state.statsEarnedToday === 'undefined') state.statsEarnedToday = null;
+    if (state.pendingItem) withCatalog(state.pendingItem);
     return state;
   }
 
@@ -1201,29 +1878,108 @@
     if (el) el.textContent = state.penalty;
   }
 
-  function render() {
+  function fmt(n) {
+    return String(Math.round(n * 10) / 10);
+  }
+
+  // The requirement actually in force today, after any items were used.
+  function effectiveTarget(ex) {
+    var m = state.mods;
+    if (m.waivedAll) return 0;
+    var t = m.targets[ex.id];
+    return typeof t === 'number' ? Math.max(0, t) : ex.target;
+  }
+
+  function runExercise() {
+    return EXS.find(function(e) { return e.id === 'ex-run'; });
+  }
+
+  // Stat points for today, scaled by how much of each exercise is required.
+  function sumMult(list) {
+    var pct = 0;
+    list.forEach(function(g) { if (g.remaining > 0) pct += g.pct; });
+    return 1 + pct / 100;
+  }
+  function spendMults(list) {
+    list.forEach(function(g) { if (g.remaining > 0) g.remaining--; });
+    return list.filter(function(g) { return g.remaining > 0; });
+  }
+
+  // Stat points for today, scaled by how much of each exercise is required.
+  // With includeBuffs, active stat-point multipliers are applied too.
+  function projectedStats(includeBuffs) {
+    var out = { STR: 0, VIT: 0, END: 0, AGI: 0 };
     EXS.forEach(function(ex) {
-      var val = state.values[ex.id] || 0;
-      var pct = Math.min(100, (val / ex.target) * 100);
-      var display = ex.kind === 'float' ? val.toFixed(1) : String(val);
-      var valEl = document.getElementById(ex.id + '-val');
-      var barEl = document.getElementById(ex.id + '-bar');
-      var cardEl = document.getElementById(ex.id);
-      if (valEl) valEl.textContent = display;
-      if (barEl) barEl.style.width = pct + '%';
-      if (cardEl) {
-        if (val >= ex.target) cardEl.classList.add('done');
-        else cardEl.classList.remove('done');
-      }
+      var frac = ex.target > 0 ? effectiveTarget(ex) / ex.target : 0;
+      var w = EXERCISE_INFO[ex.id].stats;
+      STAT_KEYS.forEach(function(k) { out[k] += (w[k] || 0) * frac; });
     });
-    var runInput = document.getElementById('run-input');
-    if (document.activeElement !== runInput) {
-      runInput.value = state.values['ex-run'] || 0;
+    var mult = includeBuffs ? sumMult(buffs.gainMults) : 1;
+    STAT_KEYS.forEach(function(k) { out[k] = Math.round(out[k] * mult * 100) / 100; });
+    return out;
+  }
+
+  function renderStatGrid() {
+    var grid = document.getElementById('statGrid');
+    if (!grid) return;
+    var g = (state.lootOpened && state.statsEarnedToday) ? state.statsEarnedToday : projectedStats(true);
+    grid.innerHTML = STAT_KEYS.map(function(k) {
+      return '<div class="stat-chip"><div class="stat-name">' + k + '</div><div class="stat-val">+' + fmt(g[k]) + '</div></div>';
+    }).join('');
+    var note = document.getElementById('rewardNote');
+    if (note) {
+      var mult = sumMult(buffs.gainMults);
+      var boosted = !state.lootOpened && mult > 1;
+      note.textContent = 'Stat points are earned in proportion to the work required today (items that cut work cut points). Gold and a loot drop are granted when the quest is cleared.' +
+        (boosted ? ' Boost active: +' + Math.round((mult - 1) * 100) + '% stat points on this clear.' : '');
     }
   }
 
+  function render() {
+    EXS.forEach(function(ex) {
+      var val = state.values[ex.id] || 0;
+      var target = effectiveTarget(ex);
+      var pct = target <= 0 ? 100 : Math.min(100, (val / target) * 100);
+      var display = ex.kind === 'float' ? val.toFixed(1) : String(val);
+      var valEl = document.getElementById(ex.id + '-val');
+      var barEl = document.getElementById(ex.id + '-bar');
+      var tgtEl = document.getElementById(ex.id + '-target');
+      var cardEl = document.getElementById(ex.id);
+      if (valEl) valEl.textContent = display;
+      if (barEl) barEl.style.width = pct + '%';
+      if (tgtEl) {
+        tgtEl.textContent = target <= 0 ? 'WAIVED' : fmt(target) + (ex.kind === 'float' ? ' km' : '');
+        if (target <= 0 || target !== ex.target) tgtEl.classList.add('mod');
+        else tgtEl.classList.remove('mod');
+      }
+      if (cardEl) {
+        if (val >= target) cardEl.classList.add('done');
+        else cardEl.classList.remove('done');
+        if (target <= 0) cardEl.classList.add('waived');
+        else cardEl.classList.remove('waived');
+      }
+    });
+    var runInput = document.getElementById('run-input');
+    runInput.disabled = effectiveTarget(runExercise()) <= 0;
+    if (document.activeElement !== runInput) {
+      runInput.value = state.values['ex-run'] || 0;
+    }
+    renderStatGrid();
+  }
+
+  // How far through today's quest you are, from 0 to 1.
+  function questProgress() {
+    if (allDone()) return 1;
+    var sum = 0, n = 0;
+    EXS.forEach(function(ex) {
+      var t = effectiveTarget(ex);
+      if (t > 0) { n++; sum += Math.min(1, (state.values[ex.id] || 0) / t); }
+    });
+    return n ? sum / n : 1;
+  }
+
   function allDone() {
-    return EXS.every(function(ex) { return (state.values[ex.id] || 0) >= ex.target; });
+    return EXS.every(function(ex) { return (state.values[ex.id] || 0) >= effectiveTarget(ex); });
   }
 
   document.querySelectorAll('.stepper-btn').forEach(function(btn) {
@@ -1232,13 +1988,15 @@
       var action = btn.getAttribute('data-action');
       var ex = EXS.find(function(e) { return e.id === targetId; });
       var val = state.values[targetId] || 0;
+      var cap = effectiveTarget(ex);
+      if (cap <= 0) return;
       var step = action === 'add' ? 10 : 1;
       if (action === 'dec') {
         val = Math.max(0, val - 1);
       } else if (action === 'inc') {
-        val = Math.min(ex.target, val + 1);
+        val = Math.min(cap, val + 1);
       } else if (action === 'add') {
-        val = Math.min(ex.target, val + step);
+        val = Math.min(cap, val + step);
       }
       state.values[targetId] = val;
       saveState();
@@ -1250,8 +2008,9 @@
   var runInput = document.getElementById('run-input');
   runInput.addEventListener('input', function() {
     var v = parseFloat(runInput.value);
+    var runCap = effectiveTarget(runExercise());
     if (isNaN(v) || v < 0) v = 0;
-    if (v > 10) v = 10;
+    if (v > runCap) v = runCap;
     state.values['ex-run'] = v;
     saveState();
     render();
@@ -1259,13 +2018,33 @@
   });
 
   document.getElementById('resetBtn').addEventListener('click', function() {
+    // Resetting undoes today's stat/gold rewards so progress can't be farmed.
+    if (state.lootOpened) {
+      if (state.leveledUp) {
+        hunterLevel = Math.max(1, hunterLevel - 1);
+        saveLevel();
+      }
+      if (state.statsEarnedToday) {
+        STAT_KEYS.forEach(function(k) {
+          stats[k] = Math.max(0, Math.round((stats[k] - (state.statsEarnedToday[k] || 0)) * 100) / 100);
+        });
+        saveStats();
+      }
+      if (state.goldEarnedToday) {
+        goldBalance = Math.max(0, goldBalance - state.goldEarnedToday);
+        saveGold();
+        renderGoldDisplays();
+      }
+    }
+    state.statsEarnedToday = null;
+    state.leveledUp = null;
+    state.goldEarnedToday = 0;
     state.values = { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 };
     state.lootOpened = false;
     state.lastLootId = null;
     state.pendingItem = null;
     state.pendingRevealed = false;
     state.penaltyCountdownEnd = null;
-    state.penaltyActive = false;
     saveState();
     render();
     renderLootArea();
@@ -1288,8 +2067,13 @@
     if (finished) {
       grantDailyLoot();
       renderLootArea();
+      var g = state.statsEarnedToday || projectedStats(true);
+      var parts = STAT_KEYS.filter(function(k) { return g[k] > 0; }).map(function(k) { return '+' + fmt(g[k]) + ' ' + k; });
+      if (state.goldEarnedToday > 0) parts.push('+' + state.goldEarnedToday + ' GOLD');
+      if (state.leveledUp) parts.unshift('LEVEL ' + state.leveledUp.from + ' → ' + state.leveledUp.to);
+      var title = state.mods.waivedAll ? 'QUEST WAIVED — NO PENALTY' : (state.leveledUp ? 'QUEST CLEARED — LEVEL UP!' : 'QUEST CLEARED — REWARD ISSUED');
       banner.className = 'status-banner panel show success';
-      banner.innerHTML = 'QUEST CLEARED — REWARD ISSUED<span class="sub">+1 STR &middot; +1 VIT &middot; +1 END &middot; +1 AGI &middot; +' + state.goldEarnedToday + ' GOLD</span>';
+      banner.innerHTML = title + '<span class="sub">' + (parts.length ? parts.join(' &middot; ') : 'NO REWARDS EARNED TODAY') + '</span>';
     } else if (msLeft <= 0) {
       // Failure is surfaced by the full-screen penalty overlay (see
       // resolveDayTransition/updatePenaltyOverlay), not this inline banner.
@@ -1307,49 +2091,117 @@
     return div.innerHTML;
   }
 
+  function iconFor(item) {
+    return item.mystery ? '❓' : item.icon;
+  }
+
+  // The effect line for an item. Mystery items keep their effect hidden until used.
+  function effectLine(item) {
+    if (item.mystery) {
+      return item.revealed
+        ? '<b>REVEALED:</b> ' + escapeHtml(item.revealed)
+        : '<b>EFFECT:</b> Unknown. It is revealed when the item is used.';
+    }
+    return '<b>EFFECT:</b> ' + escapeHtml(item.buff);
+  }
+
   function renderItemCardHtml(item, extraClass, footerHtml) {
-    return '<div class="item-card rarity-' + item.rank + (extraClass ? ' ' + extraClass : '') + '">' +
-      '<div class="item-icon">' + item.icon + '</div>' +
+    return '<div class="item-card rarity-' + item.rank + (item.mystery ? ' mystery' : '') + (extraClass ? ' ' + extraClass : '') + '">' +
+      '<div class="item-icon">' + iconFor(item) + '</div>' +
       '<div class="item-body">' +
         '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
         '<span class="item-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
         '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
-        '<div class="item-buff"><b>EFFECT:</b> ' + escapeHtml(item.buff) + '</div>' +
+        '<div class="item-buff">' + effectLine(item) + '</div>' +
         (footerHtml || '') +
       '</div>' +
     '</div>';
   }
 
+  // Inventory entry / pending drop built from a catalog (or shop) item.
+  function makeEntry(src, used) {
+    var e = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      rank: src.rank, icon: src.icon, name: src.name, flavor: src.flavor, buff: src.buff,
+      effect: src.effect, mystery: !!src.mystery,
+      acquired: new Date().toISOString(), used: !!used
+    };
+    if (typeof src.cost === 'number') e.cost = src.cost;
+    return e;
+  }
+  function pendingFields(src) {
+    return { rank: src.rank, icon: src.icon, name: src.name, flavor: src.flavor, buff: src.buff, effect: src.effect, mystery: !!src.mystery };
+  }
+
   function grantDailyLoot() {
     if (state.lootOpened) return;
+
+    // Stat points are scaled by the work that was actually required today,
+    // plus any stat-point multiplier the player has active.
+    var base = projectedStats(false);
+    var baseTotal = STAT_KEYS.reduce(function(sum, k) { return sum + base[k]; }, 0);
+    var gains = projectedStats(true);
+    if (baseTotal > 0 && buffs.gainMults.some(function(g) { return g.remaining > 0; })) {
+      buffs.gainMults = spendMults(buffs.gainMults);
+      saveBuffs();
+    }
+    STAT_KEYS.forEach(function(k) { stats[k] = Math.round((stats[k] + gains[k]) * 100) / 100; });
+    saveStats();
+    state.statsEarnedToday = gains;
+
+    // Clearing the daily quest raises your level by one. A waived quest (no work done) doesn't.
+    if (!state.mods.waivedAll) {
+      var fromLevel = hunterLevel;
+      hunterLevel += 1;
+      saveLevel();
+      state.leveledUp = { from: fromLevel, to: hunterLevel };
+      showToast('LEVEL UP! You are now level ' + hunterLevel + '.');
+    }
+
+    // A pure rest day (waived, no rewards) earns no gold or loot.
+    if (state.mods.waivedAll && !state.mods.waiveRewards) {
+      state.goldEarnedToday = 0;
+      state.pendingItem = null;
+      state.pendingRevealed = false;
+      state.lootOpened = true;
+      saveState();
+      renderStatGrid();
+      renderLootArea();
+      return;
+    }
+
+    var goldBase = 30 + Math.floor(Math.random() * 21);
+    var gold = Math.round(goldBase * sumMult(buffs.goldMults));
+    if (buffs.goldMults.some(function(g) { return g.remaining > 0; })) {
+      buffs.goldMults = spendMults(buffs.goldMults);
+      saveBuffs();
+    }
     var item = rollLootItem();
-    var gold = 30 + Math.floor(Math.random() * 21);
     state.goldEarnedToday = gold;
     goldBalance += gold;
     saveGold();
     renderGoldDisplays();
-    state.pendingItem = { rank: item.rank, icon: item.icon, name: item.name, flavor: item.flavor, buff: item.buff };
+    state.pendingItem = pendingFields(item);
     state.pendingRevealed = false;
     state.lootOpened = true;
     saveState();
+    renderStatGrid();
     renderLootArea();
   }
 
   function resolvePendingItem(useNow) {
     if (!state.pendingItem) return;
-    var entry = {
-      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-      rank: state.pendingItem.rank, icon: state.pendingItem.icon, name: state.pendingItem.name,
-      flavor: state.pendingItem.flavor, buff: state.pendingItem.buff,
-      acquired: new Date().toISOString(),
-      used: !!useNow
-    };
+    var entry = makeEntry(state.pendingItem, false);
     inventory.unshift(entry);
     saveInventory();
     state.lastLootId = entry.id;
     state.pendingItem = null;
     state.pendingRevealed = false;
     saveState();
+    if (useNow) {
+      var msg = useItemNow(entry);
+      if (msg) { saveInventory(); showToast(msg); }
+    }
     renderLootArea();
     renderInventoryBadge();
   }
@@ -1358,6 +2210,11 @@
     var lootArea = document.getElementById('lootArea');
     if (!allDone()) {
       lootArea.innerHTML = '<div class="loot-box-visual" id="lootLocked"><div class="loot-box-icon">🔒</div><div class="loot-box-text">Clear today\'s quest to unlock a random item drop.</div></div>';
+      return;
+    }
+
+    if (state.mods.waivedAll && !state.mods.waiveRewards) {
+      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">🛌</div><div class="loot-box-text">Rest day — today\'s quest was waived, so there is no loot drop.</div></div>';
       return;
     }
 
@@ -1379,12 +2236,15 @@
 
     if (state.pendingItem && state.pendingRevealed) {
       var card = renderItemCardHtml(state.pendingItem, '');
+      var usable = canUseNow(state.pendingItem);
       lootArea.innerHTML = card +
         '<div class="loot-decision-row">' +
-          '<button class="use-btn" id="lootUseBtn">USE NOW</button>' +
-          '<button class="stash-btn" id="lootStashBtn">STASH IN INVENTORY</button>' +
-        '</div>';
-      document.getElementById('lootUseBtn').addEventListener('click', function() { resolvePendingItem(true); });
+          (usable ? '<button class="use-btn" id="lootUseBtn">USE NOW</button>' : '') +
+          '<button class="stash-btn" id="lootStashBtn"' + (usable ? '' : ' style="flex:none; width:100%;"') + '>STASH IN INVENTORY</button>' +
+        '</div>' +
+        (usable ? '' : '<div class="loot-resolved-tag">This item changes an active quest, so use it from your Inventory before you clear a future quest.</div>');
+      var useBtn = document.getElementById('lootUseBtn');
+      if (useBtn) useBtn.addEventListener('click', function() { resolvePendingItem(true); });
       document.getElementById('lootStashBtn').addEventListener('click', function() { resolvePendingItem(false); });
       return;
     }
@@ -1392,11 +2252,13 @@
     if (state.lastLootId) {
       var found = inventory.find(function(it) { return it.id === state.lastLootId; });
       if (found) {
-        var tag = found.used ? 'Used immediately' : 'Stashed in inventory';
+        var tag = found.used ? 'Already redeemed' : 'Stashed in inventory';
         lootArea.innerHTML = renderItemCardHtml(found, found.used ? 'used' : '') +
           '<div class="loot-resolved-tag">' + tag + ' &middot; tap Inventory above to view it anytime</div>';
         return;
       }
+      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">💰</div><div class="loot-box-text">Today\'s drop is no longer in your inventory (sold).</div></div>';
+      return;
     }
 
     lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">📦</div><div class="loot-box-text">Quest cleared. Rolling for loot&hellip;</div></div>';
@@ -1426,7 +2288,7 @@
     });
     list.innerHTML = sorted.map(function(item) {
       var dateStr = new Date(item.acquired).toLocaleDateString();
-      var meta = '<div class="item-meta">Acquired ' + dateStr + '</div>';
+      var meta = '<div class="item-meta">Acquired ' + dateStr + (item.used ? '' : ' &middot; sells for ' + sellValue(item) + ' gold') + '</div>';
       return renderItemCardHtml(item, (item.used ? 'used ' : '') + 'clickable', meta).replace(
         'class="item-card', 'data-item-id="' + item.id + '" class="item-card'
       );
@@ -1441,25 +2303,340 @@
     });
   }
 
+  var toastTimer = null;
+  function showToast(msg) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { el.classList.remove('show'); }, 4200);
+  }
+
+  // Items that change today's quest need one that is still in progress.
+  function questModifiable() {
+    return !allDone() && Date.now() < state.deadline && !state.penaltyCountdownEnd;
+  }
+
+  var QUEST_TYPES = { shaveReps: 1, shaveRun: 1, skipRun: 1, halveAll: 1, shavePct: 1, shaveOnePct: 1, skipOne: 1, waiveAll: 1, extendDeadline: 1, penaltyReroll: 1 };
+  var CHOICE_TYPES = { shaveReps: 1, shaveOnePct: 1, skipOne: 1 };
+
+  function needsChoice(eff) { return !!CHOICE_TYPES[eff.type]; }
+
+  function eligibleExercises(eff) {
+    return EXS.filter(function(ex) {
+      if (effectiveTarget(ex) <= 0) return false;
+      if (eff.type === 'shaveReps') return ex.kind === 'int';
+      return true;
+    });
+  }
+
+  function mysteryCandidates(eff) {
+    return eff.pool.filter(function(e) { return !effectProblem(e); });
+  }
+
+  // Returns a message when the effect can't be used right now, or '' when it can.
+  function effectProblem(eff) {
+    var m = state.mods;
+    if (eff.type === 'mystery') {
+      return mysteryCandidates(eff).length ? '' : 'The item stirs, but there is nothing for it to act on right now. Try again during an active quest.';
+    }
+    if (eff.type === 'combo') {
+      for (var i = 0; i < eff.effects.length; i++) {
+        var p = effectProblem(eff.effects[i]);
+        if (p) return p;
+      }
+      return '';
+    }
+    if (QUEST_TYPES[eff.type] && !questModifiable()) {
+      return 'This item changes an active quest. Use it before the quest is cleared and before the deadline passes.';
+    }
+    if (eff.type === 'waiveAll' && m.waivedAll) return 'Today\'s quest is already waived.';
+    if ((eff.type === 'skipRun' || eff.type === 'shaveRun') && effectiveTarget(runExercise()) <= 0) return 'The run is already waived today.';
+    if (eff.type === 'halveAll' && m.halved) return 'Today\'s requirements are already halved.';
+    if (needsChoice(eff) && !eligibleExercises(eff).length) return 'There is no exercise left for this item to act on.';
+    if (eff.type === 'clearOwed' && !owed.length) return 'You don\'t owe any penalties right now.';
+    return '';
+  }
+
+  function exName(exId) { return EXERCISE_INFO[exId].name.toLowerCase(); }
+
+  function describeEffect(eff, exId) {
+    switch (eff.type) {
+      case 'shaveReps': return '−' + eff.reps + ' ' + exName(exId);
+      case 'shaveRun': return '−' + fmt(eff.km) + ' km run';
+      case 'skipRun': return 'run waived';
+      case 'halveAll': return 'all requirements halved';
+      case 'shavePct': return 'all requirements −' + eff.pct + '%';
+      case 'shaveOnePct': return exName(exId) + ' −' + eff.pct + '%';
+      case 'skipOne': return exName(exId) + ' waived';
+      case 'waiveAll': return eff.rewards ? 'quest waived (gold & loot kept)' : 'quest waived (rest day)';
+      case 'extendDeadline': return 'deadline +' + eff.hours + 'h';
+      case 'penaltyReroll': return 'penalty rerolled';
+      case 'penaltyShield': return 'Penalty Shield ×' + eff.charges;
+      case 'clearOwed': return eff.count === 'all' ? 'all owed penalties cleared' : 'oldest owed penalty cleared';
+      case 'tempStat': return '+' + eff.amount + ' ' + eff.stat + ' for ' + eff.hours + 'h';
+      case 'gainMult': return '+' + eff.pct + '% stat points on your next ' + (eff.clears > 1 ? eff.clears + ' clears' : 'clear');
+      case 'goldMult': return '+' + eff.pct + '% gold on your next ' + (eff.clears > 1 ? eff.clears + ' clears' : 'clear');
+      case 'luck': return 'lucky loot ×' + eff.rolls;
+      case 'instantGold': return '+' + eff.amount + ' gold';
+      case 'grantLoot': return '+' + eff.count + ' loot drop' + (eff.count > 1 ? 's' : '');
+      case 'statGrant': return '+' + fmt(eff.amount) + ' ' + eff.stat + ' (permanent)';
+      case 'title': return 'title: ' + eff.title;
+      case 'combo': return eff.effects.map(function(e) { return describeEffect(e, null); }).join(' · ');
+      case 'mystery': return 'unknown effect';
+    }
+    return '';
+  }
+
+  // Reps are whole numbers; the run keeps one decimal.
+  function roundTarget(exId, t) {
+    if (exId === 'ex-run') return Math.round(t * 10) / 10;
+    return Math.ceil(t - 1e-9);
+  }
+
+  function rerollPenalty() {
+    var next = state.penalty;
+    var tries = 0;
+    while (next === state.penalty && tries++ < 30) next = pickRandomPenalty();
+    state.penalty = next;
+    renderPenaltyText();
+  }
+
+  // Does the work of one effect and returns a short description of what happened.
+  function applyCore(item, eff, exId) {
+    var m = state.mods;
+    var text = describeEffect(eff, exId);
+    switch (eff.type) {
+      case 'shaveReps': m.targets[exId] = Math.max(0, m.targets[exId] - eff.reps); break;
+      case 'shaveRun': m.targets['ex-run'] = Math.max(0, Math.round((m.targets['ex-run'] - eff.km) * 10) / 10); break;
+      case 'skipRun': m.targets['ex-run'] = 0; break;
+      case 'halveAll':
+        EXS.forEach(function(ex) { m.targets[ex.id] = roundTarget(ex.id, m.targets[ex.id] / 2); });
+        m.halved = true;
+        break;
+      case 'shavePct':
+        EXS.forEach(function(ex) { m.targets[ex.id] = roundTarget(ex.id, m.targets[ex.id] * (1 - eff.pct / 100)); });
+        break;
+      case 'shaveOnePct': m.targets[exId] = roundTarget(exId, m.targets[exId] * (1 - eff.pct / 100)); break;
+      case 'skipOne': m.targets[exId] = 0; break;
+      case 'waiveAll': m.waivedAll = true; m.waiveRewards = !!eff.rewards; break;
+      case 'extendDeadline': state.deadline += eff.hours * 3600000; break;
+      case 'penaltyReroll': rerollPenalty(); break;
+      case 'penaltyShield': buffs.shields += eff.charges; saveBuffs(); break;
+      case 'clearOwed':
+        if (eff.count === 'all') owed = []; else owed.shift();
+        saveOwed();
+        renderPenaltyButtonVisibility();
+        break;
+      case 'tempStat':
+        buffs.temp.push({ stat: eff.stat, amount: eff.amount, expiresAt: Date.now() + eff.hours * 3600000, name: item.name });
+        saveBuffs();
+        break;
+      case 'gainMult': buffs.gainMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
+      case 'goldMult': buffs.goldMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
+      case 'luck': buffs.luck += eff.rolls; saveBuffs(); break;
+      case 'instantGold': goldBalance += eff.amount; saveGold(); renderGoldDisplays(); break;
+      case 'statGrant':
+        stats[eff.stat] = Math.round((stats[eff.stat] + eff.amount) * 100) / 100;
+        saveStats();
+        break;
+      case 'title': buffs.title = eff.title; saveBuffs(); break;
+      case 'grantLoot': {
+        var names = [];
+        for (var i = 0; i < eff.count; i++) {
+          var found = rollLootItem();
+          inventory.unshift(makeEntry(found, false));
+          names.push(found.mystery ? 'a mystery item' : found.name);
+        }
+        saveInventory();
+        renderInventoryBadge();
+        text = 'found ' + names.join(', ');
+        break;
+      }
+      case 'combo':
+        text = eff.effects.map(function(e) { return applyCore(item, e, null); }).join(' · ');
+        break;
+    }
+    return text;
+  }
+
+  function applyEffect(item, eff, exId) {
+    var text = applyCore(item, eff, exId);
+    state.mods.log.push(item.name + ': ' + text);
+    saveState();
+    render();
+    updateBanner();
+    return text;
+  }
+
+  function consumeInventoryItem(item, msg) {
+    item.used = true;
+    saveInventory();
+    document.getElementById('detailOverlay').classList.remove('show');
+    renderInventoryList();
+    renderLootArea();
+    showToast(msg);
+  }
+
+  function useMystery(item, eff) {
+    var cands = mysteryCandidates(eff);
+    if (!cands.length) {
+      showToast('The item stirs, but there is nothing for it to act on right now. Try again during an active quest.');
+      return null;
+    }
+    var chosen = cands[Math.floor(Math.random() * cands.length)];
+    var exId = null;
+    if (needsChoice(chosen)) {
+      var options = eligibleExercises(chosen);
+      exId = options[Math.floor(Math.random() * options.length)].id;
+    }
+    var text = applyEffect(item, chosen, exId);
+    item.used = true;
+    item.revealed = text;
+    return item.name + ' revealed: ' + text + '.';
+  }
+
+  // Uses an item that needs no choice. Returns a message when it was used, or null when it wasn't.
+  function useItemNow(item) {
+    var eff = getEffect(item);
+    if (!eff) { item.used = true; return 'Item redeemed.'; }
+    if (eff.type === 'mystery') return useMystery(item, eff);
+    var problem = effectProblem(eff);
+    if (problem) { showToast(problem); return null; }
+    var text = applyEffect(item, eff, null);
+    item.used = true;
+    return item.name + ': ' + text + '.';
+  }
+
+  function canUseNow(item) {
+    var eff = getEffect(item);
+    if (!eff) return true;
+    if (needsChoice(eff)) return false;
+    return !effectProblem(eff);
+  }
+
+  function tryUseInventoryItem(item) {
+    var eff = getEffect(item);
+    if (eff && needsChoice(eff)) {
+      var problem = effectProblem(eff);
+      if (problem) { showToast(problem); return; }
+      showExerciseChooser(item, eff);
+      return;
+    }
+    var msg = useItemNow(item);
+    if (msg) consumeInventoryItem(item, msg);
+  }
+
+  function fmtTarget(ex, t) {
+    return fmt(t) + (ex.kind === 'float' ? ' km' : '');
+  }
+
+  function chooserPrompt(eff) {
+    if (eff.type === 'shaveReps') return 'Choose an exercise to shave ' + eff.reps + ' reps from:';
+    if (eff.type === 'shaveOnePct') return 'Choose an exercise to cut by ' + eff.pct + '%:';
+    return 'Choose an exercise to waive:';
+  }
+
+  function previewTarget(eff, ex, now) {
+    if (eff.type === 'shaveReps') return Math.max(0, now - eff.reps);
+    if (eff.type === 'shaveOnePct') return roundTarget(ex.id, now * (1 - eff.pct / 100));
+    return 0;
+  }
+
+  function showExerciseChooser(item, eff) {
+    var options = eligibleExercises(eff);
+    if (!options.length) { showToast('There is no exercise left for this item to act on.'); return; }
+    var body = document.getElementById('detailBody');
+    var row = body.querySelector('.loot-decision-row');
+    if (!row) return;
+    var btns = options.map(function(ex) {
+      var now = effectiveTarget(ex);
+      var after = previewTarget(eff, ex, now);
+      return '<button class="stash-btn shave-pick" data-ex="' + ex.id + '">' +
+        EXERCISE_INFO[ex.id].name.toUpperCase() + ' (' + fmtTarget(ex, now) + ' → ' + (after <= 0 ? 'WAIVED' : fmtTarget(ex, after)) + ')</button>';
+    }).join('');
+    row.outerHTML =
+      '<div class="item-detail-status">' + chooserPrompt(eff) + '</div>' +
+      '<div class="loot-decision-row" style="flex-direction:column;">' + btns +
+      '<button id="shaveCancelBtn" style="color:var(--text-dim);">CANCEL</button></div>';
+    body.querySelectorAll('.shave-pick').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var exId = b.getAttribute('data-ex');
+        if (effectProblem(eff)) { showToast('This quest can no longer be changed.'); return; }
+        var text = applyEffect(item, eff, exId);
+        consumeInventoryItem(item, item.name + ': ' + text + '.');
+      });
+    });
+    var cancel = document.getElementById('shaveCancelBtn');
+    if (cancel) cancel.addEventListener('click', function() { openItemDetail(item, 'inventory'); });
+  }
+
+  function sellValue(item) {
+    if (typeof item.cost === 'number') return Math.floor(item.cost * SHOP_RESALE);      // bought from the shop
+    if (item.rank === 'shop') {
+      var c = catalogFind(item.name);
+      if (c && typeof c.cost === 'number') return Math.floor(c.cost * SHOP_RESALE);
+    }
+    return LOOT_VALUES[item.rank] || 0;
+  }
+
+  // Sells an unused inventory item: it disappears and its gold is added to the pool.
+  function sellItem(item) {
+    if (!item || item.used) return false;
+    var idx = -1;
+    for (var i = 0; i < inventory.length; i++) { if (inventory[i].id === item.id) { idx = i; break; } }
+    if (idx < 0) return false;
+    var price = sellValue(item);
+    inventory.splice(idx, 1);
+    saveInventory();
+    goldBalance += price;
+    saveGold();
+    renderGoldDisplays();
+    renderInventoryBadge();
+    document.getElementById('detailOverlay').classList.remove('show');
+    renderInventoryList();
+    renderLootArea();
+    showToast('Sold ' + item.name + ' for ' + price + ' gold.');
+    return true;
+  }
+
   function openItemDetail(item, context) {
     context = context || 'inventory';
     var body = document.getElementById('detailBody');
 
-    var costHtml = (typeof item.cost === 'number')
-      ? '<div class="item-detail-cost">' + item.cost + ' GOLD</div>'
-      : '';
+    var costHtml = '';
+    if (context === 'shop') {
+      costHtml = '<div class="item-detail-cost">' + item.cost + ' GOLD</div>';
+    } else if (context === 'codex') {
+      costHtml = '<div class="item-detail-cost">WORTH ' + (LOOT_VALUES[item.rank] || 0) + ' GOLD WHEN SOLD</div>';
+    } else {
+      if (typeof item.cost === 'number') costHtml += '<div class="item-detail-cost paid">BOUGHT FOR ' + item.cost + ' GOLD</div>';
+      if (!item.used) {
+        costHtml += '<div class="item-detail-cost sell">SELLS FOR ' + sellValue(item) + ' GOLD' +
+          (typeof item.cost === 'number' || item.rank === 'shop' ? ' (80% OF THE SHOP PRICE)' : '') + '</div>';
+      }
+    }
 
     var statusHtml = '';
     var actionsHtml = '';
 
     if (context === 'shop') {
       var affordable = goldBalance >= item.cost;
+      statusHtml = '<div class="item-detail-status">Once it is yours it only sells back for 80% of this price (' + Math.floor(item.cost * SHOP_RESALE) + ' gold).</div>';
       actionsHtml =
         '<div class="loot-decision-row">' +
           '<button class="use-btn" id="detailPurchaseBtn"' + (affordable ? '' : ' disabled') + '>' +
             (affordable ? 'PURCHASE' : 'NOT ENOUGH GOLD') +
           '</button>' +
           '<button class="stash-btn" id="detailCloseBottomBtn">CLOSE</button>' +
+        '</div>';
+    } else if (context === 'sellConfirm') {
+      statusHtml = '<div class="item-detail-status">Sell this item for <b>' + sellValue(item) + ' gold</b>? It will disappear and can\'t be used again.</div>';
+      actionsHtml =
+        '<div class="loot-decision-row">' +
+          '<button class="sell-btn" id="detailSellConfirmBtn">CONFIRM SELL</button>' +
+          '<button class="stash-btn" id="detailSellCancelBtn">CANCEL</button>' +
         '</div>';
     } else if (context === 'codex') {
       actionsHtml =
@@ -1478,16 +2655,19 @@
           '<div class="loot-decision-row">' +
             '<button class="use-btn" id="detailUseBtn">USE NOW</button>' +
             '<button class="stash-btn" id="detailCloseBottomBtn">KEEP STASHED &amp; CLOSE</button>' +
+          '</div>' +
+          '<div class="loot-decision-row">' +
+            '<button class="sell-btn" id="detailSellBtn">SELL FOR ' + sellValue(item) + ' GOLD</button>' +
           '</div>';
       }
     }
 
     body.innerHTML =
-      '<div class="item-detail-icon">' + item.icon + '</div>' +
+      '<div class="item-detail-icon' + (item.mystery ? ' mystery' : '') + '">' + iconFor(item) + '</div>' +
       '<div class="item-detail-name">' + escapeHtml(item.name) + '</div>' +
       '<span class="item-detail-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
       '<div class="item-detail-flavor">' + escapeHtml(item.flavor) + '</div>' +
-      '<div class="item-detail-effect"><b>EFFECT:</b> ' + escapeHtml(item.buff) + '</div>' +
+      '<div class="item-detail-effect">' + effectLine(item) + '</div>' +
       costHtml + statusHtml + actionsHtml;
 
     if (context === 'shop') {
@@ -1500,12 +2680,14 @@
       }
     } else if (context === 'inventory' && !item.used) {
       document.getElementById('detailUseBtn').addEventListener('click', function() {
-        item.used = true;
-        saveInventory();
-        document.getElementById('detailOverlay').classList.remove('show');
-        renderInventoryList();
-        renderLootArea();
+        tryUseInventoryItem(item);
       });
+      document.getElementById('detailSellBtn').addEventListener('click', function() {
+        openItemDetail(item, 'sellConfirm');
+      });
+    } else if (context === 'sellConfirm') {
+      document.getElementById('detailSellConfirmBtn').addEventListener('click', function() { sellItem(item); });
+      document.getElementById('detailSellCancelBtn').addEventListener('click', function() { openItemDetail(item, 'inventory'); });
     }
 
     var closeBottomBtn = document.getElementById('detailCloseBottomBtn');
@@ -1534,12 +2716,7 @@
     if (!item || goldBalance < item.cost) return false;
     goldBalance -= item.cost;
     saveGold();
-    var entry = {
-      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-      rank: 'shop', icon: item.icon, name: item.name, flavor: item.flavor, buff: item.buff, cost: item.cost,
-      acquired: new Date().toISOString(),
-      used: false
-    };
+    var entry = makeEntry(item, false);
     inventory.unshift(entry);
     saveInventory();
     renderInventoryBadge();
@@ -1579,22 +2756,37 @@
     document.getElementById('shopOverlay').classList.remove('show');
   });
 
+  var codexTier = 'common';
+
   function renderCodexList() {
+    var tabs = document.getElementById('codexTabs');
+    tabs.innerHTML = TIER_ORDER.map(function(t) {
+      return '<button class="codex-tab rarity-' + t + (t === codexTier ? ' active' : '') + '" data-tier="' + t + '">' +
+        RANK_LABELS[t] + ' ' + TIER_WEIGHTS[t] + '%</button>';
+    }).join('');
+    tabs.querySelectorAll('.codex-tab').forEach(function(b) {
+      b.addEventListener('click', function() {
+        codexTier = b.getAttribute('data-tier');
+        renderCodexList();
+      });
+    });
+
+    var pool = ITEM_POOL.filter(function(it) { return it.rank === codexTier; });
+    var each = TIER_WEIGHTS[codexTier] / pool.length;
+    document.getElementById('codexTierInfo').textContent =
+      RANK_LABELS[codexTier] + ': ' + TIER_WEIGHTS[codexTier] + '% of all drops, ' + pool.length + ' items, about ' + each.toFixed(2) + '% each. Tap an item for details.';
+
     var list = document.getElementById('codexList');
-    var total = ITEM_POOL.reduce(function(sum, it) { return sum + it.weight; }, 0);
-    var sorted = ITEM_POOL.slice().sort(function(a, b) { return b.weight - a.weight; });
-    list.innerHTML = sorted.map(function(item) {
-      var odds = ((item.weight / total) * 100).toFixed(1) + '% drop chance';
-      var footer = '<div class="item-meta">' + odds + '</div>';
+    list.innerHTML = pool.map(function(item, i) {
+      var footer = '<div class="item-meta">' + each.toFixed(2) + '% chance per drop &middot; worth ' + LOOT_VALUES[codexTier] + ' gold</div>';
       return renderItemCardHtml(item, 'clickable', footer).replace(
-        'class="item-card', 'data-codex-rank="' + item.rank + '" class="item-card'
+        'class="item-card', 'data-codex-idx="' + i + '" class="item-card'
       );
     }).join('');
 
     list.querySelectorAll('.item-card').forEach(function(cardEl) {
       cardEl.addEventListener('click', function() {
-        var rank = cardEl.getAttribute('data-codex-rank');
-        var item = ITEM_POOL.find(function(i) { return i.rank === rank; });
+        var item = pool[parseInt(cardEl.getAttribute('data-codex-idx'), 10)];
         if (item) openItemDetail(item, 'codex');
       });
     });
@@ -1606,6 +2798,113 @@
   });
   document.getElementById('codexCloseBtn').addEventListener('click', function() {
     document.getElementById('codexOverlay').classList.remove('show');
+  });
+
+  function timeLeft(ts) {
+    var mins = Math.max(0, Math.ceil((ts - Date.now()) / 60000));
+    var h = Math.floor(mins / 60);
+    return h > 0 ? h + 'h ' + (mins % 60) + 'm' : mins + 'm';
+  }
+
+  function renderStatsScreen() {
+    pruneBuffs();
+    var body = document.getElementById('statsBody');
+    var total = STAT_KEYS.reduce(function(s, k) { return s + stats[k]; }, 0);
+    var maxStat = Math.max(10, Math.max.apply(null, STAT_KEYS.map(function(k) { return stats[k]; })));
+    function boostFor(k) {
+      return buffs.temp.filter(function(t) { return t.stat === k; }).reduce(function(s, t) { return s + t.amount; }, 0);
+    }
+
+    var leveled = !!state.leveledUp;
+    var levelStatus;
+    var barPct;
+    if (leveled) {
+      levelStatus = 'LEVELED UP TODAY &middot; LV ' + state.leveledUp.from + ' → LV ' + state.leveledUp.to;
+      barPct = 100;
+    } else if (allDone() && state.mods.waivedAll) {
+      levelStatus = 'REST DAY &middot; NO LEVEL GAINED TODAY';
+      barPct = 100;
+    } else if (allDone()) {
+      levelStatus = 'TODAY\'S QUEST CLEARED';
+      barPct = 100;
+    } else {
+      levelStatus = 'CLEAR TODAY\'S QUEST TO REACH LEVEL ' + (hunterLevel + 1);
+      barPct = Math.round(questProgress() * 100);
+    }
+
+    var html =
+      '<div class="stats-level-card panel' + (leveled ? ' leveled' : '') + '">' +
+        '<div class="sys-title"><span>Player</span></div>' +
+        '<div class="stats-level-label">LEVEL</div>' +
+        '<div class="stats-level-num">' + hunterLevel + '</div>' +
+        '<div class="stats-level-status">' + levelStatus + '</div>' +
+        '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + barPct + '%"></div></div>' +
+        '<div class="status-ids">' +
+          '<div class="status-line"><b>NAME</b><span>PLAYER</span></div>' +
+          '<div class="status-line"><b>JOB</b><span>HUNTER</span></div>' +
+          '<div class="status-line"><b>TITLE</b><span>' + (buffs.title ? escapeHtml(buffs.title) : 'NONE') + '</span></div>' +
+        '</div>' +
+        '<div class="stats-level-sub">' + fmt(total) + ' TOTAL STAT POINTS</div>' +
+      '</div>';
+
+    STAT_KEYS.forEach(function(k) {
+      var boost = boostFor(k);
+      html +=
+        '<div class="stat-row">' +
+          '<div class="stat-row-top">' +
+            '<div class="stat-row-name">' + k + '<span>' + STAT_INFO[k].name + '</span></div>' +
+            '<div class="stat-row-val">' + fmt(stats[k] + boost) + (boost ? '<span class="stat-boost">+' + fmt(boost) + ' boost</span>' : '') + '</div>' +
+          '</div>' +
+          '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + Math.min(100, ((stats[k] + boost) / maxStat) * 100) + '%"></div></div>' +
+          '<div class="stat-row-desc">' + STAT_INFO[k].desc + '</div>' +
+        '</div>';
+    });
+
+    var lines = [];
+    buffs.temp.forEach(function(t) { lines.push('+' + t.amount + ' ' + t.stat + ' &middot; ' + timeLeft(t.expiresAt) + ' left &middot; ' + escapeHtml(t.name)); });
+    buffs.gainMults.forEach(function(g) { if (g.remaining > 0) lines.push('+' + g.pct + '% stat points &middot; next ' + g.remaining + ' clear' + (g.remaining > 1 ? 's' : '')); });
+    buffs.goldMults.forEach(function(g) { if (g.remaining > 0) lines.push('+' + g.pct + '% gold &middot; next ' + g.remaining + ' clear' + (g.remaining > 1 ? 's' : '')); });
+    if (buffs.luck > 0) lines.push('Lucky loot &middot; next ' + buffs.luck + ' roll' + (buffs.luck > 1 ? 's' : '') + ' taken twice');
+    if (buffs.shields > 0) lines.push('Penalty Shield &times;' + buffs.shields);
+    if (owed.length) lines.push('Penalties owed: ' + owed.length);
+    html +=
+      '<div class="stats-section-title"><span>ACTIVE BUFFS</span></div>' +
+      '<div class="stats-today panel">' +
+        (lines.length ? lines.map(function(l) { return '<div class="stats-buff">▸ ' + l + '</div>'; }).join('') : '<div class="stats-today-line">No active buffs.</div>') +
+      '</div>';
+
+    var earned = !!(state.lootOpened && state.statsEarnedToday);
+    var g = earned ? state.statsEarnedToday : projectedStats(true);
+    var line = STAT_KEYS.map(function(k) { return '+' + fmt(g[k]) + ' ' + k; }).join(' &nbsp;&middot;&nbsp; ');
+    html +=
+      '<div class="stats-section-title"><span>TODAY\'S QUEST</span></div>' +
+      '<div class="stats-today panel">' +
+        '<div class="stats-today-line">' + (earned ? 'EARNED TODAY' : 'IF YOU CLEAR TODAY') + '<br>' + line + '</div>' +
+        state.mods.log.map(function(l) { return '<div class="stats-mod">▸ ' + escapeHtml(l) + '</div>'; }).join('') +
+      '</div>';
+
+    html += '<div class="stats-section-title"><span>HOW STATS ARE EARNED</span></div>';
+    EXS.forEach(function(ex) {
+      var info = EXERCISE_INFO[ex.id];
+      var gain = STAT_KEYS.filter(function(k) { return info.stats[k]; }).map(function(k) { return '+' + info.stats[k] + ' ' + k; }).join(' &nbsp;');
+      html +=
+        '<div class="stats-source">' +
+          '<div class="stats-source-name">' + info.name + '</div>' +
+          '<div class="stats-source-muscles">' + info.muscles + '</div>' +
+          '<div class="stats-source-gain">' + gain + ' for the full requirement</div>' +
+        '</div>';
+    });
+    html += '<div class="stats-note">Points scale with the work actually required. If an item shaves reps or waives an exercise, you earn proportionally fewer points from it — cutting 20 of 100 push-ups costs 20% of that exercise\'s points. Every cleared daily quest raises your level by one (a waived quest doesn\'t). Temporary boosts show on top of your stats until they expire.</div>';
+
+    body.innerHTML = html;
+  }
+
+  document.getElementById('statsOpenBtn').addEventListener('click', function() {
+    renderStatsScreen();
+    document.getElementById('statsOverlay').classList.add('show');
+  });
+  document.getElementById('statsCloseBtn').addEventListener('click', function() {
+    document.getElementById('statsOverlay').classList.remove('show');
   });
 
   function startNewQuestDay() {
@@ -1624,7 +2923,14 @@
 
   function renderPenaltyButtonVisibility() {
     var btn = document.getElementById('penaltyOpenBtn');
-    if (btn) btn.style.display = state.penaltyActive ? 'flex' : 'none';
+    if (!btn) return;
+    btn.style.display = owed.length ? 'flex' : 'none';
+    btn.textContent = '⚠️ PENALTY' + (owed.length > 1 ? ' (' + owed.length + ')' : '');
+  }
+
+  function prettyDay(day) {
+    var p = String(day || '').split('-');
+    return p.length === 3 ? p[1] + '/' + p[2] : String(day || '');
   }
 
   function showPenaltyCountdownPhase() {
@@ -1632,56 +2938,71 @@
     document.getElementById('penaltyHeading').textContent = 'PENALTY ENFORCEMENT INITIATED';
     document.getElementById('penaltySubheading').textContent = 'DAILY QUEST FAILED';
     document.getElementById('penaltyOverlayText').textContent = state.penalty;
+    document.getElementById('penaltyOverlayText').style.display = '';
+    document.getElementById('penaltyOwedList').style.display = 'none';
     document.getElementById('penaltyCountdownBlock').style.display = '';
     document.getElementById('penaltyFooterNote').textContent = 'THE SYSTEM DOES NOT NEGOTIATE.';
     document.getElementById('penaltyCloseBtn').style.display = 'none';
     if (overlay) overlay.classList.add('show');
   }
 
-  function showPenaltyActivePhase() {
+  // The "penalty in effect" window: every enforced penalty that is still owed.
+  function renderOwedPanel() {
     var overlay = document.getElementById('penaltyOverlay');
+    var list = document.getElementById('penaltyOwedList');
     document.getElementById('penaltyHeading').textContent = 'PENALTY IN EFFECT';
-    document.getElementById('penaltySubheading').textContent = 'COMPLETE THIS BEFORE THE NEXT QUEST BEGINS';
-    document.getElementById('penaltyOverlayText').textContent = state.penalty;
+    document.getElementById('penaltySubheading').textContent = 'COMPLETE IT, THEN MARK IT DONE';
+    document.getElementById('penaltyOverlayText').style.display = 'none';
     document.getElementById('penaltyCountdownBlock').style.display = 'none';
-    document.getElementById('penaltyFooterNote').textContent = 'TAP THE ⚠️ PENALTY BUTTON ANYTIME TO REVIEW THIS.';
+    document.getElementById('penaltyFooterNote').textContent = 'THIS STAYS UNTIL YOU MARK IT COMPLETE.';
     document.getElementById('penaltyCloseBtn').style.display = 'inline-block';
+    list.style.display = '';
+    list.innerHTML = owed.map(function(o) {
+      return '<div class="owed-item">' +
+        '<div class="owed-text">' + escapeHtml(o.text) + '</div>' +
+        '<div class="owed-meta">FAILED QUEST &middot; ' + escapeHtml(prettyDay(o.day)) + '</div>' +
+        '<button class="owed-done-btn" data-owed-id="' + o.id + '">MARK COMPLETE</button>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.owed-done-btn').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var id = b.getAttribute('data-owed-id');
+        owed = owed.filter(function(o) { return o.id !== id; });
+        saveOwed();
+        renderPenaltyButtonVisibility();
+        if (owed.length) {
+          renderOwedPanel();
+        } else {
+          overlay.classList.remove('show');
+          showToast('Penalty cleared. Well done.');
+        }
+      });
+    });
     if (overlay) overlay.classList.add('show');
   }
 
   function updatePenaltyOverlay() {
-    var overlay = document.getElementById('penaltyOverlay');
-    if (!overlay) return;
-
-    if (state.penaltyActive) {
-      // Content is only (re)rendered here; visibility is controlled by
-      // the open/close buttons once in this phase, not by tick().
-      return;
-    }
-
-    if (!state.penaltyCountdownEnd) {
-      overlay.classList.remove('show');
-      return;
-    }
+    // Only the 30-second countdown is driven from here. The "in effect"
+    // window is opened and closed by its own buttons.
+    if (!state.penaltyCountdownEnd) return;
 
     var numEl = document.getElementById('penaltyCountdownNum');
-    document.getElementById('penaltyOverlayText').textContent = state.penalty;
     var remainingMs = state.penaltyCountdownEnd - Date.now();
     var remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
     if (numEl) numEl.textContent = String(remainingSec);
     showPenaltyCountdownPhase();
 
     if (remainingMs <= 0) {
-      state.penaltyActive = true;
-      state.penaltyCountdownEnd = null;
-      saveState();
-      showPenaltyActivePhase();
+      owed.push({ id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), text: state.penalty, day: state.day, failedAt: Date.now() });
+      saveOwed();
+      startNewQuestDay();      // fresh quest, fresh random penalty for the new day
       renderPenaltyButtonVisibility();
+      renderOwedPanel();       // the countdown panel turns into "penalty in effect"
     }
   }
 
   document.getElementById('penaltyOpenBtn').addEventListener('click', function() {
-    if (state.penaltyActive) showPenaltyActivePhase();
+    if (owed.length) renderOwedPanel();
   });
   document.getElementById('penaltyCloseBtn').addEventListener('click', function() {
     document.getElementById('penaltyOverlay').classList.remove('show');
@@ -1696,21 +3017,27 @@
       return;
     }
 
-    if (state.penaltyActive) {
-      // Waiting for the next real calendar day before issuing a new quest.
-      if (todayKey() !== state.day) {
-        startNewQuestDay();
-      }
-      return;
-    }
-
     if (!state.penaltyCountdownEnd) {
+      // A Penalty Shield absorbs the failure instead of starting the countdown.
+      if (buffs.shields > 0) {
+        buffs.shields--;
+        saveBuffs();
+        startNewQuestDay();
+        showToast('Your Penalty Shield absorbed the penalty. It is spent.');
+        return;
+      }
       state.penaltyCountdownEnd = now + 30000;
       saveState();
     }
   }
 
+  function hhmm(ts) {
+    var d = new Date(ts);
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
   function tick() {
+    pruneBuffs();
     resolveDayTransition();
 
     var msLeft = Math.max(0, state.deadline - Date.now());
@@ -1719,7 +3046,7 @@
     if (finished) {
       clockEl.textContent = '00:00:00';
       clockEl.className = 'clock';
-      clockLabel.textContent = 'Quest complete';
+      clockLabel.textContent = state.mods.waivedAll ? 'Quest waived' : 'Quest complete';
       clockSub.textContent = 'A NEW QUEST WILL BE ISSUED AT 00:01';
       document.body.classList.remove('armed');
     } else {
@@ -1729,7 +3056,7 @@
       var s = totalSec % 60;
       clockEl.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
       clockLabel.textContent = msLeft <= 0 ? 'DEADLINE PASSED' : 'Time remaining to complete quest';
-      clockSub.textContent = 'WINDOW OPENS 00:01  /  DEADLINE 00:00';
+      clockSub.textContent = 'WINDOW OPENS 00:01  /  DEADLINE ' + hhmm(state.deadline);
 
       clockEl.className = 'clock';
       if (msLeft <= 0) {
@@ -1750,6 +3077,18 @@
     updatePenaltyOverlay();
   }
 
+  // A quest cleared earlier today, before levels worked this way, still counts once.
+  if (state.leveledUp === undefined) {
+    state.leveledUp = null;
+    if (state.lootOpened && allDone() && !state.mods.waivedAll) {
+      var wasLevel = hunterLevel;
+      hunterLevel += 1;
+      saveLevel();
+      state.leveledUp = { from: wasLevel, to: hunterLevel };
+    }
+    saveState();
+  }
+
   render();
   renderLootArea();
   renderInventoryBadge();
@@ -1759,6 +3098,12 @@
   updateSaveStatus(checkStorageAvailable());
   tick();
   setInterval(tick, 1000);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    });
+  }
 })();
 </script>
 </body>
