@@ -1136,6 +1136,32 @@
   .penalty-countdown-num { text-shadow: 0 0 22px rgba(255,59,92,0.95), 0 0 60px rgba(255,40,70,0.6); }
   .owed-item { background: linear-gradient(180deg, rgba(120,12,32,0.30), rgba(30,3,10,0.66)); border: 1px solid rgba(255,90,110,0.5); }
 
+  .shop-restock { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #a9dcff; text-shadow: 0 0 8px rgba(110,180,255,0.8); margin: -4px 0 6px; }
+  .shop-item-card.rarity-common { color: #9aa8b8; }
+  .shop-item-card.rarity-rare { color: #4fd8ff; }
+  .shop-item-card.rarity-heroic { color: #b28bff; }
+  .shop-item-card.rarity-legendary { color: #ffd76a; box-shadow: 0 0 16px rgba(255,215,106,0.35), inset 0 0 16px rgba(255,215,106,0.08); }
+  .shop-item-card.soldout { opacity: 0.42; }
+  .shop-item-card.soldout .shop-cost { color: var(--text-dim); letter-spacing: 0.2em; }
+  .item-special {
+    display: inline-block; margin-left: 6px; padding: 1px 7px; vertical-align: middle;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    border: 1px solid #ffd76a; color: #ffe9a3; text-shadow: 0 0 8px rgba(255,215,106,0.8);
+  }
+  .item-detail-special {
+    text-align: center; margin: -6px 0 12px; font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.3em;
+    color: #ffe9a3; text-shadow: 0 0 10px rgba(255,215,106,0.9);
+  }
+  .item-cursed {
+    display: inline-block; margin-left: 6px; padding: 1px 7px; vertical-align: middle;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    border: 1px solid #ff5c78; color: #ff8fa1; text-shadow: 0 0 8px rgba(255,59,92,0.8);
+  }
+  .item-card.cursed { box-shadow: inset 0 0 20px rgba(255,59,92,0.16); }
+  .item-detail-cursed {
+    text-align: center; margin: -6px 0 12px; font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.3em;
+    color: #ff8fa1; text-shadow: 0 0 10px rgba(255,59,92,0.9);
+  }
   .code-box {
     display: block; width: 100%; min-height: 92px; resize: vertical; padding: 10px; margin-bottom: 10px;
     background: rgba(5,16,52,0.7); border: 1px solid rgba(150,206,255,0.5); color: #cfe6ff;
@@ -1321,7 +1347,8 @@
       <div class="inv-title">HUNTER SHOP</div>
       <button class="inv-close" id="shopCloseBtn">CLOSE</button>
     </div>
-    <div class="loot-box-text" style="margin-bottom:14px;">Spend gold earned from cleared quests on stronger, guaranteed items. Balance: <span id="shopGoldLine">0</span> gold.</div>
+    <div class="loot-box-text" style="margin-bottom:10px;">Spend the gold you earn from cleared quests. Today's stock changes every day and each item is limited to one. Anything you buy sells back for 80% of its price. Balance: <span id="shopGoldLine">0</span> gold.</div>
+    <div class="shop-restock" id="shopRestock"></div>
     <div id="shopList"></div>
   </div>
 </div>
@@ -1430,6 +1457,7 @@
     loot: function(count) { return { type: 'grantLoot', count: count }; },
     title: function(title) { return { type: 'title', title: title }; },
     waive: function(rewards) { return { type: 'waiveAll', rewards: !!rewards }; },
+    cursed: function(ex, amount) { return { type: 'cursedReps', ex: ex, amount: amount }; },
     combo: function() { return { type: 'combo', effects: Array.prototype.slice.call(arguments) }; },
     mystery: function() { return { type: 'mystery', pool: Array.prototype.slice.call(arguments) }; }
   };
@@ -1467,6 +1495,11 @@
       ['⏱️', 'Wobbly Stopwatch', 'Loses a second here, gains one there, and somehow always leaves you fitter.', FX.grant('END', 0.5)],
       ['🧰', 'Battered Toolbox', 'The lid rattles. Something inside is worth keeping.', FX.loot(1)],
       ['🎗️', 'Faded Victory Ribbon', 'Awarded for something long forgotten, yet it still feels lucky.', FX.combo(FX.gold(10), FX.gain(5, 1))],
+      ['💀', "Weakling's Wager", 'Cold to the touch. It promises a bigger reward to anyone who takes on a bigger burden.', FX.cursed('ex-pushups', 20)],
+      ['🩸', 'Bloodied Hunter Coin', 'Every hunter who carried it came back with more. None came back unchanged.', FX.cursed('ex-situps', 20)],
+      ['🦴', 'Bonebound Gate Token', 'Carved from something that died at the mouth of a dungeon gate.', FX.cursed('ex-squats', 20)],
+      ['🕸️', 'Cobweb Dungeon Token', 'Sticky threads cling to it. The longer the road, the heavier the payout.', FX.cursed('ex-run', 2)],
+      ['🥀', 'Withered Reward Seal', 'A seal that crumbles a little every time it is offered a fair deal.', FX.cursed('ex-situps', 25)],
       ['❓', 'Unmarked Vial', 'No label, no smell. Just a faint hum when you shake it.',
         FX.mystery(FX.temp('STR', 1, 12), FX.temp('AGI', 1, 12), FX.gold(20), FX.gain(10, 1), FX.goldMult(20, 1), FX.luck(1), FX.grant('VIT', 0.5), FX.loot(1))],
       ['❓', 'Sealed Paper Charm', 'The seal has never been broken. Something shifts inside when you hold it.',
@@ -1492,6 +1525,11 @@
       ['🪓', "Hunter's Whetted Axe", 'Chops through the toughest part of the day.', FX.onePct(35)],
       ['🎒', "Scout's Satchel", "Stuffed with whatever the last scout couldn't carry.", FX.loot(2)],
       ['🗺️', "Cartographer's Chart", 'Every route on it is a little shorter than the real one.', FX.combo(FX.pct(10), FX.temp('AGI', 1, 12))],
+      ['🦇', 'Nightfang Token', 'It hums whenever a hunter hesitates.', FX.cursed('ex-pushups', 30)],
+      ['🐍', "Serpent's Bargain", 'It always keeps its word, and always keeps the fine print too.', FX.cursed('ex-situps', 30)],
+      ['🔗', "Gatekeeper's Chain", 'Each link is a promise someone else was too weak to keep.', FX.cursed('ex-squats', 30)],
+      ['🪦', 'Gravemarker Token', 'Left where an ambitious hunter fell. It has been waiting for someone bolder.', FX.cursed('ex-run', 3)],
+      ['🃏', "Gambler's Curse", 'Double or nothing, except nothing is not an option.', FX.cursed('ex-squats', 45)],
       ['❓', 'Veiled Idol', 'A faceless figure. It seems to lean closer when you look away.',
         FX.mystery(FX.temp('STR', 2, 24), FX.temp('END', 2, 24), FX.gold(60), FX.gain(20, 1), FX.goldMult(40, 1), FX.luck(2), FX.grant('AGI', 1), FX.loot(2))],
       ['❓', 'Locked Reliquary', 'No keyhole. The lid opens only when it decides to.',
@@ -1517,6 +1555,11 @@
       ['🎖️', 'Mark of the Unbroken', 'Pinned over the heart, worn by those who kept going.', FX.title('The Unbroken')],
       ['🎁', 'Overflowing Cache', 'Every time you open it there is somehow more inside.', FX.loot(3)],
       ['🔺', 'Rune of Titans', 'Heavy as a mountain, warm as a forge.', FX.grant('STR', 2)],
+      ['👹', 'Demon Gate Token', 'Warm to the touch. Something on the other side wants you to go further.', FX.cursed('ex-pushups', 50)],
+      ['🕷️', "Widow's Pact", 'She offers a feast to anyone willing to be eaten alive by the work.', FX.cursed('ex-situps', 50)],
+      ['⛓️', 'Shackles of the Dungeon Lord', 'Heavy on the wrists. Heavier on the legs.', FX.cursed('ex-squats', 50)],
+      ['🖤', 'Heart of the Fallen Hunter', 'Still beating. Still asking for one more kilometer.', FX.cursed('ex-run', 5)],
+      ['🧟', 'Undying Legion Token', 'An army marches for you, but only if you march farther.', FX.cursed('ex-squats', 70)],
       ['❓', 'Veilbound Tome', 'The pages rewrite themselves every time you look away.',
         FX.mystery(FX.temp('STR', 3, 48), FX.temp('AGI', 3, 48), FX.gold(120), FX.gain(35, 2), FX.goldMult(60, 2), FX.luck(3), FX.grant('VIT', 2), FX.loot(3))],
       ['❓', 'Whispering Lantern', "It glows only when you're not looking directly at it.",
@@ -1542,12 +1585,63 @@
       ['🔻', 'Rune of the Colossus', 'Carved by a giant who never once rested.', FX.grant('STR', 3)],
       ['🏆', "Emperor's Reliquary", 'Every treasure that ever mattered, all in one chest.', FX.loot(5)],
       ['🌟', 'Star of the Sovereign', 'Worn by those who answer to no one.', FX.title('The Sovereign')],
+      ['☠️', "Sovereign's Debt", 'Every treasure has a price, and this one is collected in full.', FX.cursed('ex-pushups', 75)],
+      ['👿', 'Contract of the Demon King', 'Signed in a hand that was never quite yours.', FX.cursed('ex-situps', 75)],
+      ['🌑', 'Eclipse Gate Token', 'The gate closes behind whoever holds it. The reward waits at the end.', FX.cursed('ex-squats', 75)],
+      ['🗿', 'Token of the Fallen Titan', 'It weighs more than it should, and it gets heavier when you look at it.', FX.cursed('ex-run', 7.5)],
+      ['🦂', "Death Sovereign's Mark", 'Burned into the palm. The pain is the price of admission.', FX.cursed('ex-squats', 100)],
       ['❓', 'Voidbound Relic', 'It feels heavier every time you look at it.',
         FX.mystery(FX.temp('STR', 5, 72), FX.temp('AGI', 5, 72), FX.gold(400), FX.gain(75, 3), FX.goldMult(150, 3), FX.luck(5), FX.grant('END', 3), FX.loot(5))],
       ['❓', 'Whisper of the Abyss', 'You hear it, but it never quite says the same thing twice.',
         FX.mystery(FX.extend(4), FX.pct(40), FX.reps(50), FX.skipOne(), FX.shield(3), FX.clear('all'), FX.waive(true))]
     ]
   };
+
+  // ---- Stat boosts make your quests easier ------------------------------------
+  // Each point of a boosted stat trims a requirement by PERK_PER_POINT percent, times how much
+  // that exercise trains the stat (the same weights that decide how stat points are earned).
+  // No exercise can be cut by more than PERK_CAP percent from boosts.
+  var PERK_PER_POINT = 2;
+  var PERK_CAP = 40;
+
+  function boostCutPct(exId, stat, amount) {
+    return (EXERCISE_INFO[exId].stats[stat] || 0) * amount * PERK_PER_POINT;
+  }
+
+  // What a boost would take off a fresh quest, in words (used in item text and on the Status screen).
+  function perkPreview(stat, amount) {
+    return EXS.map(function(ex) {
+      var pct = Math.min(PERK_CAP, boostCutPct(ex.id, stat, amount));
+      if (pct <= 0) return null;
+      var cut = ex.kind === 'float' ? Math.round(ex.target * pct / 100 * 10) / 10 : Math.round(ex.target * pct / 100);
+      return EXERCISE_INFO[ex.id].name.toLowerCase() + ' −' + fmt(cut) + (ex.kind === 'float' ? ' km' : '');
+    }).filter(Boolean).join(', ');
+  }
+
+  // Applies a boost to one day's requirements. Returns what changed.
+  function applyPerkToMods(mods, stat, amount) {
+    var cuts = [];
+    if (mods.waivedAll) return cuts;
+    EXS.forEach(function(ex) {
+      var current = mods.targets[ex.id];
+      if (!(current > 0)) return;
+      var used = mods.perkPct[ex.id] || 0;
+      var pct = Math.min(PERK_CAP - used, boostCutPct(ex.id, stat, amount));
+      if (pct <= 0) return;
+      var next = roundTarget(ex.id, current * (1 - pct / 100));
+      if (next >= current) return;
+      mods.targets[ex.id] = next;
+      mods.perkPct[ex.id] = used + pct;
+      cuts.push({ id: ex.id, from: current, to: next });
+    });
+    return cuts;
+  }
+
+  function describeCuts(cuts) {
+    return cuts.map(function(c) {
+      return EXERCISE_INFO[c.id].name.toLowerCase() + ' −' + fmt(c.from - c.to) + (c.id === 'ex-run' ? ' km' : '');
+    }).join(', ');
+  }
 
   // Plain-language description of an effect, so item text always matches what the item does.
   function effectText(eff) {
@@ -1566,7 +1660,14 @@
       case 'penaltyReroll': return 'Reroll today\'s penalty into a different random one.';
       case 'penaltyShield': return 'Absorb the penalty of your next failed quest' + (eff.charges > 1 ? ' (' + eff.charges + ' charges).' : '.');
       case 'clearOwed': return eff.count === 'all' ? 'Clear every penalty you currently owe.' : 'Clear the oldest penalty you currently owe. It no longer has to be completed.';
-      case 'tempStat': return 'Gain +' + eff.amount + ' ' + eff.stat + ' for ' + eff.hours + ' hours. A temporary boost shown on your Status screen.';
+      case 'cursedReps': {
+        var cex = EXS.find(function(e) { return e.id === eff.ex; });
+        var isRun = eff.ex === 'ex-run';
+        var pctMore = Math.round(eff.amount / cex.target * 100);
+        return 'A curse. Adds ' + fmt(eff.amount) + (isRun ? ' km to today\'s run' : ' ' + EXERCISE_INFO[eff.ex].name.toLowerCase() + ' to today\'s quest') +
+          ' and cannot be undone. In return you earn proportionally more: +' + pctMore + '% of that exercise\'s stat points and +' + pctMore + '% gold on that clear.';
+      }
+      case 'tempStat': return 'Gain +' + eff.amount + ' ' + eff.stat + ' for ' + eff.hours + ' hours. It makes your quests easier while it lasts (' + perkPreview(eff.stat, eff.amount) + '), for any quest you use it in or that begins before it expires.';
       case 'gainMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% stat points.';
       case 'goldMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% gold.';
       case 'luck': return 'Your next ' + (eff.rolls > 1 ? eff.rolls + ' loot rolls are' : 'loot roll is') + ' rolled twice, and the rarer result wins.';
@@ -1639,7 +1740,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-09-28-backup';
+  var APP_VERSION = '2026-09-28-daily-shop';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -1806,6 +1907,122 @@
     if (!raw) return [];
     try { var arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
   }
+
+  // ---- Daily shop ---------------------------------------------------------------
+  // Every day the shop stocks six items (common, rare or heroic) and, some days, one
+  // legendary Special Offer. Stock is picked from the date, so it is the same on every
+  // device that day, and each item is limited to one. The four permanent items in
+  // SHOP_ITEMS are always available.
+  var SHOP_KEY = 'the-system-shop';
+  var SHOP_PRICES = { common: 40, rare: 100, heroic: 260, legendary: 800 };
+  var SHOP_SLOT_TIERS = [['common', 45], ['rare', 35], ['heroic', 20]];
+  var SHOP_SLOTS = 6;
+  var SPECIAL_CHANCE = 0.3;
+
+  function seededRandom(text) {
+    var h = 1779033703 ^ text.length;
+    for (var i = 0; i < text.length; i++) {
+      h = Math.imul(h ^ text.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    var a = h >>> 0;
+    return function() {
+      a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function generateStock(dayKey) {
+    var rng = seededRandom('the-system-shop-' + dayKey);
+    var chosen = {};
+    function pick(tier) {
+      var pool = ITEM_POOL.filter(function(it) { return it.rank === tier && !chosen[it.name]; });
+      var it = pool[Math.floor(rng() * pool.length)];
+      chosen[it.name] = true;
+      return it;
+    }
+    var regular = [];
+    for (var i = 0; i < SHOP_SLOTS; i++) {
+      var roll = rng() * 100;
+      var tier = SHOP_SLOT_TIERS[SHOP_SLOT_TIERS.length - 1][0];
+      for (var j = 0; j < SHOP_SLOT_TIERS.length; j++) {
+        roll -= SHOP_SLOT_TIERS[j][1];
+        if (roll < 0) { tier = SHOP_SLOT_TIERS[j][0]; break; }
+      }
+      var it = pick(tier);
+      regular.push({ name: it.name, price: SHOP_PRICES[tier], rank: it.rank });
+    }
+    regular.sort(function(a, b) { return TIER_ORDER.indexOf(a.rank) - TIER_ORDER.indexOf(b.rank); });
+    var stock = [];
+    if (rng() < SPECIAL_CHANCE) {
+      var sp = pick('legendary');
+      stock.push({ name: sp.name, price: SHOP_PRICES.legendary, special: true });
+    }
+    regular.forEach(function(r) { stock.push({ name: r.name, price: r.price }); });
+    return stock;
+  }
+
+  function loadShop() {
+    var raw = null;
+    try { raw = localStorage.getItem(SHOP_KEY); } catch (e) {}
+    var today = todayKey();
+    var st = null;
+    if (raw) { try { st = JSON.parse(raw); } catch (e) { st = null; } }
+    if (!st || st.day !== today || !Array.isArray(st.stock) || !Array.isArray(st.sold)) {
+      st = { day: today, stock: generateStock(today), sold: [] };
+    }
+    return st;
+  }
+
+  function saveShop() {
+    if (restoring) return;
+    var ok = false;
+    try { localStorage.setItem(SHOP_KEY, JSON.stringify(dailyShop)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var dailyShop = loadShop();
+  saveShop();
+
+  // Today's stock as shop items, Special Offer first.
+  function stockItems() {
+    return dailyShop.stock.map(function(s, i) {
+      var cat = catalogFind(s.name);
+      if (!cat) return null;
+      return { id: 'daily:' + i, daily: true, special: !!s.special, sold: dailyShop.sold.indexOf(s.name) >= 0, cost: s.price,
+               rank: cat.rank, icon: cat.icon, name: cat.name, flavor: cat.flavor, buff: cat.buff, effect: cat.effect, mystery: !!cat.mystery };
+    }).filter(Boolean);
+  }
+
+  function findShopItem(id) {
+    for (var i = 0; i < SHOP_ITEMS.length; i++) { if (SHOP_ITEMS[i].id === id) return SHOP_ITEMS[i]; }
+    var list = stockItems();
+    for (var j = 0; j < list.length; j++) { if (list[j].id === id) return list[j]; }
+    return null;
+  }
+
+  function shopRestockText() {
+    var n = new Date();
+    var next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0);
+    var secs = Math.max(0, Math.floor((next - n) / 1000));
+    return 'NEW STOCK IN ' + pad(Math.floor(secs / 3600)) + ':' + pad(Math.floor((secs % 3600) / 60)) + ':' + pad(secs % 60);
+  }
+
+  // New day: the shop restocks. Called every tick; cheap unless the date changed.
+  function refreshShop() {
+    var overlay = document.getElementById('shopOverlay');
+    var open = !!(overlay && overlay.classList.contains('show'));
+    if (dailyShop.day !== todayKey()) {
+      dailyShop = loadShop();
+      saveShop();
+      if (open) renderShopList();
+    }
+    var el = document.getElementById('shopRestock');
+    if (el && open) el.textContent = shopRestockText();
+  }
+
   function saveOwed() {
     if (restoring) return;
     var ok = false;
@@ -1904,6 +2121,7 @@
   function defaultMods() {
     return {
       targets: { 'ex-pushups': 100, 'ex-situps': 100, 'ex-squats': 100, 'ex-run': 10 },
+      perkPct: { 'ex-pushups': 0, 'ex-situps': 0, 'ex-squats': 0, 'ex-run': 0 },
       halved: false,
       waivedAll: false,
       waiveRewards: false,
@@ -1913,7 +2131,7 @@
 
   function freshDayState() {
     var now = new Date();
-    return {
+    var st = {
       day: todayKey(),
       deadline: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime(),
       values: { 'ex-pushups':0, 'ex-situps':0, 'ex-squats':0, 'ex-run':0 },
@@ -1928,6 +2146,16 @@
       statsEarnedToday: null,
       leveledUp: null
     };
+    // Stat boosts that are still active when a quest begins make that quest easier.
+    if (typeof buffs !== 'undefined') {
+      buffs.temp.forEach(function(t) {
+        if (t.expiresAt > now.getTime()) {
+          var cuts = applyPerkToMods(st.mods, t.stat, t.amount);
+          if (cuts.length) st.mods.log.push(t.name + ': +' + t.amount + ' ' + t.stat + ' boost, ' + describeCuts(cuts));
+        }
+      });
+    }
+    return st;
   }
 
   function loadState() {
@@ -1951,6 +2179,7 @@
     }
     if (!state.penalty) state.penalty = pickRandomPenalty();
     if (!state.mods || !state.mods.targets) state.mods = defaultMods();
+    if (!state.mods.perkPct) state.mods.perkPct = { 'ex-pushups': 0, 'ex-situps': 0, 'ex-squats': 0, 'ex-run': 0 };
     if (!state.mods.log) state.mods.log = [];
     if (typeof state.statsEarnedToday === 'undefined') state.statsEarnedToday = null;
     if (state.pendingItem) withCatalog(state.pendingItem);
@@ -2055,7 +2284,8 @@
       var mult = sumMult(buffs.gainMults);
       var boosted = !state.lootOpened && mult > 1;
       note.textContent = 'Stat points are earned in proportion to the work required today (items that cut work cut points). Gold and a loot drop are granted when the quest is cleared.' +
-        (boosted ? ' Boost active: +' + Math.round((mult - 1) * 100) + '% stat points on this clear.' : '');
+        (boosted ? ' Boost active: +' + Math.round((mult - 1) * 100) + '% stat points on this clear.' : '') +
+        (!state.lootOpened && workBonus() > 0 ? ' Cursed extra work today: +' + Math.round(workBonus() * 100) + '% gold on this clear.' : '');
     }
   }
 
@@ -2085,10 +2315,21 @@
     });
     var runInput = document.getElementById('run-input');
     runInput.disabled = effectiveTarget(runExercise()) <= 0;
+    runInput.max = String(Math.max(10, effectiveTarget(runExercise())));
     if (document.activeElement !== runInput) {
       runInput.value = state.values['ex-run'] || 0;
     }
     renderStatGrid();
+  }
+
+  // Extra work taken on above the normal quest (from cursed tokens) pays extra gold, in proportion.
+  function workBonus() {
+    var bonus = 0;
+    EXS.forEach(function(ex) {
+      var extra = effectiveTarget(ex) - ex.target;
+      if (extra > 0) bonus += extra / ex.target;
+    });
+    return bonus;
   }
 
   // How far through today's quest you are, from 0 to 1.
@@ -2229,12 +2470,18 @@
     return '<b>EFFECT:</b> ' + escapeHtml(item.buff);
   }
 
+  function isCursed(item) {
+    var e = getEffect(item);
+    return !!(e && e.type === 'cursedReps');
+  }
+
   function renderItemCardHtml(item, extraClass, footerHtml) {
-    return '<div class="item-card rarity-' + item.rank + (item.mystery ? ' mystery' : '') + (extraClass ? ' ' + extraClass : '') + '">' +
+    return '<div class="item-card rarity-' + item.rank + (item.mystery ? ' mystery' : '') + (isCursed(item) ? ' cursed' : '') + (extraClass ? ' ' + extraClass : '') + '">' +
       '<div class="item-icon">' + iconFor(item) + '</div>' +
       '<div class="item-body">' +
         '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
         '<span class="item-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+        (isCursed(item) ? '<span class="item-cursed">CURSED</span>' : '') +
         '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
         '<div class="item-buff">' + effectLine(item) + '</div>' +
         (footerHtml || '') +
@@ -2295,7 +2542,7 @@
     }
 
     var goldBase = 30 + Math.floor(Math.random() * 21);
-    var gold = Math.round(goldBase * sumMult(buffs.goldMults));
+    var gold = Math.round(goldBase * sumMult(buffs.goldMults) * (1 + workBonus()));
     if (buffs.goldMults.some(function(g) { return g.remaining > 0; })) {
       buffs.goldMults = spendMults(buffs.goldMults);
       saveBuffs();
@@ -2442,7 +2689,7 @@
     return !allDone() && Date.now() < state.deadline && !state.penaltyCountdownEnd;
   }
 
-  var QUEST_TYPES = { shaveReps: 1, shaveRun: 1, skipRun: 1, halveAll: 1, shavePct: 1, shaveOnePct: 1, skipOne: 1, waiveAll: 1, extendDeadline: 1, penaltyReroll: 1 };
+  var QUEST_TYPES = { shaveReps: 1, shaveRun: 1, skipRun: 1, halveAll: 1, shavePct: 1, shaveOnePct: 1, skipOne: 1, waiveAll: 1, extendDeadline: 1, penaltyReroll: 1, cursedReps: 1 };
   var CHOICE_TYPES = { shaveReps: 1, shaveOnePct: 1, skipOne: 1 };
 
   function needsChoice(eff) { return !!CHOICE_TYPES[eff.type]; }
@@ -2478,6 +2725,11 @@
     if (eff.type === 'waiveAll' && m.waivedAll) return 'Today\'s quest is already waived.';
     if ((eff.type === 'skipRun' || eff.type === 'shaveRun') && effectiveTarget(runExercise()) <= 0) return 'The run is already waived today.';
     if (eff.type === 'halveAll' && m.halved) return 'Today\'s requirements are already halved.';
+    if (eff.type === 'cursedReps') {
+      if (m.waivedAll) return 'Today\'s quest is waived, so there is nothing to add to.';
+      var target = EXS.find(function(e) { return e.id === eff.ex; });
+      if (effectiveTarget(target) <= 0) return 'The ' + exName(eff.ex) + ' is already waived today.';
+    }
     if (needsChoice(eff) && !eligibleExercises(eff).length) return 'There is no exercise left for this item to act on.';
     if (eff.type === 'clearOwed' && !owed.length) return 'You don\'t owe any penalties right now.';
     return '';
@@ -2487,6 +2739,7 @@
 
   function describeEffect(eff, exId) {
     switch (eff.type) {
+      case 'cursedReps': return '+' + fmt(eff.amount) + (eff.ex === 'ex-run' ? ' km run' : ' ' + exName(eff.ex)) + ' (cursed)';
       case 'shaveReps': return '−' + eff.reps + ' ' + exName(exId);
       case 'shaveRun': return '−' + fmt(eff.km) + ' km run';
       case 'skipRun': return 'run waived';
@@ -2543,6 +2796,7 @@
         EXS.forEach(function(ex) { m.targets[ex.id] = roundTarget(ex.id, m.targets[ex.id] * (1 - eff.pct / 100)); });
         break;
       case 'shaveOnePct': m.targets[exId] = roundTarget(exId, m.targets[exId] * (1 - eff.pct / 100)); break;
+      case 'cursedReps': m.targets[eff.ex] = Math.round((m.targets[eff.ex] + eff.amount) * 10) / 10; break;
       case 'skipOne': m.targets[exId] = 0; break;
       case 'waiveAll': m.waivedAll = true; m.waiveRewards = !!eff.rewards; break;
       case 'extendDeadline': state.deadline += eff.hours * 3600000; break;
@@ -2553,10 +2807,18 @@
         saveOwed();
         renderPenaltyButtonVisibility();
         break;
-      case 'tempStat':
+      case 'tempStat': {
         buffs.temp.push({ stat: eff.stat, amount: eff.amount, expiresAt: Date.now() + eff.hours * 3600000, name: item.name });
         saveBuffs();
+        var base = '+' + eff.amount + ' ' + eff.stat + ' for ' + eff.hours + 'h';
+        if (questModifiable()) {
+          var cuts = applyPerkToMods(m, eff.stat, eff.amount);
+          text = base + (cuts.length ? ' — today: ' + describeCuts(cuts) : ' — no exercise left to ease today');
+        } else {
+          text = base + ' — eases your next quest';
+        }
         break;
+      }
       case 'gainMult': buffs.gainMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
       case 'goldMult': buffs.goldMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
       case 'luck': buffs.luck += eff.rolls; saveBuffs(); break;
@@ -2640,8 +2902,15 @@
     return !effectProblem(eff);
   }
 
-  function tryUseInventoryItem(item) {
+  function tryUseInventoryItem(item, confirmed) {
     var eff = getEffect(item);
+    // A curse can't be undone, so it always asks before it takes hold.
+    if (eff && eff.type === 'cursedReps' && !confirmed) {
+      var cursedProblem = effectProblem(eff);
+      if (cursedProblem) { showToast(cursedProblem); return; }
+      openItemDetail(item, 'curseConfirm');
+      return;
+    }
     if (eff && needsChoice(eff)) {
       var problem = effectProblem(eff);
       if (problem) { showToast(problem); return; }
@@ -2747,13 +3016,29 @@
 
     if (context === 'shop') {
       var affordable = goldBalance >= item.cost;
-      statusHtml = '<div class="item-detail-status">Once it is yours it only sells back for 80% of this price (' + Math.floor(item.cost * SHOP_RESALE) + ' gold).</div>';
+      var soldOut = !!item.sold;
+      statusHtml = '<div class="item-detail-status">Once it is yours it only sells back for 80% of this price (' + Math.floor(item.cost * SHOP_RESALE) + ' gold).' +
+        (item.daily ? ' Limited stock: one per day.' : '') + '</div>';
       actionsHtml =
         '<div class="loot-decision-row">' +
-          '<button class="use-btn" id="detailPurchaseBtn"' + (affordable ? '' : ' disabled') + '>' +
-            (affordable ? 'PURCHASE' : 'NOT ENOUGH GOLD') +
+          '<button class="use-btn" id="detailPurchaseBtn"' + (affordable && !soldOut ? '' : ' disabled') + '>' +
+            (soldOut ? 'SOLD OUT TODAY' : (affordable ? 'PURCHASE' : 'NOT ENOUGH GOLD')) +
           '</button>' +
           '<button class="stash-btn" id="detailCloseBottomBtn">CLOSE</button>' +
+        '</div>';
+    } else if (context === 'curseConfirm') {
+      var ceff = getEffect(item);
+      var cex = EXS.find(function(e) { return e.id === ceff.ex; });
+      var cnow = effectiveTarget(cex);
+      var cafter = Math.round((cnow + ceff.amount) * 10) / 10;
+      var cpct = Math.round(ceff.amount / cex.target * 100);
+      var cgold = Math.round((workBonus() + ceff.amount / cex.target) * 100);
+      statusHtml = '<div class="item-detail-status">Accept the curse? Your ' + exName(ceff.ex) + ' requirement goes from <b>' + fmtTarget(cex, cnow) + '</b> to <b>' + fmtTarget(cex, cafter) + '</b> today. ' +
+        'You earn +' + cpct + '% more stat points from it, and gold on this clear becomes +' + cgold + '%. This cannot be undone.</div>';
+      actionsHtml =
+        '<div class="loot-decision-row">' +
+          '<button class="use-btn" id="detailCurseConfirmBtn">ACCEPT THE CURSE</button>' +
+          '<button class="stash-btn" id="detailCurseCancelBtn">CANCEL</button>' +
         '</div>';
     } else if (context === 'sellConfirm') {
       statusHtml = '<div class="item-detail-status">Sell this item for <b>' + sellValue(item) + ' gold</b>? It will disappear and can\'t be used again.</div>';
@@ -2790,6 +3075,8 @@
       '<div class="item-detail-icon' + (item.mystery ? ' mystery' : '') + '">' + iconFor(item) + '</div>' +
       '<div class="item-detail-name">' + escapeHtml(item.name) + '</div>' +
       '<span class="item-detail-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+      (item.special ? '<div class="item-detail-special">✦ SPECIAL OFFER ✦</div>' : '') +
+      (isCursed(item) ? '<div class="item-detail-cursed">✦ CURSED TOKEN ✦</div>' : '') +
       '<div class="item-detail-flavor">' + escapeHtml(item.flavor) + '</div>' +
       '<div class="item-detail-effect">' + effectLine(item) + '</div>' +
       costHtml + statusHtml + actionsHtml;
@@ -2798,8 +3085,10 @@
       var purchaseBtn = document.getElementById('detailPurchaseBtn');
       if (purchaseBtn && !purchaseBtn.disabled) {
         purchaseBtn.addEventListener('click', function() {
-          buyShopItem(item);
+          var bought = buyShopItem(item);
           document.getElementById('detailOverlay').classList.remove('show');
+          renderShopList();
+          if (bought) showToast('Bought ' + item.name + ' for ' + item.cost + ' gold.');
         });
       }
     } else if (context === 'inventory' && !item.used) {
@@ -2809,6 +3098,9 @@
       document.getElementById('detailSellBtn').addEventListener('click', function() {
         openItemDetail(item, 'sellConfirm');
       });
+    } else if (context === 'curseConfirm') {
+      document.getElementById('detailCurseConfirmBtn').addEventListener('click', function() { tryUseInventoryItem(item, true); });
+      document.getElementById('detailCurseCancelBtn').addEventListener('click', function() { openItemDetail(item, 'inventory'); });
     } else if (context === 'sellConfirm') {
       document.getElementById('detailSellConfirmBtn').addEventListener('click', function() { sellItem(item); });
       document.getElementById('detailSellCancelBtn').addEventListener('click', function() { openItemDetail(item, 'inventory'); });
@@ -2837,36 +3129,49 @@
   });
 
   function buyShopItem(item) {
-    if (!item || goldBalance < item.cost) return false;
+    if (!item || item.sold || goldBalance < item.cost) return false;
+    if (item.daily && dailyShop.sold.indexOf(item.name) >= 0) return false;
     goldBalance -= item.cost;
     saveGold();
     var entry = makeEntry(item, false);
     inventory.unshift(entry);
     saveInventory();
+    if (item.daily) { dailyShop.sold.push(item.name); saveShop(); }
     renderInventoryBadge();
     renderGoldDisplays();
     return true;
   }
 
+  function shopCardHtml(item) {
+    var cls = item.rank === 'shop' ? '' : ' rarity-' + item.rank;
+    return '<div class="shop-item-card clickable' + cls + (item.sold ? ' soldout' : '') + '" data-shop-id="' + item.id + '">' +
+      '<div class="item-icon">' + iconFor(item) + '</div>' +
+      '<div class="shop-item-body">' +
+        '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="item-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+        (item.special ? '<span class="item-special">SPECIAL OFFER</span>' : '') +
+        (isCursed(item) ? '<span class="item-cursed">CURSED</span>' : '') +
+        '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
+        '<div class="shop-cost">' + (item.sold ? 'SOLD OUT' : item.cost + ' GOLD') + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderShopList() {
     renderGoldDisplays();
+    var restock = document.getElementById('shopRestock');
+    if (restock) restock.textContent = shopRestockText();
     var list = document.getElementById('shopList');
-    list.innerHTML = SHOP_ITEMS.map(function(item) {
-      return '<div class="shop-item-card clickable" data-shop-id="' + item.id + '">' +
-        '<div class="item-icon">' + item.icon + '</div>' +
-        '<div class="shop-item-body">' +
-          '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
-          '<span class="item-rarity rarity-shop">SHOP</span>' +
-          '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
-          '<div class="shop-cost">' + item.cost + ' GOLD</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    var stock = stockItems();
+    list.innerHTML =
+      '<div class="stats-section-title"><span>TODAY\'S STOCK</span></div>' +
+      (stock.length ? stock.map(shopCardHtml).join('') : '<div class="inv-empty">Nothing in stock today.</div>') +
+      '<div class="stats-section-title"><span>ALWAYS AVAILABLE</span></div>' +
+      SHOP_ITEMS.map(shopCardHtml).join('');
 
     list.querySelectorAll('.shop-item-card').forEach(function(cardEl) {
       cardEl.addEventListener('click', function() {
-        var id = cardEl.getAttribute('data-shop-id');
-        var item = SHOP_ITEMS.find(function(i) { return i.id === id; });
+        var item = findShopItem(cardEl.getAttribute('data-shop-id'));
         if (item) openItemDetail(item, 'shop');
       });
     });
@@ -2985,7 +3290,10 @@
     });
 
     var lines = [];
-    buffs.temp.forEach(function(t) { lines.push('+' + t.amount + ' ' + t.stat + ' &middot; ' + timeLeft(t.expiresAt) + ' left &middot; ' + escapeHtml(t.name)); });
+    buffs.temp.forEach(function(t) {
+      lines.push('+' + t.amount + ' ' + t.stat + ' &middot; ' + timeLeft(t.expiresAt) + ' left &middot; ' + escapeHtml(t.name) +
+        '<br>&nbsp;&nbsp;↳ eases quests: ' + escapeHtml(perkPreview(t.stat, t.amount)));
+    });
     buffs.gainMults.forEach(function(g) { if (g.remaining > 0) lines.push('+' + g.pct + '% stat points &middot; next ' + g.remaining + ' clear' + (g.remaining > 1 ? 's' : '')); });
     buffs.goldMults.forEach(function(g) { if (g.remaining > 0) lines.push('+' + g.pct + '% gold &middot; next ' + g.remaining + ' clear' + (g.remaining > 1 ? 's' : '')); });
     if (buffs.luck > 0) lines.push('Lucky loot &middot; next ' + buffs.luck + ' roll' + (buffs.luck > 1 ? 's' : '') + ' taken twice');
@@ -3007,6 +3315,14 @@
         state.mods.log.map(function(l) { return '<div class="stats-mod">▸ ' + escapeHtml(l) + '</div>'; }).join('') +
       '</div>';
 
+    html += '<div class="stats-section-title"><span>WHAT BOOSTS DO</span></div>';
+    STAT_KEYS.forEach(function(k) {
+      var eases = EXS.filter(function(ex) { return EXERCISE_INFO[ex.id].stats[k]; }).map(function(ex) {
+        return EXERCISE_INFO[ex.id].name.toLowerCase() + ' ' + (EXERCISE_INFO[ex.id].stats[k] * PERK_PER_POINT) + '%';
+      }).join(', ');
+      html += '<div class="stats-source"><div class="stats-source-name">' + k + ' boost</div><div class="stats-source-gain">Each point cuts: ' + eases + '</div></div>';
+    });
+    html += '<div class="stats-note">A stat boost makes real quests easier: for every quest you use it in, or that begins while it lasts, the exercises that train that stat need fewer reps (or km). Cuts are capped at ' + PERK_CAP + '% per exercise, and you earn proportionally fewer stat points for the work you skip.</div>';
     html += '<div class="stats-section-title"><span>HOW STATS ARE EARNED</span></div>';
     EXS.forEach(function(ex) {
       var info = EXERCISE_INFO[ex.id];
@@ -3276,6 +3592,7 @@
 
   function tick() {
     pruneBuffs();
+    refreshShop();
     resolveDayTransition();
 
     var msLeft = Math.max(0, state.deadline - Date.now());
