@@ -982,6 +982,31 @@
   .ex-count::after { content: "\00a0]"; color: var(--text-dim); }
   .exercise.done .ex-name { color: var(--green); text-shadow: 0 0 10px rgba(61,255,176,0.6); }
   .quest-window .exercise.done { border-top-color: rgba(61,255,176,0.45); }
+  .trade-block { margin-top: 6px; padding-top: 13px; border-top: 1px solid rgba(125,192,255,0.24); }
+  .trade-btn {
+    display: block; width: 100%; text-align: center; padding: 11px 10px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    background: linear-gradient(180deg, rgba(255,180,84,0.20), rgba(56,32,4,0.68));
+    border: 1px solid rgba(255,180,84,0.6); color: #ffcf8a; text-shadow: 0 0 8px rgba(255,180,84,0.7);
+    box-shadow: inset 0 0 14px rgba(255,180,84,0.18), 0 0 10px rgba(255,180,84,0.2);
+  }
+  .trade-btn:active { background: linear-gradient(180deg, rgba(255,180,84,0.36), rgba(70,40,6,0.8)); }
+  .trade-btn:disabled { opacity: 0.4; }
+  .trade-done {
+    text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 11.5px; letter-spacing: 0.04em;
+    color: var(--text-dim); line-height: 1.5;
+  }
+  .trade-pick-row { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .trade-pick-row button {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 11px 10px; background: rgba(5,16,52,0.7); border: 1px solid rgba(150,206,255,0.5); color: #cfe6ff;
+  }
+  .trade-pick-row button:active { border-color: #a9dcff; }
+  .trade-confirm {
+    margin-top: 10px; padding: 12px 14px; background: rgba(5,16,52,0.7); border: 1px solid rgba(255,180,84,0.5);
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; line-height: 1.55; color: var(--text);
+  }
+  .trade-confirm b { color: #ffcf8a; }
   .quest-caution {
     margin-top: 6px; padding-top: 13px; border-top: 1px solid rgba(255,59,92,0.4);
     font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.55; letter-spacing: 0.07em; text-align: center;
@@ -1273,6 +1298,7 @@
         <span class="unit">km</span>
       </div>
     </div>
+      <div class="trade-block" id="tradeBlock"></div>
       <div class="quest-caution">CAUTION: FAILING THE DAILY QUEST ENFORCES A PENALTY.</div>
     </div>
   </section>
@@ -1740,7 +1766,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-09-28-daily-shop';
+  var APP_VERSION = '2026-09-28-waive-trade';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -2123,6 +2149,8 @@
       targets: { 'ex-pushups': 100, 'ex-situps': 100, 'ex-squats': 100, 'ex-run': 10 },
       perkPct: { 'ex-pushups': 0, 'ex-situps': 0, 'ex-squats': 0, 'ex-run': 0 },
       halved: false,
+      tradeUsed: false,
+      tradeInfo: null,
       waivedAll: false,
       waiveRewards: false,
       log: []
@@ -2180,6 +2208,8 @@
     if (!state.penalty) state.penalty = pickRandomPenalty();
     if (!state.mods || !state.mods.targets) state.mods = defaultMods();
     if (!state.mods.perkPct) state.mods.perkPct = { 'ex-pushups': 0, 'ex-situps': 0, 'ex-squats': 0, 'ex-run': 0 };
+    if (typeof state.mods.tradeUsed !== 'boolean') state.mods.tradeUsed = false;
+    if (typeof state.mods.tradeInfo === 'undefined') state.mods.tradeInfo = null;
     if (!state.mods.log) state.mods.log = [];
     if (typeof state.statsEarnedToday === 'undefined') state.statsEarnedToday = null;
     if (state.pendingItem) withCatalog(state.pendingItem);
@@ -2290,6 +2320,7 @@
   }
 
   function render() {
+    renderTradeBlock();
     EXS.forEach(function(ex) {
       var val = state.values[ex.id] || 0;
       var target = effectiveTarget(ex);
@@ -2349,6 +2380,7 @@
 
   document.querySelectorAll('.stepper-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
+      if (tradeStep !== null) { tradeStep = null; }
       var targetId = btn.getAttribute('data-target-id');
       var action = btn.getAttribute('data-action');
       var ex = EXS.find(function(e) { return e.id === targetId; });
@@ -2410,6 +2442,9 @@
     state.pendingItem = null;
     state.pendingRevealed = false;
     state.penaltyCountdownEnd = null;
+    state.mods.tradeUsed = false;
+    state.mods.tradeInfo = null;
+    tradeStep = null;
     saveState();
     render();
     renderLootArea();
@@ -2992,6 +3027,105 @@
     renderLootArea();
     showToast('Sold ' + item.name + ' for ' + price + ' gold.');
     return true;
+  }
+
+  // ---- Free daily trade: waive one exercise, double another at random -----------
+  // Once per day, while the quest is still open, the player may drop one exercise
+  // to zero in exchange for doubling a different exercise that The System picks.
+  // Doubling raises that exercise's share of today's stat points and gold the same
+  // way a cursed token does, since both simply raise effectiveTarget() above normal.
+  var tradeStep = null;   // null | 'choose' | { waiveId }
+
+  function tradeEligible() {
+    return EXS.filter(function(ex) { return effectiveTarget(ex) > 0; });
+  }
+
+  function tradeAvailable() {
+    return !state.mods.waivedAll && !state.mods.tradeUsed && questModifiable() && tradeEligible().length >= 2;
+  }
+
+  function exLabel(ex) {
+    return EXERCISE_INFO[ex.id].name.toUpperCase();
+  }
+
+  function exNiceName(ex) {
+    return EXERCISE_INFO[ex.id].name;
+  }
+
+  function renderTradeBlock() {
+    var el = document.getElementById('tradeBlock');
+    if (!el) return;
+
+    if (state.mods.tradeInfo) {
+      var info = state.mods.tradeInfo;
+      el.innerHTML = '<div class="trade-done">⚖ TRADE MADE TODAY &middot; WAIVED ' + escapeHtml(info.waivedName.toUpperCase()) +
+        ' &middot; DOUBLED ' + escapeHtml(info.doubledName.toUpperCase()) + '</div>';
+      return;
+    }
+
+    if (!tradeAvailable() && tradeStep === null) {
+      el.innerHTML = '';
+      return;
+    }
+
+    if (tradeStep === null) {
+      el.innerHTML = '<button class="trade-btn" id="tradeStartBtn">⚖ WAIVE ONE, DOUBLE ANOTHER</button>';
+      document.getElementById('tradeStartBtn').addEventListener('click', function() {
+        tradeStep = 'choose';
+        renderTradeBlock();
+      });
+      return;
+    }
+
+    if (tradeStep === 'choose') {
+      var opts = tradeEligible().map(function(ex) {
+        return '<button data-ex="' + ex.id + '">WAIVE ' + exLabel(ex) + '</button>';
+      }).join('');
+      el.innerHTML =
+        '<div class="trade-confirm">Choose the exercise to waive. <b>The System will pick a different one at random and double it.</b></div>' +
+        '<div class="trade-pick-row">' + opts + '<button id="tradeCancelBtn" style="color:var(--text-dim);">CANCEL</button></div>';
+      el.querySelectorAll('[data-ex]').forEach(function(b) {
+        b.addEventListener('click', function() {
+          if (!tradeAvailable()) { tradeStep = null; showToast('This quest can no longer be changed.'); renderTradeBlock(); return; }
+          var waiveId = b.getAttribute('data-ex');
+          var pool = tradeEligible().filter(function(ex) { return ex.id !== waiveId; });
+          var doubled = pool[Math.floor(Math.random() * pool.length)];
+          tradeStep = { waiveId: waiveId, doubleId: doubled.id };
+          renderTradeBlock();
+        });
+      });
+      document.getElementById('tradeCancelBtn').addEventListener('click', function() { tradeStep = null; renderTradeBlock(); });
+      return;
+    }
+
+    var waiveEx = EXS.find(function(e) { return e.id === tradeStep.waiveId; });
+    var doubleEx = EXS.find(function(e) { return e.id === tradeStep.doubleId; });
+    var doubleNow = effectiveTarget(doubleEx);
+    var doubleAfter = roundTarget(doubleEx.id, doubleNow * 2);
+    el.innerHTML =
+      '<div class="trade-confirm">The System has chosen. Waive <b>' + exLabel(waiveEx) + '</b> and <b>' + exLabel(doubleEx) +
+        '</b> doubles from ' + fmtTarget(doubleEx, doubleNow) + ' to <b>' + fmtTarget(doubleEx, doubleAfter) + '</b>. ' +
+        'You earn stat points and gold for ' + exLabel(doubleEx).toLowerCase() + ' as if you did that much work. This cannot be undone.</div>' +
+      '<div class="trade-pick-row">' +
+        '<button id="tradeConfirmBtn">CONFIRM TRADE</button>' +
+        '<button id="tradeBackBtn" style="color:var(--text-dim);">BACK</button>' +
+      '</div>';
+    document.getElementById('tradeConfirmBtn').addEventListener('click', function() {
+      if (!tradeAvailable()) { tradeStep = null; showToast('This quest can no longer be changed.'); renderTradeBlock(); return; }
+      var m = state.mods;
+      var before = effectiveTarget(doubleEx);
+      m.targets[waiveEx.id] = 0;
+      m.targets[doubleEx.id] = roundTarget(doubleEx.id, before * 2);
+      m.tradeUsed = true;
+      m.tradeInfo = { waivedName: exLabel(waiveEx), doubledName: exLabel(doubleEx) };
+      m.log.push('Trade: waived ' + exNiceName(waiveEx) + ', doubled ' + exNiceName(doubleEx) + ' to ' + fmtTarget(doubleEx, m.targets[doubleEx.id]) + '.');
+      tradeStep = null;
+      saveState();
+      render();
+      updateBanner();
+      showToast('Waived ' + exLabel(waiveEx) + '. ' + exLabel(doubleEx) + ' is now ' + fmtTarget(doubleEx, m.targets[doubleEx.id]) + '.');
+    });
+    document.getElementById('tradeBackBtn').addEventListener('click', function() { tradeStep = 'choose'; renderTradeBlock(); });
   }
 
   function openItemDetail(item, context) {
