@@ -461,8 +461,21 @@
   .gate-open-btn { border-color: rgba(178,139,255,0.6); color: #d8c4ff; }
 
   /* --- Gate map --- */
-  .gate-map-wrap { position: relative; width: 100%; background: #050915; border: 1px solid rgba(125,192,255,0.4); margin-bottom: 14px; overflow: hidden; }
-  .gate-map-svg { display: block; width: 100%; height: auto; }
+  .gate-map-wrap { position: relative; width: 100%; background: #050915; border: 1px solid rgba(125,192,255,0.4); margin-bottom: 8px; overflow: hidden; touch-action: none; }
+  .gate-map-svg { display: block; width: 100%; height: auto; max-height: 62vh; cursor: grab; }
+  .gate-map-svg:active { cursor: grabbing; }
+  .gate-zoom-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .gate-zoom-btn {
+    flex: 0 0 auto; width: 42px; height: 38px;
+    background: linear-gradient(180deg, rgba(48,110,230,0.42), rgba(10,32,96,0.72));
+    border: 1px solid rgba(150,206,255,0.7); color: #eaf5ff;
+    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 18px;
+  }
+  .gate-zoom-btn.wide { flex: 1; font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0.1em; }
+  .gate-zoom-btn:active { background: linear-gradient(180deg, rgba(90,160,255,0.62), rgba(20,50,130,0.85)); }
+  .gate-map-hint { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; color: var(--text-dim); text-align: center; margin-bottom: 12px; }
+  .gate-map-city { fill: #3a5a9c; cursor: pointer; }
+  .gate-map-city-label { cursor: pointer; }
   .gate-map-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; fill: #6f90c2; letter-spacing: 0.05em; }
   .gate-map-city { fill: #3a5a9c; }
   .gate-map-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 22px; fill: rgba(125,192,255,0.18); letter-spacing: 0.1em; }
@@ -1248,6 +1261,34 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+
+  /* ---- Responsive scaling: fill the screen at any size or orientation ---- */
+  :root { --app-max: 480px; }
+  @media (min-width: 640px)  { :root { --app-max: 620px; } }
+  @media (min-width: 900px)  { :root { --app-max: 760px; } }
+  @media (min-width: 1200px) { :root { --app-max: 900px; } }
+  html, body { min-height: 100vh; }
+  @supports (height: 100dvh) { html, body { min-height: 100dvh; } }
+  .wrap { max-width: var(--app-max); width: min(100%, var(--app-max)); }
+  /* .inv-panel keeps its original calc(100% - 36px) inset at narrow widths —
+     its corner-tick decorations (.panel::before/::after) bleed 5px outside the
+     panel's own box, and that inset is what keeps them from clipping at the
+     viewport edge. Only the upper cap grows on wider screens. */
+  .inv-panel { max-width: var(--app-max); width: min(calc(100% - 36px), var(--app-max)); }
+  .gate-map-svg { max-height: min(62vh, 560px); }
+  /* Short, wide viewports (a phone or tablet turned sideways): trim the biggest
+     elements so the page fits without excessive scrolling, and let the map
+     claim more of the available height since it benefits most from the width. */
+  @media (orientation: landscape) and (max-height: 540px) {
+    .wrap { padding-top: 10px; padding-bottom: 20px; }
+    .sys-notice { padding: 10px 14px 12px; }
+    h1 { font-size: clamp(20px, 5.5vw, 32px); }
+    .h1-sub { margin-top: 4px; }
+    .clock-card { padding: 12px 14px 10px; margin-bottom: 14px; }
+    .clock { font-size: 34px; }
+    .stats-level-num { font-size: 64px; }
+    .gate-map-svg { max-height: 78vh; }
+  }
 </style>
 </head>
 <body>
@@ -1451,7 +1492,13 @@
     <div id="gateStatusBanner"></div>
     <div class="loot-box-text" style="margin-bottom:12px;">Gates open at random across the state. Tap a marker to inspect it and choose whether to enter. Left uncleared a week, a gate breaks and spills its monsters out.</div>
     <div class="gate-legend" id="gateLegend"></div>
+    <div class="gate-zoom-row">
+      <button class="gate-zoom-btn" id="gateZoomOutBtn">−</button>
+      <button class="gate-zoom-btn wide" id="gateZoomResetBtn">RESET VIEW</button>
+      <button class="gate-zoom-btn" id="gateZoomInBtn">+</button>
+    </div>
     <div id="gateMapWrap"></div>
+    <div class="gate-map-hint">Scroll/pinch to zoom, drag to pan, or tap a city name to jump in.</div>
     <div id="gateList"></div>
   </div>
 </div>
@@ -1543,7 +1590,8 @@
     waive: function(rewards) { return { type: 'waiveAll', rewards: !!rewards }; },
     cursed: function(ex, amount) { return { type: 'cursedReps', ex: ex, amount: amount }; },
     combo: function() { return { type: 'combo', effects: Array.prototype.slice.call(arguments) }; },
-    mystery: function() { return { type: 'mystery', pool: Array.prototype.slice.call(arguments) }; }
+    mystery: function() { return { type: 'mystery', pool: Array.prototype.slice.call(arguments) }; },
+    gateKey: function() { return { type: 'gateKey' }; }
   };
 
   var TIER_ORDER = ['common', 'rare', 'heroic', 'legendary'];
@@ -1560,6 +1608,7 @@
   // [icon, name, flavor text, effect]. Mystery items show no picture and hide their effect until used.
   var TIER_ITEMS = {
     common: [
+      ['🔑', 'Cracked System Seal', 'A fragment of command code, humming faintly with unclaimed access.', FX.gateKey()],
       ['🔩', 'Cracked Stamina Charm', 'A dull trinket that still hums faintly, like it remembers being useful.', FX.reps(10)],
       ['🧵', 'Frayed Grip Tape', 'Peeling at the edges, but your hands stop slipping.', FX.temp('STR', 1, 12)],
       ['🥤', 'Dented Canteen', 'Whatever is inside is lukewarm and somehow exactly enough.', FX.temp('END', 1, 12)],
@@ -1590,6 +1639,7 @@
         FX.mystery(FX.extend(1), FX.pct(10), FX.km(0.5), FX.reps(10), FX.onePct(20), FX.reroll())]
     ],
     rare: [
+      ['🪪', 'Fractured Gate Sigil', 'Half a credential. Something on the other end still remembers your name.', FX.gateKey()],
       ['🧪', 'Vial of Swift Recovery', 'The liquid inside never stops swirling, even when the vial is still.', FX.km(1)],
       ['🥊', 'Iron-Banded Wristguard', 'Heavy on the arm, lighter on the mind.', FX.temp('STR', 2, 24)],
       ['🪶', "Windrunner's Anklet", 'Every step feels like a downhill one.', FX.temp('AGI', 2, 24)],
@@ -1620,6 +1670,7 @@
         FX.mystery(FX.extend(2), FX.pct(15), FX.km(1), FX.reps(20), FX.onePct(35), FX.reroll())]
     ],
     heroic: [
+      ['📜', "Warden's Passkey", 'Sealed with a sigil no ordinary lock would recognize.', FX.gateKey()],
       ['🧥', 'Cloak of the Quiet Step', 'Wrapped around the shoulders, the rest of the world gets a little quieter.', FX.waive(false)],
       ['🛡️', "Titan's Bracer", 'Forged for someone twice your size, and it fits perfectly.', FX.temp('STR', 3, 48)],
       ['👢', 'Phantom Greaves', 'Your footsteps no longer make a sound.', FX.temp('AGI', 3, 48)],
@@ -1650,6 +1701,7 @@
         FX.mystery(FX.extend(3), FX.pct(25), FX.reps(30), FX.skipOne(), FX.reroll(), FX.shield(1), FX.clear(1))]
     ],
     legendary: [
+      ['🔓', "Architect's Master Key", 'Carved for a door that does not exist yet. It will, the moment you turn this.', FX.gateKey()],
       ['🗝️', 'Fragment of the Ascendant Will', 'Vanishingly rare. Holding it makes tomorrow feel optional.', FX.waive(true)],
       ['🪨', 'Colossus Heartstone', 'It beats once a minute, and the ground trembles.', FX.temp('STR', 5, 72)],
       ['🥾', 'Stormstep Boots', 'You outrun the thunder every time.', FX.temp('AGI', 5, 72)],
@@ -1762,6 +1814,7 @@
       case 'title': return 'Take the title "' + eff.title + '", shown on your Status screen.';
       case 'combo': return eff.effects.map(effectText).join(' Also: ');
       case 'mystery': return 'Unknown. Its effect is revealed when used.';
+      case 'gateKey': return 'Redeem to open a System-Exclusive Gate on the map. These gates never appear on their own — only a key opens one.';
     }
     return '';
   }
@@ -2621,6 +2674,7 @@
       saveLevel();
       state.leveledUp = { from: fromLevel, to: hunterLevel };
       showToast('LEVEL UP! You are now level ' + hunterLevel + '.');
+      grantMilestoneKey(hunterLevel);
     }
 
     // A pure rest day (waived, no rewards) earns no gold or loot.
@@ -2857,6 +2911,7 @@
       case 'title': return 'title: ' + eff.title;
       case 'combo': return eff.effects.map(function(e) { return describeEffect(e, null); }).join(' · ');
       case 'mystery': return 'unknown effect';
+      case 'gateKey': return 'opened a System-Exclusive Gate';
     }
     return '';
   }
@@ -2931,6 +2986,14 @@
         saveStats();
         break;
       case 'title': buffs.title = eff.title; saveBuffs(); break;
+      case 'gateKey': {
+        var opened = spawnKeyGate();
+        gates.push(opened);
+        saveGates();
+        if (document.getElementById('gateOverlay').classList.contains('show')) renderGateMap();
+        text = 'opened a System-Exclusive Gate on the map';
+        break;
+      }
       case 'grantLoot': {
         var names = [];
         for (var i = 0; i < eff.count; i++) {
@@ -3671,7 +3734,8 @@
   var GATE_TARGET_COUNT = 8;
   var GATE_BREAK_DAYS = 7;
   var GATE_RED_CHANCE = 0.05;     // fixed forever: never scales with level
-  var SPECIAL_GATE_CHANCE = 0.03; // flat chance a newly spawned gate is System-Exclusive
+  var GATE_KEY_MILESTONES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  var GRANTED_MILESTONES_KEY = 'the-system-granted-milestones';
 
   var GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
   var GATE_INFO = {
@@ -3742,17 +3806,57 @@
     };
   }
 
+  // Ordinary gates only; System-Exclusive gates never spawn on their own —
+  // they only appear when a Gate Key item is used (see spawnKeyGate below).
   function spawnGate(level) {
     var spot = randomGateSpot();
-    var special = Math.random() < SPECIAL_GATE_CHANCE;
     return {
       id: 'g' + Date.now() + Math.random().toString(36).slice(2, 7),
-      rank: special ? null : pickGateRank(level),
-      special: special,
+      rank: pickGateRank(level),
+      special: false,
       lat: spot.lat, lon: spot.lon,
       createdAt: Date.now(),
-      secretRed: !special && Math.random() < GATE_RED_CHANCE
+      secretRed: Math.random() < GATE_RED_CHANCE
     };
+  }
+
+  function spawnKeyGate() {
+    var spot = randomGateSpot();
+    return {
+      id: 'g' + Date.now() + Math.random().toString(36).slice(2, 7),
+      rank: null,
+      special: true,
+      lat: spot.lat, lon: spot.lon,
+      createdAt: Date.now(),
+      secretRed: false
+    };
+  }
+
+  // Milestone-granted keys: a one-time reward the first time the player ever
+  // reaches each milestone level, tracked separately so it can never repeat —
+  // even if the level is later reduced (e.g. by Reset Quest Progress).
+  function loadGrantedMilestones() {
+    var raw = null;
+    try { raw = localStorage.getItem(GRANTED_MILESTONES_KEY); } catch (e) {}
+    if (!raw) return [];
+    try { var arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
+  }
+  function saveGrantedMilestones() {
+    if (restoring) return;
+    try { localStorage.setItem(GRANTED_MILESTONES_KEY, JSON.stringify(grantedMilestones)); } catch (e) {}
+  }
+  var grantedMilestones = loadGrantedMilestones();
+
+  function grantMilestoneKey(level) {
+    if (GATE_KEY_MILESTONES.indexOf(level) < 0) return;
+    if (grantedMilestones.indexOf(level) >= 0) return;
+    grantedMilestones.push(level);
+    saveGrantedMilestones();
+    var key = catalogFind("Architect's Master Key");
+    inventory.unshift(makeEntry(key, false));
+    saveInventory();
+    renderInventoryBadge();
+    showToast('The System grants you a Gate Key for reaching level ' + level + '.');
   }
 
   function loadGates() {
@@ -3839,6 +3943,140 @@
     return g.special ? GATE_SPECIAL_INFO.name : GATE_INFO[g.rank].name;
   }
 
+  // ---- Map zoom and pan ----------------------------------------------------------
+  var MAP_W = 600, MAP_H = 260, MAP_MIN_W = 50;
+  var gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
+
+  function clampGateView() {
+    gateView.w = Math.min(MAP_W, Math.max(MAP_MIN_W, gateView.w));
+    gateView.h = gateView.w * (MAP_H / MAP_W);
+    if (gateView.x < 0) gateView.x = 0;
+    if (gateView.y < 0) gateView.y = 0;
+    if (gateView.x + gateView.w > MAP_W) gateView.x = MAP_W - gateView.w;
+    if (gateView.y + gateView.h > MAP_H) gateView.y = MAP_H - gateView.h;
+  }
+
+  function applyGateView() {
+    var svg = document.querySelector('#gateMapWrap svg');
+    if (svg) svg.setAttribute('viewBox', gateView.x.toFixed(2) + ' ' + gateView.y.toFixed(2) + ' ' + gateView.w.toFixed(2) + ' ' + gateView.h.toFixed(2));
+  }
+
+  function resetGateView() {
+    gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
+    applyGateView();
+  }
+
+  // Zooms so the point (cx, cy), in map user-space coordinates, stays fixed under
+  // the cursor/finger. factor > 1 zooms in, factor < 1 zooms out.
+  function zoomGateView(factor, cx, cy) {
+    if (typeof cx !== 'number') { cx = gateView.x + gateView.w / 2; cy = gateView.y + gateView.h / 2; }
+    var relX = (cx - gateView.x) / gateView.w;
+    var relY = (cy - gateView.y) / gateView.h;
+    var newW = gateView.w / factor;
+    gateView.w = newW;
+    gateView.h = newW * (MAP_H / MAP_W);
+    gateView.x = cx - relX * gateView.w;
+    gateView.y = cy - relY * gateView.h;
+    clampGateView();
+    applyGateView();
+  }
+
+  function zoomToCity(city) {
+    var p = projectGate({ lat: city.lat, lon: city.lon });
+    var w = 130;
+    gateView = { x: p.x - w / 2, y: p.y - (w * (MAP_H / MAP_W)) / 2, w: w, h: w * (MAP_H / MAP_W) };
+    clampGateView();
+    applyGateView();
+  }
+
+  function clientToGateView(svg, clientX, clientY) {
+    var rect = svg.getBoundingClientRect();
+    if (!rect || !rect.width) return { x: gateView.x + gateView.w / 2, y: gateView.y + gateView.h / 2 };
+    return {
+      x: gateView.x + (clientX - rect.left) / rect.width * gateView.w,
+      y: gateView.y + (clientY - rect.top) / rect.height * gateView.h
+    };
+  }
+
+  // Wheel-zoom, drag-to-pan and two-finger pinch, bound once to the map container
+  // (its innerHTML is rebuilt on every render, but the container itself is not).
+  function initGateMapInteractions() {
+    var wrap = document.getElementById('gateMapWrap');
+    if (!wrap || wrap._gateBound) return;
+    wrap._gateBound = true;
+
+    wrap.addEventListener('wheel', function(e) {
+      var svg = wrap.querySelector('svg');
+      if (!svg) return;
+      e.preventDefault();
+      var pt = clientToGateView(svg, e.clientX, e.clientY);
+      zoomGateView(e.deltaY < 0 ? 1.25 : 1 / 1.25, pt.x, pt.y);
+    }, { passive: false });
+
+    var pointers = {};
+    var drag = null;
+    var pinch = null;
+
+    function pointerList() { return Object.keys(pointers).map(function(k) { return pointers[k]; }); }
+
+    wrap.addEventListener('pointerdown', function(e) {
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var svg = wrap.querySelector('svg');
+      if (!svg) return;
+      var list = pointerList();
+      if (list.length === 2) {
+        drag = null;
+        var dx = list[0].x - list[1].x, dy = list[0].y - list[1].y;
+        pinch = {
+          startDist: Math.sqrt(dx * dx + dy * dy) || 1,
+          startView: { x: gateView.x, y: gateView.y, w: gateView.w, h: gateView.h },
+          center: clientToGateView(svg, (list[0].x + list[1].x) / 2, (list[0].y + list[1].y) / 2)
+        };
+      } else if (list.length === 1) {
+        pinch = null;
+        drag = { startClientX: e.clientX, startClientY: e.clientY, startView: { x: gateView.x, y: gateView.y }, rect: svg.getBoundingClientRect() };
+      }
+    });
+
+    wrap.addEventListener('pointermove', function(e) {
+      if (!(e.pointerId in pointers)) return;
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var svg = wrap.querySelector('svg');
+      if (!svg) return;
+      var list = pointerList();
+      if (pinch && list.length === 2) {
+        var dx = list[0].x - list[1].x, dy = list[0].y - list[1].y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        var factor = dist / pinch.startDist;
+        gateView.w = pinch.startView.w / factor;
+        gateView.h = gateView.w * (MAP_H / MAP_W);
+        var relX = (pinch.center.x - pinch.startView.x) / pinch.startView.w;
+        var relY = (pinch.center.y - pinch.startView.y) / pinch.startView.h;
+        gateView.x = pinch.center.x - relX * gateView.w;
+        gateView.y = pinch.center.y - relY * gateView.h;
+        clampGateView();
+        applyGateView();
+      } else if (drag && list.length === 1) {
+        var dxPix = e.clientX - drag.startClientX;
+        var dyPix = e.clientY - drag.startClientY;
+        gateView.x = drag.startView.x - dxPix / drag.rect.width * gateView.w;
+        gateView.y = drag.startView.y - dyPix / drag.rect.height * gateView.h;
+        clampGateView();
+        applyGateView();
+      }
+    });
+
+    function releasePointer(e) {
+      delete pointers[e.pointerId];
+      var list = pointerList();
+      if (list.length < 2) pinch = null;
+      if (list.length === 0) drag = null;
+    }
+    wrap.addEventListener('pointerup', releasePointer);
+    wrap.addEventListener('pointercancel', releasePointer);
+    wrap.addEventListener('pointerleave', releasePointer);
+  }
+
   function renderGateLegend() {
     var el = document.getElementById('gateLegend');
     if (!el) return;
@@ -3880,17 +4118,25 @@
         (inside ? '<circle r="' + (r + 4) + '" fill="none" stroke="#fff" stroke-width="1.5"></circle>' : '') +
       '</g>';
     }).join('');
-    var cities = KS_CITIES.map(function(c) {
+    var cities = KS_CITIES.map(function(c, i) {
       var p = projectGate({ lat: c.lat, lon: c.lon });
-      return '<circle class="gate-map-city" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2"></circle>' +
-        '<text class="gate-map-label" x="' + (p.x + 6).toFixed(1) + '" y="' + (p.y + 3).toFixed(1) + '">' + c.name + '</text>';
+      return '<circle class="gate-map-city" data-city="' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2"></circle>' +
+        '<text class="gate-map-label gate-map-city-label" data-city="' + i + '" x="' + (p.x + 6).toFixed(1) + '" y="' + (p.y + 3).toFixed(1) + '">' + c.name + '</text>';
     }).join('');
+    var vb = gateView.x.toFixed(2) + ' ' + gateView.y.toFixed(2) + ' ' + gateView.w.toFixed(2) + ' ' + gateView.h.toFixed(2);
     wrap.innerHTML =
-      '<div class="gate-map-wrap"><svg class="gate-map-svg" viewBox="0 0 600 260" xmlns="http://www.w3.org/2000/svg">' +
+      '<div class="gate-map-wrap"><svg class="gate-map-svg" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg">' +
         '<rect x="4" y="4" width="592" height="252" fill="#071022" stroke="rgba(125,192,255,0.5)" stroke-width="1"></rect>' +
         '<text class="gate-map-title" x="300" y="150" text-anchor="middle">KANSAS</text>' +
         cities + markers +
       '</svg></div>';
+    wrap.querySelectorAll('[data-city]').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        zoomToCity(KS_CITIES[parseInt(el.getAttribute('data-city'), 10)]);
+      });
+    });
+    initGateMapInteractions();
     wrap.querySelectorAll('.gate-marker').forEach(function(m) {
       m.addEventListener('click', function() { openGateDetail(m.getAttribute('data-gate-id')); });
     });
@@ -3926,14 +4172,11 @@
     var meta = '<div class="gate-detail-meta">' +
       '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
       '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared<br>' +
-      (g.special ? '' : '<b>CLEAR REWARD:</b> roughly ' + info.levels + ' level' + (info.levels === 1 ? '' : 's') + ', scaled by the boss and how many enemies fall') +
+      (g.special ? '<b>ORIGIN:</b> opened by a System Gate Key' : '<b>CLEAR REWARD:</b> roughly ' + info.levels + ' level' + (info.levels === 1 ? '' : 's') + ', scaled by the boss and how many enemies fall') +
       '</div>';
 
     var actions;
-    if (g.special) {
-      actions = '<div class="gate-special-note">This gate is keyed to something you don\'t have yet. Entry is locked until the right item, level or System command unlocks it.</div>' +
-        '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
-    } else if (inside) {
+    if (inside) {
       actions = '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
     } else if (someoneElseInside) {
       actions = '<div class="gate-special-note">You are already inside another gate. Leave it first.</div>' +
@@ -3963,7 +4206,7 @@
 
   function enterGate(id) {
     var g = gateById(id);
-    if (!g || g.special || gateEntry) return;
+    if (!g || gateEntry) return;
     gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed };
     saveGateEntry();
     document.getElementById('gateDetailOverlay').classList.remove('show');
@@ -3982,12 +4225,16 @@
   }
 
   document.getElementById('gateOpenBtn').addEventListener('click', function() {
+    resetGateView();
     renderGateMap();
     document.getElementById('gateOverlay').classList.add('show');
   });
   document.getElementById('gateCloseBtn').addEventListener('click', function() {
     document.getElementById('gateOverlay').classList.remove('show');
   });
+  document.getElementById('gateZoomInBtn').addEventListener('click', function() { zoomGateView(1.5); });
+  document.getElementById('gateZoomOutBtn').addEventListener('click', function() { zoomGateView(1 / 1.5); });
+  document.getElementById('gateZoomResetBtn').addEventListener('click', function() { resetGateView(); });
   document.getElementById('gateDetailCloseBtn').addEventListener('click', function() {
     document.getElementById('gateDetailOverlay').classList.remove('show');
   });
@@ -4178,6 +4425,23 @@
     }
     saveState();
   }
+
+  // Write every piece of progress to storage once, immediately, even if the
+  // player hasn't touched anything yet. Without this, a backup taken before
+  // any interaction could be missing keys (state, inventory, gold, stats,
+  // owed penalties, buffs, gate entry, granted milestones) — not because
+  // progress was lost, but because it was never written in the first place.
+  // Each loader already falls back to sane defaults, so this is a pure
+  // completeness fix: it makes "what's in storage" always match "what the
+  // app would show," which a backup/restore system depends on.
+  saveState();
+  saveInventory();
+  saveGold();
+  saveStats();
+  saveOwed();
+  saveBuffs();
+  saveGateEntry();
+  saveGrantedMilestones();
 
   render();
   renderLootArea();
