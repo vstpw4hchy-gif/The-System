@@ -458,6 +458,38 @@
     border-color: rgba(255,59,92,0.5);
     color: var(--red);
   }
+  .gate-open-btn { border-color: rgba(178,139,255,0.6); color: #d8c4ff; }
+
+  /* --- Gate map --- */
+  .gate-map-wrap { position: relative; width: 100%; background: #050915; border: 1px solid rgba(125,192,255,0.4); margin-bottom: 14px; overflow: hidden; }
+  .gate-map-svg { display: block; width: 100%; height: auto; }
+  .gate-map-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; fill: #6f90c2; letter-spacing: 0.05em; }
+  .gate-map-city { fill: #3a5a9c; }
+  .gate-map-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 22px; fill: rgba(125,192,255,0.18); letter-spacing: 0.1em; }
+  .gate-marker { cursor: pointer; }
+  .gate-marker circle.core { transition: r 0.15s ease; }
+  .gate-marker:active circle.core { r: 10; }
+  .gate-marker.special circle.core { animation: gateSpin 3s linear infinite; }
+  @keyframes gateSpin { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .gate-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 14px; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .gate-legend-item { display: flex; align-items: center; gap: 6px; }
+  .gate-legend-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: none; }
+  .gate-status-banner {
+    padding: 12px 14px; margin-bottom: 14px; font-family: 'Share Tech Mono', monospace; font-size: 12.5px; line-height: 1.6;
+    background: linear-gradient(180deg, rgba(178,139,255,0.18), rgba(30,10,60,0.5)); border: 1px solid rgba(178,139,255,0.6); color: #ecdcff;
+  }
+  .gate-status-banner.trapped { background: linear-gradient(180deg, rgba(255,59,92,0.22), rgba(60,8,20,0.6)); border-color: rgba(255,90,110,0.8); color: #ffd9de; }
+  .gate-status-banner b { color: inherit; }
+  .gate-detail-rank {
+    display: inline-block; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 34px; letter-spacing: 0.04em;
+    padding: 6px 20px; margin-bottom: 8px; border: 2px solid currentColor;
+  }
+  .gate-detail-name { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.22em; color: var(--text-dim); margin-bottom: 14px; }
+  .gate-detail-desc { font-family: 'Rajdhani', sans-serif; font-size: 15px; line-height: 1.5; color: var(--text); background: rgba(5,16,52,0.6); border: 1px solid rgba(125,192,255,0.3); padding: 12px 14px; margin-bottom: 12px; }
+  .gate-detail-meta { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; color: var(--text-dim); line-height: 1.7; margin-bottom: 14px; }
+  .gate-detail-meta b { color: var(--text); }
+  .gate-special-note { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; color: #ffd76a; line-height: 1.5; margin-bottom: 14px; }
+  .gate-list-empty { text-align: center; padding: 30px 20px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 13px; line-height: 1.6; }
   .shop-item-card {
     display: flex;
     align-items: center;
@@ -1230,6 +1262,7 @@
       <button class="inv-btn" id="invOpenBtn">🎒 INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
       <button class="inv-btn" id="shopOpenBtn">🛒 SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
       <button class="inv-btn" id="statsOpenBtn">📊 STATS</button>
+      <button class="inv-btn gate-open-btn" id="gateOpenBtn">🌀 GATES <span class="inv-badge" id="gateActiveBadge" style="display:none;">1</span></button>
       <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;">⚠️ PENALTY</button>
     </div>
   </header>
@@ -1406,6 +1439,30 @@
     <div class="loot-decision-row"><button class="use-btn" id="restoreBtn">RESTORE FROM CODE</button></div>
     <div class="backup-msg" id="backupMsg"></div>
     <div id="snapshotList"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="gateOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">GATE MAP — KANSAS</div>
+      <button class="inv-close" id="gateCloseBtn">CLOSE</button>
+    </div>
+    <div id="gateStatusBanner"></div>
+    <div class="loot-box-text" style="margin-bottom:12px;">Gates open at random across the state. Tap a marker to inspect it and choose whether to enter. Left uncleared a week, a gate breaks and spills its monsters out.</div>
+    <div class="gate-legend" id="gateLegend"></div>
+    <div id="gateMapWrap"></div>
+    <div id="gateList"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="gateDetailOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">GATE</div>
+      <button class="inv-close" id="gateDetailCloseBtn">CLOSE</button>
+    </div>
+    <div id="gateDetailBody"></div>
   </div>
 </div>
 
@@ -1768,7 +1825,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-09-28-gold-pct-items';
+  var APP_VERSION = '2026-09-28-gates';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3606,6 +3663,338 @@
     backupMsg(res.ok ? 'Restored. Reloading…' : res.msg, !res.ok);
   });
 
+  // ---- Gates --------------------------------------------------------------------
+  // A map of randomly-placed portals the player can choose to enter. Independent of
+  // the daily quest: gates persist for up to a week before breaking if left uncleared.
+  var GATES_KEY = 'the-system-gates';
+  var GATE_ENTRY_KEY = 'the-system-gate-entry';
+  var GATE_TARGET_COUNT = 8;
+  var GATE_BREAK_DAYS = 7;
+  var GATE_RED_CHANCE = 0.05;     // fixed forever: never scales with level
+  var SPECIAL_GATE_CHANCE = 0.03; // flat chance a newly spawned gate is System-Exclusive
+
+  var GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
+  var GATE_INFO = {
+    E: { color: '#c7cdd6', name: 'E-RANK', levels: 1,
+      desc: 'Very low risk. A cabinet-sized portal holding weak monsters like giant bugs or small beasts. Handled by novice or low-tier hunters.' },
+    D: { color: '#3dffb0', name: 'D-RANK', levels: 2,
+      desc: 'Slightly higher risk. The monsters inside are stronger, and poor coordination or a miscalculation can turn deadly fast.' },
+    C: { color: '#4fd8ff', name: 'C-RANK', levels: 3,
+      desc: 'Intermediate danger. Dangerous beasts, like giant spiders, lurk inside. Clearing one takes a proper team of low-to-mid rank hunters.' },
+    B: { color: '#b28bff', name: 'B-RANK', levels: 5,
+      desc: 'High risk. Smart, coordinated monster groups inside require an experienced, well-equipped raid party to survive.' },
+    A: { color: '#ff9a3d', name: 'A-RANK', levels: 8,
+      desc: 'Severe threat. A massive portal holding city-wiping, high-class creatures. Only top-tier professional hunters walk out.' },
+    S: { color: '#ff3b5c', name: 'S-RANK', levels: 15,
+      desc: 'A national emergency. What waits inside can put an entire nation at risk. Only elite, national-level hunters stand a chance.' }
+  };
+  var GATE_SPECIAL_INFO = {
+    color: '#ffd76a', name: 'SYSTEM-EXCLUSIVE',
+    desc: 'A restricted portal, keyed to a specific item, level or System command. It will not open for just anyone.'
+  };
+
+  // Kansas bounding box used to place gates on the stylized map.
+  var KS_BOUNDS = { lonMin: -102.06, lonMax: -94.59, latMin: 36.99, latMax: 40.0 };
+  var KS_CITIES = [
+    { name: 'Topeka', lat: 39.0473, lon: -95.6752 },
+    { name: 'Wichita', lat: 37.6872, lon: -97.3301 },
+    { name: 'Kansas City', lat: 39.1155, lon: -94.6268 },
+    { name: 'Dodge City', lat: 37.7528, lon: -100.0171 },
+    { name: 'Garden City', lat: 37.9717, lon: -100.8726 },
+    { name: 'Salina', lat: 38.8403, lon: -97.6114 }
+  ];
+
+  // Base chance of each rank on a fresh roll. The table below is reshaped as the
+  // hunter passes level milestones (10, 20, 30, ...): a little weight moves out of
+  // E-rank and into everything above it. This never touches GATE_RED_CHANCE.
+  var GATE_BASE_WEIGHTS = { E: 55, D: 25, C: 12, B: 6, A: 1.8, S: 0.2 };
+  var GATE_MILESTONE_SHIFT = { E: -4, D: 1.6, C: 1.0, B: 0.8, A: 0.4, S: 0.2 };
+
+  function gateWeightsForLevel(level) {
+    var milestones = Math.min(10, Math.floor((level || 1) / 10));
+    var w = {};
+    GATE_RANKS.forEach(function(r) { w[r] = GATE_BASE_WEIGHTS[r] + GATE_MILESTONE_SHIFT[r] * milestones; });
+    if (w.E < 15) {
+      var deficit = 15 - w.E;
+      w.E = 15;
+      var restSum = GATE_RANKS.slice(1).reduce(function(s, r) { return s + w[r]; }, 0);
+      GATE_RANKS.slice(1).forEach(function(r) { w[r] = Math.max(0.1, w[r] - deficit * (w[r] / restSum)); });
+    }
+    var total = GATE_RANKS.reduce(function(s, r) { return s + w[r]; }, 0);
+    GATE_RANKS.forEach(function(r) { w[r] = w[r] / total * 100; });
+    return w;
+  }
+
+  function pickGateRank(level) {
+    var w = gateWeightsForLevel(level);
+    var roll = Math.random() * 100;
+    for (var i = 0; i < GATE_RANKS.length; i++) {
+      roll -= w[GATE_RANKS[i]];
+      if (roll < 0) return GATE_RANKS[i];
+    }
+    return GATE_RANKS[0];
+  }
+
+  function randomGateSpot() {
+    return {
+      lat: KS_BOUNDS.latMin + Math.random() * (KS_BOUNDS.latMax - KS_BOUNDS.latMin),
+      lon: KS_BOUNDS.lonMin + Math.random() * (KS_BOUNDS.lonMax - KS_BOUNDS.lonMin)
+    };
+  }
+
+  function spawnGate(level) {
+    var spot = randomGateSpot();
+    var special = Math.random() < SPECIAL_GATE_CHANCE;
+    return {
+      id: 'g' + Date.now() + Math.random().toString(36).slice(2, 7),
+      rank: special ? null : pickGateRank(level),
+      special: special,
+      lat: spot.lat, lon: spot.lon,
+      createdAt: Date.now(),
+      secretRed: !special && Math.random() < GATE_RED_CHANCE
+    };
+  }
+
+  function loadGates() {
+    var raw = null;
+    try { raw = localStorage.getItem(GATES_KEY); } catch (e) {}
+    var list = [];
+    if (raw) { try { list = JSON.parse(raw); if (!Array.isArray(list)) list = []; } catch (e) { list = []; } }
+    return list;
+  }
+
+  function saveGates() {
+    if (restoring) return;
+    var ok = false;
+    try { localStorage.setItem(GATES_KEY, JSON.stringify(gates)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  function loadGateEntry() {
+    var raw = null;
+    try { raw = localStorage.getItem(GATE_ENTRY_KEY); } catch (e) {}
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+
+  function saveGateEntry() {
+    if (restoring) return;
+    var ok = false;
+    try {
+      if (gateEntry) localStorage.setItem(GATE_ENTRY_KEY, JSON.stringify(gateEntry));
+      else localStorage.removeItem(GATE_ENTRY_KEY);
+      ok = true;
+    } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var gates = loadGates();
+  var gateEntry = loadGateEntry();   // { gateId, enteredAt, trapped } | null
+  var selectedGateId = null;
+
+  function gateById(id) {
+    return gates.find(function(g) { return g.id === id; });
+  }
+
+  function gateExpiresAt(g) {
+    return g.createdAt + GATE_BREAK_DAYS * 86400000;
+  }
+
+  function gateIsBroken(g) {
+    return Date.now() >= gateExpiresAt(g);
+  }
+
+  // Drops expired gates and tops the map back up to GATE_TARGET_COUNT. Cheap to
+  // call often; only does real work when a gate has actually broken or is missing.
+  function maintainGates() {
+    var hadBroken = gates.some(gateIsBroken);
+    if (hadBroken) {
+      if (gateEntry && gates.some(function(g) { return g.id === gateEntry.gateId && gateIsBroken(g); })) {
+        gateEntry = null;
+        saveGateEntry();
+      }
+      gates = gates.filter(function(g) { return !gateIsBroken(g); });
+    }
+    var added = false;
+    while (gates.length < GATE_TARGET_COUNT) {
+      gates.push(spawnGate(hunterLevel));
+      added = true;
+    }
+    var changed = hadBroken || added;
+    if (changed) saveGates();
+    return changed;
+  }
+
+  function projectGate(g) {
+    var x = (g.lon - KS_BOUNDS.lonMin) / (KS_BOUNDS.lonMax - KS_BOUNDS.lonMin) * 600;
+    var y = (KS_BOUNDS.latMax - g.lat) / (KS_BOUNDS.latMax - KS_BOUNDS.latMin) * 260;
+    return { x: x, y: y };
+  }
+
+  function gateColor(g) {
+    return g.special ? GATE_SPECIAL_INFO.color : GATE_INFO[g.rank].color;
+  }
+
+  function gateLabel(g) {
+    return g.special ? GATE_SPECIAL_INFO.name : GATE_INFO[g.rank].name;
+  }
+
+  function renderGateLegend() {
+    var el = document.getElementById('gateLegend');
+    if (!el) return;
+    var items = GATE_RANKS.map(function(r) {
+      return '<span class="gate-legend-item"><span class="gate-legend-dot" style="background:' + GATE_INFO[r].color + '; box-shadow:0 0 6px ' + GATE_INFO[r].color + ';"></span>' + r + '</span>';
+    }).join('');
+    items += '<span class="gate-legend-item"><span class="gate-legend-dot" style="background:' + GATE_SPECIAL_INFO.color + '; box-shadow:0 0 6px ' + GATE_SPECIAL_INFO.color + ';"></span>SYSTEM</span>';
+    el.innerHTML = items;
+  }
+
+  function renderGateStatusBanner() {
+    var el = document.getElementById('gateStatusBanner');
+    if (!el) return;
+    if (!gateEntry) { el.innerHTML = ''; return; }
+    var g = gateById(gateEntry.gateId);
+    if (!g) { el.innerHTML = ''; return; }
+    if (gateEntry.trapped) {
+      el.innerHTML = '<div class="gate-status-banner trapped">🔒 <b>SEALED — RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.</div>';
+    } else {
+      el.innerHTML = '<div class="gate-status-banner">🌀 <b>INSIDE A ' + gateLabel(g) + ' GATE</b><br>You can leave at will, but it stays open and uncleared until someone finishes it.' +
+        '<div class="loot-decision-row" style="margin-top:10px;"><button class="stash-btn" id="gateLeaveBtn">LEAVE GATE</button></div></div>';
+    }
+  }
+
+  function renderGateMap() {
+    maintainGates();
+    renderGateLegend();
+    renderGateStatusBanner();
+    var wrap = document.getElementById('gateMapWrap');
+    if (!wrap) return;
+    var markers = gates.map(function(g) {
+      var p = projectGate(g);
+      var c = gateColor(g);
+      var inside = gateEntry && gateEntry.gateId === g.id;
+      var r = g.special ? 8 : (6 + GATE_RANKS.indexOf(g.rank));
+      return '<g class="gate-marker' + (g.special ? ' special' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
+        '<circle r="' + (r + 7) + '" fill="' + c + '" opacity="0.16"></circle>' +
+        '<circle class="core" r="' + r + '" fill="' + c + '" stroke="#04060f" stroke-width="1.5" style="filter: drop-shadow(0 0 5px ' + c + ')"></circle>' +
+        (inside ? '<circle r="' + (r + 4) + '" fill="none" stroke="#fff" stroke-width="1.5"></circle>' : '') +
+      '</g>';
+    }).join('');
+    var cities = KS_CITIES.map(function(c) {
+      var p = projectGate({ lat: c.lat, lon: c.lon });
+      return '<circle class="gate-map-city" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2"></circle>' +
+        '<text class="gate-map-label" x="' + (p.x + 6).toFixed(1) + '" y="' + (p.y + 3).toFixed(1) + '">' + c.name + '</text>';
+    }).join('');
+    wrap.innerHTML =
+      '<div class="gate-map-wrap"><svg class="gate-map-svg" viewBox="0 0 600 260" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect x="4" y="4" width="592" height="252" fill="#071022" stroke="rgba(125,192,255,0.5)" stroke-width="1"></rect>' +
+        '<text class="gate-map-title" x="300" y="150" text-anchor="middle">KANSAS</text>' +
+        cities + markers +
+      '</svg></div>';
+    wrap.querySelectorAll('.gate-marker').forEach(function(m) {
+      m.addEventListener('click', function() { openGateDetail(m.getAttribute('data-gate-id')); });
+    });
+
+    var list = document.getElementById('gateList');
+    if (list) {
+      if (!gates.length) {
+        list.innerHTML = '<div class="gate-list-empty">No gates are open right now.</div>';
+      } else {
+        list.innerHTML = '';
+      }
+    }
+    var badge = document.getElementById('gateActiveBadge');
+    if (badge) badge.style.display = gateEntry ? 'inline-block' : 'none';
+  }
+
+  function timeUntil(ts) {
+    var ms = Math.max(0, ts - Date.now());
+    var days = Math.floor(ms / 86400000);
+    var hours = Math.floor((ms % 86400000) / 3600000);
+    return days > 0 ? days + 'd ' + hours + 'h' : hours + 'h';
+  }
+
+  function openGateDetail(id) {
+    selectedGateId = id;
+    var g = gateById(id);
+    if (!g) return;
+    var body = document.getElementById('gateDetailBody');
+    var info = g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank];
+    var inside = gateEntry && gateEntry.gateId === g.id;
+    var someoneElseInside = gateEntry && gateEntry.gateId !== g.id;
+
+    var meta = '<div class="gate-detail-meta">' +
+      '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
+      '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared<br>' +
+      (g.special ? '' : '<b>CLEAR REWARD:</b> roughly ' + info.levels + ' level' + (info.levels === 1 ? '' : 's') + ', scaled by the boss and how many enemies fall') +
+      '</div>';
+
+    var actions;
+    if (g.special) {
+      actions = '<div class="gate-special-note">This gate is keyed to something you don\'t have yet. Entry is locked until the right item, level or System command unlocks it.</div>' +
+        '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
+    } else if (inside) {
+      actions = '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
+    } else if (someoneElseInside) {
+      actions = '<div class="gate-special-note">You are already inside another gate. Leave it first.</div>' +
+        '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
+    } else {
+      actions = '<div class="loot-decision-row">' +
+        '<button class="use-btn" id="gateEnterBtn">ENTER GATE</button>' +
+        '<button class="stash-btn" id="gateDetailCloseBottomBtn">CANCEL</button>' +
+      '</div>';
+    }
+
+    body.innerHTML =
+      '<div style="text-align:center;">' +
+        '<div class="gate-detail-rank" style="color:' + info.color + ';">' + (g.special ? '✦' : g.rank) + '</div>' +
+        '<div class="gate-detail-name">' + info.name + ' GATE</div>' +
+      '</div>' +
+      '<div class="gate-detail-desc">' + escapeHtml(info.desc) + '</div>' +
+      meta + actions;
+
+    var enterBtn = document.getElementById('gateEnterBtn');
+    if (enterBtn) enterBtn.addEventListener('click', function() { enterGate(g.id); });
+    var closeBtn = document.getElementById('gateDetailCloseBottomBtn');
+    if (closeBtn) closeBtn.addEventListener('click', function() { document.getElementById('gateDetailOverlay').classList.remove('show'); });
+
+    document.getElementById('gateDetailOverlay').classList.add('show');
+  }
+
+  function enterGate(id) {
+    var g = gateById(id);
+    if (!g || g.special || gateEntry) return;
+    gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed };
+    saveGateEntry();
+    document.getElementById('gateDetailOverlay').classList.remove('show');
+    renderGateMap();
+    showToast(g.secretRed
+      ? '⚠ The gate seals shut behind you. This was a RED GATE — you are trapped until its boss falls.'
+      : 'You step into the ' + gateLabel(g) + ' gate.');
+  }
+
+  function leaveGate() {
+    if (!gateEntry || gateEntry.trapped) return;
+    gateEntry = null;
+    saveGateEntry();
+    renderGateMap();
+    showToast('You step back out. The gate is still open behind you.');
+  }
+
+  document.getElementById('gateOpenBtn').addEventListener('click', function() {
+    renderGateMap();
+    document.getElementById('gateOverlay').classList.add('show');
+  });
+  document.getElementById('gateCloseBtn').addEventListener('click', function() {
+    document.getElementById('gateOverlay').classList.remove('show');
+  });
+  document.getElementById('gateDetailCloseBtn').addEventListener('click', function() {
+    document.getElementById('gateDetailOverlay').classList.remove('show');
+  });
+  document.getElementById('gateStatusBanner').addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'gateLeaveBtn') leaveGate();
+  });
+
   function startNewQuestDay() {
     state = freshDayState();
     saveState();
@@ -3739,6 +4128,7 @@
     pruneBuffs();
     refreshShop();
     resolveDayTransition();
+    if (maintainGates() && document.getElementById('gateOverlay').classList.contains('show')) renderGateMap();
 
     var msLeft = Math.max(0, state.deadline - Date.now());
     var finished = allDone();
@@ -3795,6 +4185,7 @@
   renderGoldDisplays();
   renderPenaltyText();
   renderPenaltyButtonVisibility();
+  maintainGates();
   updateSaveStatus(checkStorageAvailable());
   tick();
   setInterval(tick, 1000);
