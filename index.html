@@ -1467,6 +1467,7 @@
   var FX = {
     temp: function(stat, amount, hours) { return { type: 'tempStat', stat: stat, amount: amount, hours: hours }; },
     gold: function(amount) { return { type: 'instantGold', amount: amount }; },
+    goldPct: function(pct) { return { type: 'goldPct', pct: pct }; },
     extend: function(hours) { return { type: 'extendDeadline', hours: hours }; },
     pct: function(pct) { return { type: 'shavePct', pct: pct }; },
     onePct: function(pct) { return { type: 'shaveOnePct', pct: pct }; },
@@ -1507,8 +1508,8 @@
       ['🥤', 'Dented Canteen', 'Whatever is inside is lukewarm and somehow exactly enough.', FX.temp('END', 1, 12)],
       ['👟', 'Worn Lucky Laces', 'Knotted so many times they remember your stride.', FX.temp('AGI', 1, 12)],
       ['📿', 'Chipped Vitality Bead', 'One bead off a broken string, still warm to the touch.', FX.temp('VIT', 1, 12)],
-      ['👝', 'Pouch of Old Coins', 'Light, jingling, and probably worth more than it looks.', FX.gold(15)],
-      ['💰', 'Tarnished Coin Purse', "Somebody's savings, now yours.", FX.gold(25)],
+      ['👝', 'Pouch of Old Coins', 'Light, jingling, and it somehow always matches what you already carry.', FX.goldPct(4)],
+      ['💰', 'Tarnished Coin Purse', "Empty on its own. It fills to match what's already in your pocket.", FX.goldPct(5)],
       ['🧭', 'Bent Compass', 'The needle wobbles, but it always points toward a little more time.', FX.extend(1)],
       ['🧣', 'Sweat-Stained Wrap', 'It has soaked up a hundred hard sessions and kept the worst of them.', FX.pct(10)],
       ['🔔', "Pacer's Bell", 'Its dull chime makes the last kilometer feel a bit shorter.', FX.km(0.5)],
@@ -1520,14 +1521,14 @@
       ['🧤', 'Scuffed Practice Gloves', 'The leather is thin, but it remembers your grip.', FX.grant('STR', 0.5)],
       ['⏱️', 'Wobbly Stopwatch', 'Loses a second here, gains one there, and somehow always leaves you fitter.', FX.grant('END', 0.5)],
       ['🧰', 'Battered Toolbox', 'The lid rattles. Something inside is worth keeping.', FX.loot(1)],
-      ['🎗️', 'Faded Victory Ribbon', 'Awarded for something long forgotten, yet it still feels lucky.', FX.combo(FX.gold(10), FX.gain(5, 1))],
+      ['🎗️', 'Faded Victory Ribbon', 'Awarded for something long forgotten. It still remembers what winning felt like.', FX.combo(FX.luck(1), FX.gain(5, 1))],
       ['💀', "Weakling's Wager", 'Cold to the touch. It promises a bigger reward to anyone who takes on a bigger burden.', FX.cursed('ex-pushups', 20)],
       ['🩸', 'Bloodied Hunter Coin', 'Every hunter who carried it came back with more. None came back unchanged.', FX.cursed('ex-situps', 20)],
       ['🦴', 'Bonebound Gate Token', 'Carved from something that died at the mouth of a dungeon gate.', FX.cursed('ex-squats', 20)],
       ['🕸️', 'Cobweb Dungeon Token', 'Sticky threads cling to it. The longer the road, the heavier the payout.', FX.cursed('ex-run', 2)],
       ['🥀', 'Withered Reward Seal', 'A seal that crumbles a little every time it is offered a fair deal.', FX.cursed('ex-situps', 25)],
       ['❓', 'Unmarked Vial', 'No label, no smell. Just a faint hum when you shake it.',
-        FX.mystery(FX.temp('STR', 1, 12), FX.temp('AGI', 1, 12), FX.gold(20), FX.gain(10, 1), FX.goldMult(20, 1), FX.luck(1), FX.grant('VIT', 0.5), FX.loot(1))],
+        FX.mystery(FX.temp('STR', 1, 12), FX.temp('AGI', 1, 12), FX.extend(1), FX.gain(10, 1), FX.goldMult(20, 1), FX.luck(1), FX.grant('VIT', 0.5), FX.loot(1))],
       ['❓', 'Sealed Paper Charm', 'The seal has never been broken. Something shifts inside when you hold it.',
         FX.mystery(FX.extend(1), FX.pct(10), FX.km(0.5), FX.reps(10), FX.onePct(20), FX.reroll())]
     ],
@@ -1537,8 +1538,8 @@
       ['🪶', "Windrunner's Anklet", 'Every step feels like a downhill one.', FX.temp('AGI', 2, 24)],
       ['🔥', 'Ember Flask', 'Sip it and the fire in your lungs stops feeling like a warning.', FX.temp('END', 2, 24)],
       ['🌱', 'Heartroot Tonic', 'Bitter, green, and oddly reassuring.', FX.temp('VIT', 2, 24)],
-      ['🗃️', "Merchant's Lockbox", 'The lock is broken, so the coins spill out easily.', FX.gold(45)],
-      ['📒', 'Gilded Ledger', 'Every page is a receipt marked "paid in full".', FX.gold(70)],
+      ['🗃️', "Merchant's Lockbox", 'The lock springs open and quietly adds its own interest to your balance.', FX.goldPct(8)],
+      ['📒', 'Gilded Ledger', 'Every page is a receipt, and the sum always rounds up in your favor.', FX.goldPct(10)],
       ['🕰️', "Traveler's Pocketwatch", 'It runs slow whenever you need it to.', FX.extend(2)],
       ['🎽', 'Tailwind Sash', 'A little wind at your back turns every rep lighter.', FX.pct(15)],
       ['🗡️', 'Whetstone of the Relentless', 'Every edge it touches forgets what it means to be dull.', FX.reps(20)],
@@ -1557,7 +1558,7 @@
       ['🪦', 'Gravemarker Token', 'Left where an ambitious hunter fell. It has been waiting for someone bolder.', FX.cursed('ex-run', 3)],
       ['🃏', "Gambler's Curse", 'Double or nothing, except nothing is not an option.', FX.cursed('ex-squats', 45)],
       ['❓', 'Veiled Idol', 'A faceless figure. It seems to lean closer when you look away.',
-        FX.mystery(FX.temp('STR', 2, 24), FX.temp('END', 2, 24), FX.gold(60), FX.gain(20, 1), FX.goldMult(40, 1), FX.luck(2), FX.grant('AGI', 1), FX.loot(2))],
+        FX.mystery(FX.temp('STR', 2, 24), FX.temp('END', 2, 24), FX.extend(2), FX.gain(20, 1), FX.goldMult(40, 1), FX.luck(2), FX.grant('AGI', 1), FX.loot(2))],
       ['❓', 'Locked Reliquary', 'No keyhole. The lid opens only when it decides to.',
         FX.mystery(FX.extend(2), FX.pct(15), FX.km(1), FX.reps(20), FX.onePct(35), FX.reroll())]
     ],
@@ -1567,8 +1568,8 @@
       ['👢', 'Phantom Greaves', 'Your footsteps no longer make a sound.', FX.temp('AGI', 3, 48)],
       ['🐉', 'Dragonheart Ember', 'A coal that never cools, glowing in your chest.', FX.temp('END', 3, 48)],
       ['🕊️', 'Sanctuary Dove', 'Where it perches, nothing hurts as much.', FX.temp('VIT', 3, 48)],
-      ['🏺', 'Amphora of Coin', 'Sealed with wax, heavy with gold.', FX.gold(100)],
-      ['👑', 'Royal Purse', 'Embroidered with the crest of a kingdom that no longer exists.', FX.gold(150)],
+      ['🏺', 'Amphora of Coin', 'Sealed with wax, heavy with gold that multiplies whatever you already hold.', FX.goldPct(15)],
+      ['👑', 'Royal Purse', 'Embroidered with the crest of a kingdom that paid its hunters well.', FX.goldPct(18)],
       ['⌛', 'Chrono Sand', 'Pour it out and the evening stretches.', FX.extend(3)],
       ['🌩️', "Stormcaller's Mantle", 'The thunder does some of the heavy lifting for you.', FX.pct(25)],
       ['⚔️', "Berserker's Oath", 'Swear it and the last thirty reps no longer feel necessary.', FX.reps(30)],
@@ -1587,7 +1588,7 @@
       ['🖤', 'Heart of the Fallen Hunter', 'Still beating. Still asking for one more kilometer.', FX.cursed('ex-run', 5)],
       ['🧟', 'Undying Legion Token', 'An army marches for you, but only if you march farther.', FX.cursed('ex-squats', 70)],
       ['❓', 'Veilbound Tome', 'The pages rewrite themselves every time you look away.',
-        FX.mystery(FX.temp('STR', 3, 48), FX.temp('AGI', 3, 48), FX.gold(120), FX.gain(35, 2), FX.goldMult(60, 2), FX.luck(3), FX.grant('VIT', 2), FX.loot(3))],
+        FX.mystery(FX.temp('STR', 3, 48), FX.temp('AGI', 3, 48), FX.extend(3), FX.gain(35, 2), FX.goldMult(60, 2), FX.luck(3), FX.grant('VIT', 2), FX.loot(3))],
       ['❓', 'Whispering Lantern', "It glows only when you're not looking directly at it.",
         FX.mystery(FX.extend(3), FX.pct(25), FX.reps(30), FX.skipOne(), FX.reroll(), FX.shield(1), FX.clear(1))]
     ],
@@ -1597,8 +1598,8 @@
       ['🥾', 'Stormstep Boots', 'You outrun the thunder every time.', FX.temp('AGI', 5, 72)],
       ['🌋', 'Eternal Furnace', 'A forge that never dims and never asks for fuel.', FX.temp('END', 5, 72)],
       ['🦅', 'Phoenix Plume', 'Wounds close as if they were never there.', FX.temp('VIT', 5, 72)],
-      ['🐲', "Dragon's Hoard", 'One coin at a time, a mountain of them.', FX.gold(300)],
-      ['🏦', "Sovereign's Vault", 'Only opens for someone who has earned it.', FX.gold(500)],
+      ['🐲', "Dragon's Hoard", 'One coin at a time, a mountain of them, and it just doubled yours.', FX.goldPct(100)],
+      ['🏦', "Sovereign's Vault", 'Only opens for someone who has earned it, and pays out more than double.', FX.goldPct(120)],
       ['🌌', 'Timeless Hourglass', 'The stars stop turning while you catch your breath.', FX.extend(4)],
       ['⛈️', 'Tempest Regalia', 'Armor woven from a storm that never ends.', FX.pct(40)],
       ['🚩', "Warlord's Standard", 'Raise it and the army marches for you.', FX.reps(50)],
@@ -1617,7 +1618,7 @@
       ['🗿', 'Token of the Fallen Titan', 'It weighs more than it should, and it gets heavier when you look at it.', FX.cursed('ex-run', 7.5)],
       ['🦂', "Death Sovereign's Mark", 'Burned into the palm. The pain is the price of admission.', FX.cursed('ex-squats', 100)],
       ['❓', 'Voidbound Relic', 'It feels heavier every time you look at it.',
-        FX.mystery(FX.temp('STR', 5, 72), FX.temp('AGI', 5, 72), FX.gold(400), FX.gain(75, 3), FX.goldMult(150, 3), FX.luck(5), FX.grant('END', 3), FX.loot(5))],
+        FX.mystery(FX.temp('STR', 5, 72), FX.temp('AGI', 5, 72), FX.extend(4), FX.gain(75, 3), FX.goldMult(150, 3), FX.luck(5), FX.grant('END', 3), FX.loot(5))],
       ['❓', 'Whisper of the Abyss', 'You hear it, but it never quite says the same thing twice.',
         FX.mystery(FX.extend(4), FX.pct(40), FX.reps(50), FX.skipOne(), FX.shield(3), FX.clear('all'), FX.waive(true))]
     ]
@@ -1698,6 +1699,7 @@
       case 'goldMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% gold.';
       case 'luck': return 'Your next ' + (eff.rolls > 1 ? eff.rolls + ' loot rolls are' : 'loot roll is') + ' rolled twice, and the rarer result wins.';
       case 'instantGold': return 'Gain ' + eff.amount + ' gold immediately.';
+      case 'goldPct': return 'Instantly gain ' + eff.pct + '% of your current gold holdings. The more gold you have banked when you use it, the more it pays.';
       case 'grantLoot': return 'Roll ' + eff.count + ' extra loot drop' + (eff.count > 1 ? 's' : '') + ' immediately and stash ' + (eff.count > 1 ? 'them' : 'it') + ' in your inventory.';
       case 'statGrant': return 'Permanently gain +' + fmt(eff.amount) + ' ' + eff.stat + '.';
       case 'title': return 'Take the title "' + eff.title + '", shown on your Status screen.';
@@ -1766,7 +1768,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-09-28-waive-trade';
+  var APP_VERSION = '2026-09-28-gold-pct-items';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -2792,6 +2794,7 @@
       case 'goldMult': return '+' + eff.pct + '% gold on your next ' + (eff.clears > 1 ? eff.clears + ' clears' : 'clear');
       case 'luck': return 'lucky loot ×' + eff.rolls;
       case 'instantGold': return '+' + eff.amount + ' gold';
+      case 'goldPct': return '+' + eff.pct + '% of current gold';
       case 'grantLoot': return '+' + eff.count + ' loot drop' + (eff.count > 1 ? 's' : '');
       case 'statGrant': return '+' + fmt(eff.amount) + ' ' + eff.stat + ' (permanent)';
       case 'title': return 'title: ' + eff.title;
@@ -2858,6 +2861,14 @@
       case 'goldMult': buffs.goldMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
       case 'luck': buffs.luck += eff.rolls; saveBuffs(); break;
       case 'instantGold': goldBalance += eff.amount; saveGold(); renderGoldDisplays(); break;
+      case 'goldPct': {
+        var pctGain = Math.round(goldBalance * eff.pct / 100);
+        goldBalance += pctGain;
+        saveGold();
+        renderGoldDisplays();
+        text = '+' + pctGain + ' gold (' + eff.pct + '% of your ' + (goldBalance - pctGain) + ' banked)';
+        break;
+      }
       case 'statGrant':
         stats[eff.stat] = Math.round((stats[eff.stat] + eff.amount) * 100) / 100;
         saveStats();
