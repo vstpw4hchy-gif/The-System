@@ -2076,7 +2076,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-05-system-style-pass';
+  var APP_VERSION = '2026-10-05-no-stray-system-gates';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -4435,10 +4435,34 @@
       id: 'g' + Date.now() + Math.random().toString(36).slice(2, 7),
       rank: null,
       special: true,
+      byKey: true,        // opened by redeeming a Gate Key: the only way a System-Exclusive gate may exist
       lat: spot.lat, lon: spot.lon,
       createdAt: Date.now(),
       secretRed: false
     };
+  }
+
+  // A System-Exclusive gate may only exist because a Gate Key was redeemed. An earlier version of the app
+  // sometimes opened them at random, and those were saved into your gate list and carried over every
+  // update, so they must be cleaned out. Each redeemed key (kept in the inventory, marked used) accounts
+  // for exactly one System gate; any System gate beyond that has no key behind it and is removed, oldest
+  // first (the random ones all pre-date every key). Returns true if anything was removed.
+  function removeUnbackedSpecialGates() {
+    var specials = gates.filter(function(g) { return g.special; });
+    if (!specials.length) return false;
+    var redeemed = inventory.filter(function(it) {
+      var e = getEffect(it);
+      return it.used && e && e.type === 'gateKey';
+    }).length;
+    var tagged = specials.filter(function(g) { return g.byKey; }).length;
+    var untagged = specials.filter(function(g) { return !g.byKey; }).sort(function(a, b) { return a.createdAt - b.createdAt; });
+    var allowedUntagged = Math.max(0, redeemed - tagged);       // older key-gates saved before gates were marked
+    var drop = untagged.slice(0, Math.max(0, untagged.length - allowedUntagged));
+    if (!drop.length) return false;
+    var dropIds = drop.map(function(g) { return g.id; });
+    gates = gates.filter(function(g) { return dropIds.indexOf(g.id) < 0; });
+    if (gateEntry && dropIds.indexOf(gateEntry.gateId) >= 0) { gateEntry = null; saveGateEntry(); }
+    return true;
   }
 
   // Milestone-granted keys: a one-time reward the first time the player ever
@@ -4520,6 +4544,7 @@
   // Drops expired gates and tops the map back up to GATE_TARGET_COUNT. Cheap to
   // call often; only does real work when a gate has actually broken or is missing.
   function maintainGates() {
+    var removedStray = removeUnbackedSpecialGates();
     var hadBroken = gates.some(gateIsBroken);
     if (hadBroken) {
       if (gateEntry && gates.some(function(g) { return g.id === gateEntry.gateId && gateIsBroken(g); })) {
@@ -4533,7 +4558,7 @@
       gates.push(spawnGate(hunterLevel));
       added = true;
     }
-    var changed = hadBroken || added;
+    var changed = hadBroken || added || removedStray;
     if (changed) saveGates();
     return changed;
   }
