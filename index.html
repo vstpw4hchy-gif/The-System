@@ -476,6 +476,8 @@
   .gate-map-hint { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; color: var(--text-dim); text-align: center; margin-bottom: 12px; }
   .gate-map-city { fill: #3a5a9c; cursor: pointer; }
   .gate-map-city-label { cursor: pointer; }
+  .gate-map-district { fill: rgba(125,192,255,0.5); }
+  .gate-map-district-label { font-size: 7px; fill: rgba(125,192,255,0.55); letter-spacing: 0.02em; }
   .gate-map-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; fill: #6f90c2; letter-spacing: 0.05em; }
   .gate-map-city { fill: #3a5a9c; }
   .gate-map-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 22px; fill: rgba(125,192,255,0.18); letter-spacing: 0.1em; }
@@ -1289,6 +1291,133 @@
     .stats-level-num { font-size: 64px; }
     .gate-map-svg { max-height: 78vh; }
   }
+
+  /* ---- Hunter profile, rank beside level, and the evaluation stone ---- */
+  .lvl-rank-row { display: flex; align-items: stretch; justify-content: center; flex-wrap: wrap; gap: 6px clamp(12px, 4vw, 28px); margin: 4px 0 2px; }
+  .lvl-block, .rank-block { display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; min-width: 0; }
+  .lvl-rank-row .stats-level-num { font-size: var(--lvl-size, 104px); line-height: 1.05; margin: 8px 0 6px; }
+  .rank-letter {
+    font-family: 'Orbitron', sans-serif; font-weight: 800; line-height: 1.05; margin: 8px 0 6px;
+    font-size: calc(var(--lvl-size, 104px) * 0.6);
+    color: var(--rank-color, #6f8bb8);
+    text-shadow: 0 0 10px var(--rank-color, transparent), 0 0 30px var(--rank-glow, transparent);
+  }
+  .rank-letter.unranked { color: #4d6a92; text-shadow: none; }
+  .rank-note { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 6px; }
+  @media (orientation: landscape) and (max-height: 540px) {
+    .lvl-rank-row .stats-level-num { font-size: min(var(--lvl-size, 104px), 64px); }
+    .rank-letter { font-size: calc(min(var(--lvl-size, 104px), 64px) * 0.6); }
+  }
+  /* 16px minimum keeps iPhones from zooming the page when the name field is focused */
+  .name-input {
+    flex: 1; min-width: 0; text-align: right; background: transparent; border: 0; border-bottom: 1px dashed rgba(125,192,255,0.55);
+    border-radius: 0; -webkit-appearance: none; appearance: none; outline: none; padding: 0 2px 1px;
+    color: #eaf6ff; font-family: 'Share Tech Mono', monospace; font-size: 16px; text-shadow: 0 0 8px rgba(110,180,255,0.6);
+  }
+  .name-input::placeholder { color: rgba(170,200,235,0.5); }
+  .name-input:focus { border-bottom: 1px solid #a9dcff; }
+  .assess-row { margin-top: 12px; text-align: center; }
+  .assess-btn {
+    padding: 8px 16px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; max-width: 100%;
+    color: #efe6ff; background: linear-gradient(180deg, rgba(120,90,255,0.36), rgba(30,16,80,0.74));
+    border: 1px solid rgba(178,139,255,0.75); text-shadow: 0 0 8px rgba(178,139,255,0.85);
+    box-shadow: inset 0 0 12px rgba(150,110,255,0.25), 0 0 10px rgba(130,100,255,0.25);
+  }
+  .assess-btn:active { background: linear-gradient(180deg, rgba(160,130,255,0.55), rgba(50,30,120,0.85)); }
+  .assess-btn.cooldown { opacity: 0.55; }
+  @media (max-width: 360px) { .assess-btn { padding: 8px 10px; font-size: 12px; letter-spacing: 0.07em; } }
+  #assessOverlay, #assessCooldownOverlay { z-index: 70; }
+  #assessResultOverlay { z-index: 80; }
+  .assess-dialogue { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 600; line-height: 1.5; text-align: center; color: #eaf6ff; margin: 6px 4px 18px; }
+  .assess-dialogue b { color: #d8c4ff; font-weight: 700; text-shadow: 0 0 10px rgba(178,139,255,0.9); word-break: break-word; }
+  .stone-wrap { position: relative; width: min(62vw, 52vh, 250px); aspect-ratio: 1 / 1; margin: 34px auto 30px; --p: 0; }
+  .stone-aura {
+    position: absolute; inset: -30%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(150,110,255,0.8) 0%, rgba(90,60,220,0.4) 36%, rgba(40,20,120,0) 70%);
+    opacity: calc(0.55 + var(--p) * 0.45); transform: scale(calc(0.95 + var(--p) * 0.45));
+    transition: opacity 0.45s ease, transform 0.45s ease; animation: auraPulse 2.6s ease-in-out infinite;
+  }
+  .stone-ring {
+    position: absolute; inset: -7%; border-radius: 50%; pointer-events: none; border: 1px dashed rgba(200,170,255,0.6);
+    opacity: calc(0.5 + var(--p) * 0.5); box-shadow: 0 0 16px rgba(150,110,255,0.5), inset 0 0 16px rgba(150,110,255,0.35);
+    transition: opacity 0.45s ease; animation: ringSpin 14s linear infinite;
+  }
+  .stone-wrap.holding .stone-aura { transition-duration: 0.12s; }
+  .stone {
+    position: absolute; inset: 0; border-radius: 50%; cursor: pointer; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(circle at 32% 26%, #4a4d66 0%, #1a1b2b 24%, #07070f 52%, #000 80%);
+    box-shadow: inset -12px -16px 30px rgba(0,0,0,0.85), inset 8px 10px 22px rgba(120,120,170,0.2),
+                0 0 calc(26px + var(--p) * 56px) rgba(140,100,255, calc(0.5 + var(--p) * 0.45));
+    transition: box-shadow 0.45s ease;
+  }
+  .stone::after { content: ""; position: absolute; top: 11%; left: 19%; width: 28%; height: 17%; border-radius: 50%; transform: rotate(-32deg);
+    background: radial-gradient(ellipse, rgba(255,255,255,0.4), rgba(255,255,255,0) 70%); pointer-events: none; }
+  .stone-wrap.holding .stone { transition-duration: 0.12s; }
+  @keyframes auraPulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
+  @keyframes ringSpin { to { transform: rotate(360deg); } }
+  .assess-hint { text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 0.04em; color: var(--text-dim); min-height: 36px; line-height: 1.5; }
+  .assess-congrats { text-align: center; font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 600; line-height: 1.4; color: #eaf6ff; margin: 8px 0 0; }
+  .assess-congrats b { color: #d8c4ff; font-weight: 700; text-shadow: 0 0 10px rgba(178,139,255,0.9); word-break: break-word; }
+  .assess-rank-big {
+    text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 800; line-height: 1.05; margin: 8px 0 4px;
+    font-size: clamp(88px, 28vw, 140px); color: var(--rank-color, #fff);
+    text-shadow: 0 0 14px var(--rank-color, transparent), 0 0 46px var(--rank-glow, transparent);
+  }
+  .assess-result-title { text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.1em; color: var(--rank-color, #fff); text-shadow: 0 0 12px var(--rank-glow, transparent); margin: 2px 0 6px; }
+  .assess-result-note { text-align: center; font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 600; color: #cfe3fb; margin: 0 6px 10px; }
+  .assess-result-sub { text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); line-height: 1.6; margin: 0 0 14px; }
+  .cd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+  .cd-box { text-align: center; padding: 12px 2px 8px; background: linear-gradient(180deg, rgba(20,56,138,0.30), rgba(4,14,46,0.66)); border: 1px solid rgba(125,192,255,0.38); }
+  .cd-num { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: clamp(20px, 6.5vw, 34px); color: #fff; text-shadow: 0 0 12px rgba(110,180,255,0.9); font-variant-numeric: tabular-nums; }
+  .cd-label { font-family: 'Share Tech Mono', monospace; font-size: 9.5px; letter-spacing: 0.05em; color: var(--text-dim); margin-top: 4px; }
+  .assess-body { display: grid; grid-template-areas: "dialogue" "stone" "hint"; }
+  .assess-body .assess-dialogue { grid-area: dialogue; }
+  .assess-body .stone-wrap { grid-area: stone; }
+  .assess-body .assess-hint { grid-area: hint; }
+  /* A phone on its side is short: put the stone beside the text so it is fully on screen without scrolling */
+  @media (orientation: landscape) and (max-height: 540px) {
+    .assess-body { grid-template-columns: 1fr auto; grid-template-areas: "dialogue stone" "hint stone"; column-gap: 24px; align-items: center; }
+    .assess-body .assess-dialogue { font-size: 16px; margin: 0; text-align: left; align-self: end; }
+    .assess-body .assess-hint { text-align: left; align-self: start; margin-top: 10px; min-height: 0; }
+    .assess-body .stone-wrap { width: min(42vh, 190px); margin: 26px 30px 26px 0; }
+    .assess-rank-big { font-size: min(clamp(88px, 28vw, 140px), 20vh); margin: 2px 0 2px; }
+    .assess-congrats { font-size: 17px; margin-top: 0; }
+    .assess-result-note { font-size: 15px; margin-bottom: 4px; }
+    .assess-result-sub { margin-bottom: 8px; }
+    .cd-grid { margin: 8px 0; }
+    .assess-dialogue { margin-bottom: 10px; }
+  }
+
+  /* ---- System icon set (clean line icons instead of emoji) ---- */
+  .ico { display: inline-flex; width: 1.25em; height: 1.25em; flex: none; vertical-align: -0.25em; }
+  .ico svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px currentColor); }
+  .loot-box-icon, .loot-tap-icon { display: flex; justify-content: center; line-height: 1; color: #7cc4ff; }
+  .loot-tap-icon { color: var(--green); }
+  .loot-box-icon .ico, .loot-tap-icon .ico { width: 1em; height: 1em; }
+  .penalty-icon { color: var(--red); font-size: 44px; line-height: 1; display: flex; justify-content: center; }
+  .penalty-icon .ico { width: 1em; height: 1em; }
+  .trade-btn .ico, .trade-done .ico, .gate-status-banner .ico, .item-detail-status .ico { width: 1.15em; height: 1.15em; }
+  .trade-done .ico { vertical-align: -0.3em; }
+  /* waive chooser buttons: same glowing slab as every other System button */
+  .trade-pick-row button {
+    background: linear-gradient(180deg, rgba(48,110,230,0.42), rgba(10,32,96,0.72)); border: 1px solid rgba(150,206,255,0.7);
+    color: #eaf5ff; text-shadow: 0 0 8px rgba(110,180,255,0.85); letter-spacing: 0.12em;
+    box-shadow: inset 0 0 14px rgba(90,165,255,0.25), 0 0 10px rgba(60,140,255,0.22);
+  }
+  .trade-pick-row button:active { background: linear-gradient(180deg, rgba(90,160,255,0.62), rgba(20,50,130,0.85)); }
+  /* phone handling */
+  button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  button:focus-visible, .name-input:focus-visible { outline: 2px solid #a9dcff; outline-offset: 2px; }
+  .inv-overlay, .penalty-overlay { overscroll-behavior: contain; }
+  .code-box { font-size: 16px; }      /* 16px keeps iPhones from zooming the page when a box is tapped */
+  /* gate map: hologram table */
+  .gate-map-wrap { background: radial-gradient(ellipse at 50% 40%, #0a1d4a 0%, #030a1e 75%); box-shadow: inset 0 0 30px rgba(80,160,255,0.18); }
+  .gate-map-grid line { stroke: rgba(110,180,255,0.1); stroke-width: 1; }
+  .gate-ring { transform-box: fill-box; transform-origin: center; animation: ringSpin 7s linear infinite; }
+  .gate-halo { transform-box: fill-box; transform-origin: center; animation: haloPulse 2.6s ease-in-out infinite; }
+  @keyframes haloPulse { 0%, 100% { transform: scale(0.85); opacity: 0.1; } 50% { transform: scale(1.25); opacity: 0.28; } }
+  .gate-rank { font-family: 'Orbitron', sans-serif; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -1300,11 +1429,11 @@
       <div class="h1-sub">A DAILY QUEST HAS ARRIVED.</div>
     </div>
     <div class="header-btn-row">
-      <button class="inv-btn" id="invOpenBtn">🎒 INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
-      <button class="inv-btn" id="shopOpenBtn">🛒 SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
-      <button class="inv-btn" id="statsOpenBtn">📊 STATS</button>
-      <button class="inv-btn gate-open-btn" id="gateOpenBtn">🌀 GATES <span class="inv-badge" id="gateActiveBadge" style="display:none;">1</span></button>
-      <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;">⚠️ PENALTY</button>
+      <button class="inv-btn" id="invOpenBtn"><span data-ico="cube"></span> INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
+      <button class="inv-btn" id="shopOpenBtn"><span data-ico="coin"></span> SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
+      <button class="inv-btn" id="statsOpenBtn"><span data-ico="bars"></span> STATS</button>
+      <button class="inv-btn gate-open-btn" id="gateOpenBtn"><span data-ico="portal"></span> GATES <span class="inv-badge" id="gateActiveBadge" style="display:none;">1</span></button>
+      <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;"><span data-ico="warning"></span><span id="penaltyBtnLabel">PENALTY</span></button>
     </div>
   </header>
 
@@ -1387,11 +1516,11 @@
         <div class="loot-label">DAILY LOOT DROP</div>
         <div id="lootArea">
           <div class="loot-box-visual" id="lootLocked">
-            <div class="loot-box-icon">🔒</div>
+            <div class="loot-box-icon" data-ico="lock"></div>
             <div class="loot-box-text">Clear today's quest to unlock a random item drop.</div>
           </div>
         </div>
-        <button class="inv-btn" id="codexOpenBtn" style="margin-top:12px; width:100%;">📖 VIEW ITEM CODEX</button>
+        <button class="inv-btn" id="codexOpenBtn" style="margin-top:12px; width:100%;"><span data-ico="book"></span> VIEW ITEM CODEX</button>
       </div>
     </div>
 
@@ -1404,7 +1533,7 @@
 
   <div class="reset-row">
     <div class="save-status" id="saveStatus">Checking storage&hellip;</div>
-    <button class="reset-btn" id="backupOpenBtn">💾 BACKUP / RESTORE</button>
+    <button class="reset-btn" id="backupOpenBtn"><span data-ico="download"></span> BACKUP / RESTORE</button>
     <button class="reset-btn" id="resetBtn">RESET QUEST PROGRESS</button>
   </div>
 </div>
@@ -1412,7 +1541,7 @@
 <div class="inv-overlay" id="invOverlay">
   <div class="inv-panel">
     <div class="inv-header">
-      <div class="inv-title">HUNTER INVENTORY</div>
+      <div class="inv-title">INVENTORY</div>
       <button class="inv-close" id="invCloseBtn">CLOSE</button>
     </div>
     <div id="invList"></div>
@@ -1444,7 +1573,7 @@
 <div class="inv-overlay" id="shopOverlay">
   <div class="inv-panel">
     <div class="inv-header">
-      <div class="inv-title">HUNTER SHOP</div>
+      <div class="inv-title">SHOP</div>
       <button class="inv-close" id="shopCloseBtn">CLOSE</button>
     </div>
     <div class="loot-box-text" style="margin-bottom:10px;">Spend the gold you earn from cleared quests. Today's stock changes every day and each item is limited to one. Anything you buy sells back for 80% of its price. Balance: <span id="shopGoldLine">0</span> gold.</div>
@@ -1486,7 +1615,7 @@
 <div class="inv-overlay" id="gateOverlay">
   <div class="inv-panel">
     <div class="inv-header">
-      <div class="inv-title">GATE MAP — KANSAS</div>
+      <div class="inv-title">GATE MAP</div>
       <button class="inv-close" id="gateCloseBtn">CLOSE</button>
     </div>
     <div id="gateStatusBanner"></div>
@@ -1513,10 +1642,61 @@
   </div>
 </div>
 
+<div class="inv-overlay" id="assessOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">EVALUATION</div>
+      <button class="inv-close" id="assessCloseBtn">CANCEL</button>
+    </div>
+    <div class="assess-body">
+      <div class="assess-dialogue">Welcome Hunter <b id="assessName"></b> to your hunter evaluation. Please place your hand on the black stone and wait for your results.</div>
+      <div class="stone-wrap" id="stoneWrap">
+        <div class="stone-aura"></div>
+        <div class="stone-ring"></div>
+        <div class="stone" id="evalStone" role="button" aria-label="Black stone. Press and hold."></div>
+      </div>
+      <div class="assess-hint" id="assessHint"></div>
+    </div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="assessResultOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">RESULT</div>
+      <button class="inv-close" id="assessResultCloseBtn">CLOSE</button>
+    </div>
+    <div class="assess-congrats">Congratulations Hunter <b id="assessResultName"></b>, your rank is</div>
+    <div class="assess-rank-big" id="assessResultRank">E</div>
+    <div class="assess-result-title" id="assessResultTitle"></div>
+    <div class="assess-result-note" id="assessResultNote"></div>
+    <div class="assess-result-sub" id="assessResultSub"></div>
+    <div class="loot-decision-row"><button class="stash-btn" id="assessResultOkBtn" style="flex:none; width:100%;">CONTINUE</button></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="assessCooldownOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">EVALUATION</div>
+      <button class="inv-close" id="assessCooldownCloseBtn">CLOSE</button>
+    </div>
+    <div class="assess-dialogue" id="assessCooldownText"></div>
+    <div class="cd-grid">
+      <div class="cd-box"><div class="cd-num" id="cdDays">00</div><div class="cd-label">DAYS</div></div>
+      <div class="cd-box"><div class="cd-num" id="cdHours">00</div><div class="cd-label">HOURS</div></div>
+      <div class="cd-box"><div class="cd-num" id="cdMinutes">00</div><div class="cd-label">MINUTES</div></div>
+      <div class="cd-box"><div class="cd-num" id="cdSeconds">00</div><div class="cd-label">SECONDS</div></div>
+    </div>
+    <div class="assess-result-sub" id="assessCooldownSub"></div>
+    <div class="loot-decision-row" id="assessBeginRow" style="display:none;"><button class="use-btn" id="assessBeginBtn">BEGIN EVALUATION</button></div>
+  </div>
+</div>
+
 <div class="penalty-overlay" id="penaltyOverlay">
   <div class="penalty-box panel">
     <div class="sys-title danger"><span>Warning</span></div>
-    <div class="penalty-icon">⚠️</div>
+    <div class="penalty-icon" data-ico="warning"></div>
     <div class="penalty-heading" id="penaltyHeading">PENALTY ENFORCEMENT INITIATED</div>
     <div class="penalty-subheading" id="penaltySubheading">DAILY QUEST FAILED</div>
     <div class="penalty-desc" id="penaltyOverlayText">—</div>
@@ -1538,6 +1718,24 @@
     { id: 'ex-squats',  target: 100, kind: 'int' },
     { id: 'ex-run',     target: 10,  kind: 'float' }
   ];
+
+  // ---- System-style line icons: monochrome, glow in the colour of the text beside them ----
+  var ICON_PATHS = {
+    cube: '<path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/>',
+    coin: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5v11M15 9.4c0-1.2-1.3-2-3-2s-3 .8-3 2c0 2.6 6 1.4 6 4.2 0 1.2-1.3 2-3 2s-3-.8-3-2"/>',
+    bars: '<path d="M5 20v-8M12 20V4M19 20v-5"/>',
+    portal: '<ellipse cx="12" cy="12" rx="5.5" ry="9"/><ellipse cx="12" cy="12" rx="2" ry="5"/>',
+    warning: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.4v.2"/>',
+    book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5V5.5M9 7.5h6"/>',
+    download: '<path d="M12 3.5v11M7.5 10.5l4.5 4.5 4.5-4.5M4.5 20h15"/>',
+    lock: '<rect x="5" y="11" width="14" height="9.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    swap: '<path d="M4 8h14.5l-3.5-3.5M20 16H5.5L9 19.5"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"/>'
+  };
+  function ico(name) {
+    return '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ICON_PATHS[name] || '') + '</svg></span>';
+  }
 
   function todayKey() {
     var d = new Date();
@@ -1878,7 +2076,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-09-28-gates';
+  var APP_VERSION = '2026-10-05-system-style-pass';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -2351,7 +2549,7 @@
       el.textContent = 'Progress saved on this device \u00b7 ' + hh + ':' + mm + ':' + ss;
       el.classList.remove('warn');
     } else {
-      el.textContent = '\u26a0 Could not save — progress may be lost when this closes. Try opening this page in Safari/Chrome directly instead of an in-app preview.';
+      el.textContent = 'Could not save — progress may be lost when this closes. Try opening this page in Safari/Chrome directly instead of an in-app preview.';
       el.classList.add('warn');
     }
   }
@@ -2728,19 +2926,19 @@
   function renderLootArea() {
     var lootArea = document.getElementById('lootArea');
     if (!allDone()) {
-      lootArea.innerHTML = '<div class="loot-box-visual" id="lootLocked"><div class="loot-box-icon">🔒</div><div class="loot-box-text">Clear today\'s quest to unlock a random item drop.</div></div>';
+      lootArea.innerHTML = '<div class="loot-box-visual" id="lootLocked"><div class="loot-box-icon">' + ico('lock') + '</div><div class="loot-box-text">Clear today\'s quest to unlock a random item drop.</div></div>';
       return;
     }
 
     if (state.mods.waivedAll && !state.mods.waiveRewards) {
-      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">🛌</div><div class="loot-box-text">Rest day — today\'s quest was waived, so there is no loot drop.</div></div>';
+      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">' + ico('moon') + '</div><div class="loot-box-text">Rest day — today\'s quest was waived, so there is no loot drop.</div></div>';
       return;
     }
 
     if (state.pendingItem && !state.pendingRevealed) {
       lootArea.innerHTML =
         '<div class="loot-tap-box" id="lootTapBox">' +
-          '<div class="loot-tap-icon">📦</div>' +
+          '<div class="loot-tap-icon">' + ico('cube') + '</div>' +
           '<div class="loot-tap-label">TAP TO OPEN TODAY\'S DROP</div>' +
           '<div class="loot-tap-sub">Quest cleared — a reward is waiting</div>' +
         '</div>';
@@ -2780,7 +2978,7 @@
       return;
     }
 
-    lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">📦</div><div class="loot-box-text">Quest cleared. Rolling for loot&hellip;</div></div>';
+    lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">' + ico('cube') + '</div><div class="loot-box-text">Quest cleared. Rolling for loot&hellip;</div></div>';
   }
 
   function renderInventoryBadge() {
@@ -3189,7 +3387,7 @@
 
     if (state.mods.tradeInfo) {
       var info = state.mods.tradeInfo;
-      el.innerHTML = '<div class="trade-done">⚖ TRADE MADE TODAY &middot; WAIVED ' + escapeHtml(info.waivedName.toUpperCase()) +
+      el.innerHTML = '<div class="trade-done">' + ico('swap') + ' TRADE MADE TODAY &middot; WAIVED ' + escapeHtml(info.waivedName.toUpperCase()) +
         ' &middot; DOUBLED ' + escapeHtml(info.doubledName.toUpperCase()) + '</div>';
       return;
     }
@@ -3200,7 +3398,7 @@
     }
 
     if (tradeStep === null) {
-      el.innerHTML = '<button class="trade-btn" id="tradeStartBtn">⚖ WAIVE ONE, DOUBLE ANOTHER</button>';
+      el.innerHTML = '<button class="trade-btn" id="tradeStartBtn">' + ico('swap') + ' WAIVE ONE, DOUBLE ANOTHER</button>';
       document.getElementById('tradeStartBtn').addEventListener('click', function() {
         tradeStep = 'choose';
         renderTradeBlock();
@@ -3319,7 +3517,7 @@
         '</div>';
     } else {
       if (item.used) {
-        statusHtml = '<div class="item-detail-status">✅ Already redeemed</div>';
+        statusHtml = '<div class="item-detail-status">' + ico('check') + ' Already redeemed</div>';
         actionsHtml =
           '<div class="loot-decision-row">' +
             '<button class="stash-btn" id="detailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button>' +
@@ -3526,18 +3724,33 @@
       barPct = Math.round(questProgress() * 100);
     }
 
+    var rankInfo = hunterProfile.rank ? HUNTER_RANK_INFO[hunterProfile.rank] : null;
+    var digits = String(hunterLevel).length;
+    // Level stays large; its size steps down a little for 3+ digit levels so the rank always fits beside it.
+    var lvlSize = digits <= 2 ? 'clamp(60px, 26vw, 104px)' : (digits === 3 ? 'clamp(48px, 20vw, 88px)' : 'clamp(38px, 14vw, 68px)');
+    var evaluated = hunterProfile.assessedAt ? new Date(hunterProfile.assessedAt).toLocaleDateString() : 'NEVER';
+
     var html =
       '<div class="stats-level-card panel' + (leveled ? ' leveled' : '') + '">' +
         '<div class="sys-title"><span>Player</span></div>' +
-        '<div class="stats-level-label">LEVEL</div>' +
-        '<div class="stats-level-num">' + hunterLevel + '</div>' +
+        '<div class="lvl-rank-row" style="--lvl-size:' + lvlSize + ';">' +
+          '<div class="lvl-block"><div class="stats-level-label">LEVEL</div><div class="stats-level-num">' + hunterLevel + '</div></div>' +
+          '<div class="rank-block"><div class="stats-level-label">RANK</div>' +
+            (rankInfo
+              ? '<div class="rank-letter" style="--rank-color:' + rankInfo.color + '; --rank-glow:' + rankInfo.glow + ';">' + hunterProfile.rank + '</div>'
+              : '<div class="rank-letter unranked">?</div>') +
+          '</div>' +
+        '</div>' +
+        '<div class="rank-note">' + (rankInfo ? rankInfo.title : 'UNRANKED · TAKE THE HUNTER EVALUATION') + '</div>' +
         '<div class="stats-level-status">' + levelStatus + '</div>' +
         '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + barPct + '%"></div></div>' +
         '<div class="status-ids">' +
-          '<div class="status-line"><b>NAME</b><span>PLAYER</span></div>' +
+          '<div class="status-line"><b>NAME</b><input class="name-input" id="playerNameInput" type="text" maxlength="' + HUNTER_NAME_MAX + '" placeholder="' + HUNTER_DEFAULT_NAME + '" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Your name"></div>' +
           '<div class="status-line"><b>JOB</b><span>HUNTER</span></div>' +
           '<div class="status-line"><b>TITLE</b><span>' + (buffs.title ? escapeHtml(buffs.title) : 'NONE') + '</span></div>' +
+          '<div class="status-line"><b>EVALUATED</b><span>' + escapeHtml(evaluated) + '</span></div>' +
         '</div>' +
+        '<div class="assess-row"><button class="assess-btn" id="assessOpenBtn">◉ HUNTER EVALUATION</button></div>' +
         '<div class="stats-level-sub">' + fmt(total) + ' TOTAL STAT POINTS</div>' +
       '</div>';
 
@@ -3602,6 +3815,20 @@
     html += '<div class="stats-note">Points scale with the work actually required. If an item shaves reps or waives an exercise, you earn proportionally fewer points from it — cutting 20 of 100 push-ups costs 20% of that exercise\'s points. Every cleared daily quest raises your level by one (a waived quest doesn\'t). Temporary boosts show on top of your stats until they expire.</div>';
 
     body.innerHTML = html;
+
+    var nameInput = document.getElementById('playerNameInput');
+    if (nameInput) {
+      nameInput.value = hunterProfile.name;
+      nameInput.addEventListener('input', function() {
+        hunterProfile.name = sanitizeHunterName(nameInput.value);
+        saveHunter();
+      });
+      nameInput.addEventListener('blur', function() { nameInput.value = hunterProfile.name; });
+      nameInput.addEventListener('keydown', function(e) { if (e && e.key === 'Enter') nameInput.blur(); });
+    }
+    var assessBtn = document.getElementById('assessOpenBtn');
+    if (assessBtn) assessBtn.addEventListener('click', openAssessmentFlow);
+    refreshAssessButton();
   }
 
   document.getElementById('statsOpenBtn').addEventListener('click', function() {
@@ -3611,6 +3838,277 @@
   document.getElementById('statsCloseBtn').addEventListener('click', function() {
     document.getElementById('statsOverlay').classList.remove('show');
   });
+
+  // ---- Hunter profile and evaluation ---------------------------------------------
+  var HUNTER_KEY = 'the-system-hunter';
+  var HUNTER_NAME_MAX = 20;
+  var HUNTER_DEFAULT_NAME = 'PLAYER';
+  var ASSESS_COOLDOWN_MS = 14 * 86400000;   // two weeks between evaluations
+  var ASSESS_HOLD_MIN_MS = 15000;           // the stone must be held for somewhere between
+  var ASSESS_HOLD_MAX_MS = 20000;           // 15 and 20 seconds, chosen when the evaluation begins
+
+  // A rank needs BOTH its level and its total stat points ("skill points"). Each
+  // rung asks for roughly double the one before it, so ranks arrive slowly and
+  // ever more slowly. For someone who fully clears every daily quest (19 stat
+  // points a day) the level is the binding requirement; for someone who waives
+  // or trims their quests a lot, the stat points are.
+  var HUNTER_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
+  var HUNTER_RANK_REQ = {
+    E: { level: 1,   points: 0 },
+    D: { level: 20,  points: 280 },
+    C: { level: 50,  points: 700 },
+    B: { level: 110, points: 1600 },
+    A: { level: 230, points: 3400 },
+    S: { level: 470, points: 6900 }
+  };
+  var HUNTER_RANK_INFO = {
+    E: { color: '#c7cdd6', glow: 'rgba(199,205,214,0.55)', title: 'E-RANK HUNTER', note: 'Everyone starts somewhere.' },
+    D: { color: '#3dffb0', glow: 'rgba(61,255,176,0.55)',  title: 'D-RANK HUNTER', note: 'You have outgrown the weakest gates.' },
+    C: { color: '#4fd8ff', glow: 'rgba(79,216,255,0.55)',  title: 'C-RANK HUNTER', note: 'A dependable hunter, trusted on a real team.' },
+    B: { color: '#b28bff', glow: 'rgba(178,139,255,0.55)', title: 'B-RANK HUNTER', note: 'Seasoned and well equipped. Few reach this far.' },
+    A: { color: '#ff9a3d', glow: 'rgba(255,154,61,0.55)',  title: 'A-RANK HUNTER', note: 'Top-tier. Others look to you.' },
+    S: { color: '#ff3b5c', glow: 'rgba(255,59,92,0.6)',    title: 'S-RANK HUNTER', note: 'Nation-level power. There are almost none like you.' }
+  };
+
+  function sanitizeHunterName(raw) {
+    var t = String(raw == null ? '' : raw).replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim();
+    if (t.length > HUNTER_NAME_MAX) t = t.slice(0, HUNTER_NAME_MAX).trim();
+    return t;
+  }
+
+  function loadHunter() {
+    var out = { name: '', rank: null, assessedAt: null, assessedLevel: null, assessedPoints: null };
+    var raw = null;
+    try { raw = localStorage.getItem(HUNTER_KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        if (typeof p.name === 'string') out.name = sanitizeHunterName(p.name);
+        if (HUNTER_RANKS.indexOf(p.rank) >= 0) out.rank = p.rank;
+        if (typeof p.assessedAt === 'number' && isFinite(p.assessedAt)) out.assessedAt = p.assessedAt;
+        if (typeof p.assessedLevel === 'number') out.assessedLevel = p.assessedLevel;
+        if (typeof p.assessedPoints === 'number') out.assessedPoints = p.assessedPoints;
+      } catch (e) {}
+    }
+    return out;
+  }
+
+  function saveHunter() {
+    if (restoring) return;
+    var ok = false;
+    try { localStorage.setItem(HUNTER_KEY, JSON.stringify(hunterProfile)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  var hunterProfile = loadHunter();
+
+  function hunterDisplayName() {
+    return hunterProfile.name || HUNTER_DEFAULT_NAME;
+  }
+
+  // Permanent stat points only (temporary boosts never count toward rank).
+  function totalSkillPoints() {
+    var sum = STAT_KEYS.reduce(function(acc, k) { return acc + stats[k]; }, 0);
+    return Math.round(sum * 100) / 100;
+  }
+
+  function rankIndex(r) { return HUNTER_RANKS.indexOf(r); }
+
+  function computeHunterRank(level, points) {
+    var best = HUNTER_RANKS[0];
+    HUNTER_RANKS.forEach(function(r) {
+      if (level >= HUNTER_RANK_REQ[r].level && points >= HUNTER_RANK_REQ[r].points) best = r;
+    });
+    return best;
+  }
+
+  // Milliseconds until the next evaluation is allowed (0 = available now).
+  // If the device clock was moved backwards, the wait is capped at the full two weeks.
+  function assessmentRemainingMs(now) {
+    if (!hunterProfile.assessedAt) return 0;
+    var remaining = ASSESS_COOLDOWN_MS - (now - hunterProfile.assessedAt);
+    if (remaining > ASSESS_COOLDOWN_MS) remaining = ASSESS_COOLDOWN_MS;
+    return Math.max(0, remaining);
+  }
+
+  function splitDuration(ms) {
+    var total = Math.max(0, Math.ceil(ms / 1000));
+    return {
+      days: Math.floor(total / 86400),
+      hours: Math.floor((total % 86400) / 3600),
+      minutes: Math.floor((total % 3600) / 60),
+      seconds: total % 60
+    };
+  }
+
+  function pickAssessDuration() {
+    return ASSESS_HOLD_MIN_MS + Math.floor(Math.random() * (ASSESS_HOLD_MAX_MS - ASSESS_HOLD_MIN_MS + 1));
+  }
+
+  var assessRequiredMs = ASSESS_HOLD_MAX_MS;
+  var assessHold = null;            // { startedAt, pointerId, timer } while a hand is on the stone
+  var assessCompleted = false;
+
+  function setAssessHint(text) {
+    var el = document.getElementById('assessHint');
+    if (el) el.textContent = text;
+  }
+
+  function setStoneAura(p) {
+    var wrap = document.getElementById('stoneWrap');
+    if (wrap && wrap.style) wrap.style.setProperty('--p', p.toFixed(3));
+    if (wrap && wrap.classList) { if (p > 0) wrap.classList.add('holding'); else wrap.classList.remove('holding'); }
+  }
+
+  function refreshAssessButton() {
+    var btn = document.getElementById('assessOpenBtn');
+    if (!btn || !btn.classList) return;
+    if (assessmentRemainingMs(Date.now()) > 0) btn.classList.add('cooldown'); else btn.classList.remove('cooldown');
+  }
+
+  function openAssessmentFlow() {
+    if (assessmentRemainingMs(Date.now()) > 0) { openAssessCooldown(); return; }
+    openEvaluationWindow();
+  }
+
+  function openEvaluationWindow() {
+    endAssessHold(false);
+    assessCompleted = false;
+    assessRequiredMs = pickAssessDuration();
+    document.getElementById('assessName').textContent = hunterDisplayName();
+    setStoneAura(0);
+    setAssessHint('Press and hold the stone with your finger or cursor.');
+    document.getElementById('assessCooldownOverlay').classList.remove('show');
+    document.getElementById('assessOverlay').classList.add('show');
+  }
+
+  function closeEvaluationWindow() {
+    endAssessHold(false);
+    document.getElementById('assessOverlay').classList.remove('show');
+  }
+
+  function beginAssessHold(pointerId) {
+    if (assessHold || assessCompleted) return;
+    assessHold = { startedAt: Date.now(), pointerId: pointerId, timer: setInterval(assessHoldTick, 100) };
+    setAssessHint('Keep your hand on the stone. Do not let go.');
+    setStoneAura(0.001);
+  }
+
+  function assessHoldTick() {
+    if (!assessHold) return;
+    var elapsed = Date.now() - assessHold.startedAt;
+    var p = Math.min(1, elapsed / assessRequiredMs);
+    setStoneAura(Math.max(p, 0.001));
+    if (elapsed >= assessRequiredMs) completeAssessment();
+  }
+
+  // announce = true when the hand came off early (shows the "try again" hint)
+  function endAssessHold(announce) {
+    if (!assessHold) return;
+    clearInterval(assessHold.timer);
+    assessHold = null;
+    setStoneAura(0);
+    if (announce && !assessCompleted) setAssessHint('The stone goes dark. Place your hand on it again and hold.');
+  }
+
+  function completeAssessment() {
+    if (assessCompleted) return;
+    assessCompleted = true;
+    if (assessHold) { clearInterval(assessHold.timer); assessHold = null; }
+    var level = hunterLevel;
+    var points = totalSkillPoints();
+    var detected = computeHunterRank(level, points);
+    var previous = hunterProfile.rank;
+    // A rank is never taken away: a re-evaluation can only confirm or raise it.
+    var finalRank = (previous && rankIndex(previous) > rankIndex(detected)) ? previous : detected;
+    hunterProfile.rank = finalRank;
+    hunterProfile.assessedAt = Date.now();
+    hunterProfile.assessedLevel = level;
+    hunterProfile.assessedPoints = points;
+    saveHunter();
+    document.getElementById('assessOverlay').classList.remove('show');
+    showAssessResult(finalRank, previous, level, points);
+    if (document.getElementById('statsOverlay').classList.contains('show')) renderStatsScreen();
+    refreshAssessButton();
+  }
+
+  function showAssessResult(rank, previous, level, points) {
+    var info = HUNTER_RANK_INFO[rank];
+    document.getElementById('assessResultName').textContent = hunterDisplayName();
+    var big = document.getElementById('assessResultRank');
+    big.textContent = rank;
+    big.style.setProperty('--rank-color', info.color);
+    big.style.setProperty('--rank-glow', info.glow);
+    var verdict;
+    if (!previous) verdict = 'FIRST EVALUATION COMPLETE';
+    else if (rankIndex(rank) > rankIndex(previous)) verdict = 'RANK UP! YOU WERE ' + previous + '-RANK';
+    else verdict = 'RANK CONFIRMED. NO CHANGE SINCE LAST TIME';
+    var title = document.getElementById('assessResultTitle');
+    title.textContent = info.title;
+    title.style.setProperty('--rank-color', info.color);
+    title.style.setProperty('--rank-glow', info.glow);
+    document.getElementById('assessResultNote').textContent = info.note;
+    document.getElementById('assessResultSub').textContent = verdict + '. MEASURED: LEVEL ' + level + ' · ' + fmt(points) + ' STAT POINTS. NEXT EVALUATION IN 14 DAYS.';
+    document.getElementById('assessResultOverlay').classList.add('show');
+  }
+
+  function openAssessCooldown() {
+    document.getElementById('assessCooldownOverlay').classList.add('show');
+    renderAssessCountdown();
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  // Called when the window opens and then every second from tick().
+  function renderAssessCountdown() {
+    var overlay = document.getElementById('assessCooldownOverlay');
+    if (!overlay || !overlay.classList.contains('show')) return;
+    var remaining = assessmentRemainingMs(Date.now());
+    var parts = splitDuration(remaining);
+    document.getElementById('cdDays').textContent = pad2(parts.days);
+    document.getElementById('cdHours').textContent = pad2(parts.hours);
+    document.getElementById('cdMinutes').textContent = pad2(parts.minutes);
+    document.getElementById('cdSeconds').textContent = pad2(parts.seconds);
+    var open = remaining <= 0;
+    document.getElementById('assessCooldownText').textContent = open
+      ? 'The evaluation window is open. You may be assessed again.'
+      : 'You have already been evaluated. The next assessment window opens in:';
+    var last = hunterProfile.rank ? HUNTER_RANK_INFO[hunterProfile.rank].title : 'UNRANKED';
+    var when = hunterProfile.assessedAt ? new Date(hunterProfile.assessedAt).toLocaleDateString() : '';
+    document.getElementById('assessCooldownSub').textContent = 'LAST RESULT: ' + last + (when ? ' · ' + when : '');
+    document.getElementById('assessBeginRow').style.display = open ? 'flex' : 'none';
+  }
+
+  (function bindEvaluationControls() {
+    var stone = document.getElementById('evalStone');
+    stone.addEventListener('pointerdown', function(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (assessHold) return;                       // one hand at a time
+      if (e.preventDefault) e.preventDefault();
+      try { stone.setPointerCapture(e.pointerId); } catch (err) {}
+      beginAssessHold(e.pointerId);
+    });
+    stone.addEventListener('pointermove', function(e) {
+      if (!assessHold || e.pointerId !== assessHold.pointerId) return;
+      var r = stone.getBoundingClientRect();
+      var tol = 40;   // a little finger drift is fine; sliding well off the stone is not
+      if (e.clientX < r.left - tol || e.clientX > r.right + tol || e.clientY < r.top - tol || e.clientY > r.bottom + tol) endAssessHold(true);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function(type) {
+      stone.addEventListener(type, function(e) {
+        if (assessHold && e.pointerId !== undefined && e.pointerId !== assessHold.pointerId) return;
+        endAssessHold(true);
+      });
+    });
+    stone.addEventListener('contextmenu', function(e) { if (e.preventDefault) e.preventDefault(); });
+    document.getElementById('assessCloseBtn').addEventListener('click', closeEvaluationWindow);
+    document.getElementById('assessResultCloseBtn').addEventListener('click', function() { document.getElementById('assessResultOverlay').classList.remove('show'); });
+    document.getElementById('assessResultOkBtn').addEventListener('click', function() { document.getElementById('assessResultOverlay').classList.remove('show'); });
+    document.getElementById('assessCooldownCloseBtn').addEventListener('click', function() { document.getElementById('assessCooldownOverlay').classList.remove('show'); });
+    document.getElementById('assessBeginBtn').addEventListener('click', function() {
+      if (assessmentRemainingMs(Date.now()) <= 0) openEvaluationWindow();
+    });
+  })();
 
   // ---- Save Data screen ---------------------------------------------------------
   var restoreArmed = false;
@@ -3764,9 +4262,91 @@
     { name: 'Wichita', lat: 37.6872, lon: -97.3301 },
     { name: 'Kansas City', lat: 39.1155, lon: -94.6268 },
     { name: 'Dodge City', lat: 37.7528, lon: -100.0171 },
-    { name: 'Garden City', lat: 37.9717, lon: -100.8726 },
-    { name: 'Salina', lat: 38.8403, lon: -97.6114 }
+    { name: 'Garden City', lat: 37.9717, lon: -100.8726, left: true },
+    { name: 'Salina', lat: 38.8403, lon: -97.6114 },
+    { name: 'Overland Park', lat: 38.9822, lon: -94.6708 },
+    { name: 'Olathe', lat: 38.8814, lon: -94.8191 },
+    { name: 'Lawrence', lat: 38.9717, lon: -95.2353 },
+    { name: 'Manhattan', lat: 39.1836, lon: -96.5717 },
+    { name: 'Hutchinson', lat: 38.0608, lon: -97.9298, left: true },
+    { name: 'Emporia', lat: 38.4039, lon: -96.1817 },
+    { name: 'Pittsburg', lat: 37.4100, lon: -94.7047 },
+    { name: 'Hays', lat: 38.8792, lon: -99.3268 },
+    { name: 'Liberal', lat: 37.0431, lon: -100.9208 },
+    { name: 'Newton', lat: 38.0467, lon: -97.3453 },
+    { name: 'Great Bend', lat: 38.3645, lon: -98.7648 },
+    { name: 'Leavenworth', lat: 39.3111, lon: -94.9230 },
+    { name: 'Junction City', lat: 39.0281, lon: -96.8314 },
+    { name: 'Independence', lat: 37.2256, lon: -95.7083 },
+    { name: 'Coffeyville', lat: 37.0387, lon: -95.6180 },
+    { name: 'Winfield', lat: 37.2392, lon: -96.9961 },
+    { name: 'El Dorado', lat: 37.8197, lon: -96.8622 },
+    { name: 'Ottawa', lat: 38.6064, lon: -95.2666 },
+    { name: 'Atchison', lat: 39.5628, lon: -95.1250 },
+    { name: 'Parsons', lat: 37.3395, lon: -95.2614 },
+    { name: 'Pratt', lat: 37.6453, lon: -98.7395 },
+    { name: 'Colby', lat: 39.3967, lon: -101.0519 },
+    { name: 'Goodland', lat: 39.3503, lon: -101.7102 },
+    { name: 'Larned', lat: 38.1828, lon: -99.1026 },
+    { name: 'Scott City', lat: 38.4870, lon: -100.9068 },
+    { name: 'Abilene', lat: 38.9175, lon: -97.2139 },
+    { name: 'McPherson', lat: 38.3706, lon: -97.6647 },
+    { name: 'Chanute', lat: 37.6792, lon: -95.4572 }
   ];
+
+  // Neighborhood/district names for the larger cities, as small offsets (in
+  // degrees) from that city's own coordinates. These only render once the
+  // player has zoomed in close enough — see DISTRICT_ZOOM_SCALE below.
+  var KS_DISTRICTS = {
+    'Wichita': [
+      { name: 'Old Town', dlat: 0.0264, dlon: 0.0088 },
+      { name: 'Delano', dlat: 0.014, dlon: 0.07 },
+      { name: 'College Hill', dlat: -0.044, dlon: -0.066 },
+      { name: 'Riverside', dlat: 0.066, dlon: 0.044 },
+      { name: 'Douglas Design District', dlat: -0.022, dlon: 0.033 }
+    ],
+    'Topeka': [
+      { name: 'Potwin', dlat: 0.033, dlon: 0.022 },
+      { name: 'Oakland', dlat: 0.044, dlon: -0.088 },
+      { name: 'Westboro', dlat: -0.022, dlon: 0.088 },
+      { name: 'College Hill', dlat: -0.055, dlon: 0.022 }
+    ],
+    'Kansas City': [
+      { name: 'Strawberry Hill', dlat: 0.016, dlon: -0.02 },
+      { name: 'Argentine', dlat: -0.05, dlon: -0.045 },
+      { name: 'Armourdale', dlat: -0.022, dlon: -0.015 },
+      { name: 'Fairfax', dlat: 0.03, dlon: -0.035 }
+    ],
+    'Overland Park': [
+      { name: 'Corporate Woods', dlat: 0.044, dlon: -0.022 },
+      { name: 'Blue Valley', dlat: -0.066, dlon: -0.044 }
+    ],
+    'Lawrence': [
+      { name: 'KU Campus', dlat: -0.033, dlon: -0.022 },
+      { name: 'East Lawrence', dlat: 0.011, dlon: 0.055 },
+      { name: 'West Lawrence', dlat: 0.022, dlon: -0.077 }
+    ],
+    'Manhattan': [
+      { name: 'Aggieville', dlat: -0.022, dlon: 0.0 },
+      { name: 'Downtown', dlat: 0.011, dlon: 0.033 },
+      { name: 'Westloop', dlat: 0.033, dlon: -0.066 }
+    ],
+    'Salina': [
+      { name: 'South Salina', dlat: -0.055, dlon: 0.011 }
+    ],
+    'Hutchinson': [
+      { name: 'North Hutch', dlat: 0.055, dlon: -0.011 }
+    ],
+    'Dodge City': [
+      { name: 'Boot Hill', dlat: -0.012, dlon: 0.012 },
+      { name: 'Downtown', dlat: 0.04, dlon: 0.05 }
+    ],
+    'Garden City': [
+      { name: 'Finnup Park', dlat: 0.044, dlon: -0.044 }
+    ]
+  };
+  // Zoom factor (MAP_W / current view width) at which district labels appear.
+  var DISTRICT_ZOOM_SCALE = 10;
 
   // Base chance of each rank on a fresh roll. The table below is reshaped as the
   // hunter passes level milestones (10, 20, 30, ...): a little weight moves out of
@@ -3799,11 +4379,40 @@
     return GATE_RANKS[0];
   }
 
+  // Kansas' border, [lon, lat]: straight edges, with the Missouri River cutting the north-east corner.
+  var KS_OUTLINE = [[-102.05, 40.0], [-95.31, 40.0], [-95.21, 39.80], [-95.08, 39.52], [-94.89, 39.30], [-94.74, 39.19], [-94.61, 39.12], [-94.61, 37.0], [-102.05, 37.0]];
+
+  function pointInKansas(lat, lon) {
+    var inside = false;
+    for (var i = 0, j = KS_OUTLINE.length - 1; i < KS_OUTLINE.length; j = i++) {
+      var xi = KS_OUTLINE[i][0], yi = KS_OUTLINE[i][1], xj = KS_OUTLINE[j][0], yj = KS_OUTLINE[j][1];
+      if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+
+  // New gates only ever open inside the state's border, a little clear of the map's edge (so a marker is
+  // never half cut off) and well apart from every gate already on the map (so no marker ever sits on top of
+  // another and swallows its taps). If the map is so crowded that no spot qualifies, the roomiest one is used.
+  var MIN_GATE_SEPARATION = 56;   // map units: roughly 30 screen pixels on a phone, more than a marker is wide
+  var GATE_EDGE_MARGIN = 14;
   function randomGateSpot() {
-    return {
-      lat: KS_BOUNDS.latMin + Math.random() * (KS_BOUNDS.latMax - KS_BOUNDS.latMin),
-      lon: KS_BOUNDS.lonMin + Math.random() * (KS_BOUNDS.lonMax - KS_BOUNDS.lonMin)
-    };
+    var best = null, bestGap = -1;
+    for (var tries = 0; tries < 300; tries++) {
+      var lat = KS_BOUNDS.latMin + Math.random() * (KS_BOUNDS.latMax - KS_BOUNDS.latMin);
+      var lon = KS_BOUNDS.lonMin + Math.random() * (KS_BOUNDS.lonMax - KS_BOUNDS.lonMin);
+      if (!pointInKansas(lat, lon)) continue;
+      var pt = projectGate({ lat: lat, lon: lon });
+      if (pt.x < GATE_EDGE_MARGIN || pt.x > MAP_W - GATE_EDGE_MARGIN || pt.y < GATE_EDGE_MARGIN || pt.y > MAP_H - GATE_EDGE_MARGIN) continue;
+      var gap = Infinity;
+      for (var i = 0; i < gates.length; i++) {
+        var q = projectGate(gates[i]);
+        gap = Math.min(gap, Math.sqrt((pt.x - q.x) * (pt.x - q.x) + (pt.y - q.y) * (pt.y - q.y)));
+      }
+      if (gap >= MIN_GATE_SEPARATION) return { lat: lat, lon: lon };
+      if (gap > bestGap) { bestGap = gap; best = { lat: lat, lon: lon }; }
+    }
+    return best || { lat: 38.5, lon: -98.3 };
   }
 
   // Ordinary gates only; System-Exclusive gates never spawn on their own —
@@ -3944,8 +4553,9 @@
   }
 
   // ---- Map zoom and pan ----------------------------------------------------------
-  var MAP_W = 600, MAP_H = 260, MAP_MIN_W = 50;
+  var MAP_W = 600, MAP_H = 260, MAP_MIN_W = 16;
   var gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
+  var gateMapEffW = 0;   // how many screen pixels wide the whole map is drawn (measured after rendering)
 
   function clampGateView() {
     gateView.w = Math.min(MAP_W, Math.max(MAP_MIN_W, gateView.w));
@@ -3961,9 +4571,17 @@
     if (svg) svg.setAttribute('viewBox', gateView.x.toFixed(2) + ' ' + gateView.y.toFixed(2) + ' ' + gateView.w.toFixed(2) + ' ' + gateView.h.toFixed(2));
   }
 
+  // Discrete zoom/pan actions (buttons, wheel clicks, tapping a city) rebuild the
+  // whole map via renderGateMap(), not just the viewBox: which city names and
+  // district labels should appear depends on the current zoom level, and that
+  // decision is baked into the markup at render time. A plain viewBox update
+  // (applyGateView, below) reframes the same old content — correct for smooth
+  // continuous dragging/pinching, but it would never reveal a new label on its
+  // own. Drag and pinch call applyGateView() on every move for a smooth 60fps
+  // feel, then call renderGateMap() once when the gesture ends.
   function resetGateView() {
     gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
-    applyGateView();
+    renderGateMap();
   }
 
   // Zooms so the point (cx, cy), in map user-space coordinates, stays fixed under
@@ -3978,15 +4596,70 @@
     gateView.x = cx - relX * gateView.w;
     gateView.y = cy - relY * gateView.h;
     clampGateView();
-    applyGateView();
+    renderGateMap();
   }
 
+  // Tapping a city zooms to the closest view in which the city's name AND all of its districts
+  // fit on screen. Rather than guess, each zoom level is tried for real, tightest first: draw it,
+  // then check that every one of the city's names was drawn (labels that would overlap are left
+  // out) and sits fully inside the view. Cities with no districts get a wider view with their
+  // neighbours around them.
   function zoomToCity(city) {
+    var eff = gateMapEffW || 300;                     // screen pixels across the whole map
     var p = projectGate({ lat: city.lat, lon: city.lon });
-    var w = 130;
-    gateView = { x: p.x - w / 2, y: p.y - (w * (MAP_H / MAP_W)) / 2, w: w, h: w * (MAP_H / MAP_W) };
-    clampGateView();
-    applyGateView();
+    var dists = (KS_DISTRICTS[city.name] || []).map(function(d) {
+      var q = projectGate({ lat: city.lat + d.dlat, lon: city.lon + d.dlon });
+      return { x: q.x, y: q.y, name: d.name };
+    });
+    var widths = dists.length ? [18, 20, 22, 24, 26, 29, 32, 36, 40, 45, 50, 55, 60] : [44, 52, 60];   // 60 is the widest that still shows districts
+    var wrapEl = document.getElementById('gateMapWrap');
+    var names = [{ name: city.name, x: p.x, y: p.y }].concat(dists);
+    var minX = p.x, maxX = p.x, minY = p.y, maxY = p.y;
+    dists.forEach(function(d) { minX = Math.min(minX, d.x); maxX = Math.max(maxX, d.x); minY = Math.min(minY, d.y); maxY = Math.max(maxY, d.y); });
+    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    function labelOf(n) {   // the drawn label nearest to this name's own dot (another city can reuse a name, e.g. College Hill)
+      var els = wrapEl.querySelectorAll ? wrapEl.querySelectorAll('.gate-map-label') : [];
+      var best = null, bestD = Infinity;
+      for (var k = 0; k < els.length; k++) {
+        if (els[k].textContent !== n.name || !els[k].getBBox) continue;
+        var bb = els[k].getBBox();
+        var d = Math.abs(bb.x + bb.width / 2 - n.x) + Math.abs(bb.y + bb.height / 2 - n.y);
+        if (d < bestD) { bestD = d; best = bb; }
+      }
+      return best;
+    }
+    // The real extent of this city's dots and names as drawn, in map units (null if it can't be measured).
+    function extent() {
+      var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, any = false;
+      names.forEach(function(n) {
+        x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y);
+        var bb = labelOf(n);
+        if (bb) { any = true; x0 = Math.min(x0, bb.x); x1 = Math.max(x1, bb.x + bb.width); y0 = Math.min(y0, bb.y); y1 = Math.max(y1, bb.y + bb.height); }
+      });
+      return any ? { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 } : null;
+    }
+    function show(w, ccx, ccy) {
+      var h = w * (MAP_H / MAP_W);
+      gateView = { x: ccx - w / 2, y: ccy - h / 2, w: w, h: h };
+      clampGateView();
+      renderGateMap();
+    }
+    function allGood() {
+      var html = wrapEl.innerHTML;
+      for (var k = 0; k < names.length; k++) {
+        if (html.indexOf('>' + escapeHtml(names[k].name) + '</text>') < 0) return false;     // not drawn
+        var bb = labelOf(names[k]);
+        if (bb && (bb.x < gateView.x - 0.01 || bb.x + bb.width > gateView.x + gateView.w + 0.01 ||
+                   bb.y < gateView.y - 0.01 || bb.y + bb.height > gateView.y + gateView.h + 0.01)) return false;   // cut off
+      }
+      return true;
+    }
+    for (var i = 0; i < widths.length; i++) {
+      show(widths[i], cx, cy);
+      var ex = extent();
+      if (ex) show(widths[i], ex.cx, ex.cy);          // re-centre once on where the names really landed
+      if (allGood()) return;
+    }
   }
 
   function clientToGateView(svg, clientX, clientY) {
@@ -4034,7 +4707,7 @@
         };
       } else if (list.length === 1) {
         pinch = null;
-        drag = { startClientX: e.clientX, startClientY: e.clientY, startView: { x: gateView.x, y: gateView.y }, rect: svg.getBoundingClientRect() };
+        drag = { startClientX: e.clientX, startClientY: e.clientY, startView: { x: gateView.x, y: gateView.y }, rect: svg.getBoundingClientRect(), moved: false };
       }
     });
 
@@ -4059,6 +4732,11 @@
       } else if (drag && list.length === 1) {
         var dxPix = e.clientX - drag.startClientX;
         var dyPix = e.clientY - drag.startClientY;
+        // A few pixels of wobble on an ordinary tap shouldn't count as a drag —
+        // only real movement should suppress the tap's own click (e.g. zooming
+        // to a city) or trigger the end-of-gesture label refresh below.
+        if (!drag.moved && (Math.abs(dxPix) > 4 || Math.abs(dyPix) > 4)) drag.moved = true;
+        if (!drag.moved) return;
         gateView.x = drag.startView.x - dxPix / drag.rect.width * gateView.w;
         gateView.y = drag.startView.y - dyPix / drag.rect.height * gateView.h;
         clampGateView();
@@ -4069,8 +4747,17 @@
     function releasePointer(e) {
       delete pointers[e.pointerId];
       var list = pointerList();
+      // Only a real drag (one that actually moved) or any pinch counts as an
+      // interaction worth refreshing for. A plain tap must leave the DOM alone
+      // here so the browser's native 'click' event can still land on it —
+      // rebuilding the map before 'click' fires would remove the very element
+      // that was tapped, silently swallowing taps like "zoom to this city".
+      var wasInteracting = (drag && drag.moved) || !!pinch;
       if (list.length < 2) pinch = null;
-      if (list.length === 0) drag = null;
+      if (list.length === 0) {
+        drag = null;
+        if (wasInteracting) renderGateMap();
+      }
     }
     wrap.addEventListener('pointerup', releasePointer);
     wrap.addEventListener('pointercancel', releasePointer);
@@ -4094,9 +4781,9 @@
     var g = gateById(gateEntry.gateId);
     if (!g) { el.innerHTML = ''; return; }
     if (gateEntry.trapped) {
-      el.innerHTML = '<div class="gate-status-banner trapped">🔒 <b>SEALED — RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.</div>';
+      el.innerHTML = '<div class="gate-status-banner trapped">' + ico('lock') + ' <b>SEALED — RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.</div>';
     } else {
-      el.innerHTML = '<div class="gate-status-banner">🌀 <b>INSIDE A ' + gateLabel(g) + ' GATE</b><br>You can leave at will, but it stays open and uncleared until someone finishes it.' +
+      el.innerHTML = '<div class="gate-status-banner">' + ico('portal') + ' <b>INSIDE A ' + gateLabel(g) + ' GATE</b><br>You can leave at will, but it stays open and uncleared until someone finishes it.' +
         '<div class="loot-decision-row" style="margin-top:10px;"><button class="stash-btn" id="gateLeaveBtn">LEAVE GATE</button></div></div>';
     }
   }
@@ -4107,29 +4794,139 @@
     renderGateStatusBanner();
     var wrap = document.getElementById('gateMapWrap');
     if (!wrap) return;
+    // The viewBox does the zooming: it shows a smaller slice of the 600x260 map stretched across
+    // the same box, so anything sized in map units would swell as you zoom in (and shrink on a
+    // wide screen). Every size below is therefore worked out in real screen pixels and converted
+    // to map units using how many pixels one map unit currently occupies. Labels and markers stay
+    // a constant, readable size on any screen, at any zoom.
+    var zoomScale = MAP_W / gateView.w;
+    var pxPerUnit = (gateMapEffW || wrap.clientWidth || 300) / gateView.w;
+    function u(px) { return px / pxPerUnit; }
     var markers = gates.map(function(g) {
       var p = projectGate(g);
       var c = gateColor(g);
       var inside = gateEntry && gateEntry.gateId === g.id;
-      var r = g.special ? 8 : (6 + GATE_RANKS.indexOf(g.rank));
+      var r = u(g.special ? 9 : (6 + GATE_RANKS.indexOf(g.rank)));
+      var sw = u(1.5);
+      var glow = u(5).toFixed(2);
+      var dash = u(2.6).toFixed(2);
+      var rankText = (!g.special && zoomScale >= 2)
+        ? '<text class="gate-rank" x="' + (r + u(5)).toFixed(2) + '" y="' + u(3.5).toFixed(2) + '" style="font-size:' + u(10).toFixed(2) + 'px;fill:' + c + '" pointer-events="none">' + g.rank + '</text>'
+        : '';
       return '<g class="gate-marker' + (g.special ? ' special' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
-        '<circle r="' + (r + 7) + '" fill="' + c + '" opacity="0.16"></circle>' +
-        '<circle class="core" r="' + r + '" fill="' + c + '" stroke="#04060f" stroke-width="1.5" style="filter: drop-shadow(0 0 5px ' + c + ')"></circle>' +
-        (inside ? '<circle r="' + (r + 4) + '" fill="none" stroke="#fff" stroke-width="1.5"></circle>' : '') +
+        '<circle class="gate-halo" r="' + (r + u(7)).toFixed(2) + '" fill="' + c + '" opacity="0.16" pointer-events="none"></circle>' +
+        '<circle class="gate-ring" r="' + (r + u(3.4)).toFixed(2) + '" fill="none" stroke="' + c + '" stroke-width="' + sw.toFixed(2) + '" stroke-dasharray="' + dash + ' ' + dash + '" opacity="0.85" pointer-events="none"></circle>' +
+        '<circle class="core" r="' + r.toFixed(2) + '" fill="' + c + '" stroke="#04060f" stroke-width="' + sw.toFixed(2) + '" style="filter: drop-shadow(0 0 ' + glow + 'px ' + c + ')"></circle>' +
+        (inside ? '<circle r="' + (r + u(4)).toFixed(2) + '" fill="none" stroke="#fff" stroke-width="' + sw.toFixed(2) + '" pointer-events="none"></circle>' : '') +
+        rankText +
       '</g>';
     }).join('');
-    var cities = KS_CITIES.map(function(c, i) {
+    var CITY_LABEL_ZOOM_SCALE = 2;
+    var MAJOR_CITY_COUNT = 6;   // the original anchor cities, always labeled for orientation
+    var cityFont = u(10.5), cityDotR = u(2.4).toFixed(2);
+    var cityDx = u(6), cityDy = u(3.5);
+    var distFont = u(9), distDotR = u(1.6).toFixed(2);
+    var distDx = u(4.5), distDy = u(3);
+
+    // Label placement, in priority order: anchor cities, then other cities, then districts. Each
+    // label tries its preferred side of the dot, then the other side; it must lie wholly inside the
+    // map and clear of every label already placed, otherwise it is left out until you zoom in far
+    // enough for it to fit. So no name is ever cut off at the map's edge or printed on top of another.
+    var placedBoxes = [];
+    function textBox(x, y, text, fontU, endAnchor) {
+      var w = text.length * fontU * 0.68, pad = u(1);   // 0.68em a letter: monospace width plus the labels' letter-spacing, with a little to spare
+      var l = endAnchor ? x - w : x;
+      return { l: l - pad, r: l + w + pad, t: y - fontU * 0.85 - pad, b: y + fontU * 0.25 + pad };
+    }
+    function clashes(bx) {
+      for (var q = 0; q < placedBoxes.length; q++) {
+        var o = placedBoxes[q];
+        if (bx.r > o.l && bx.l < o.r && bx.b > o.t && bx.t < o.b) return true;
+      }
+      return false;
+    }
+    function insideMap(bx) { return bx.l >= 0 && bx.r <= MAP_W && bx.t >= 0 && bx.b <= MAP_H; }
+    function placeLabel(px, py, text, fontU, dx, dy, preferLeft) {
+      // Candidate spots, best first: beside the dot on the preferred side, then the other side, then
+      // one line up or down on either side. The first that is inside the map and clear of every
+      // label already placed wins; if none is, the label waits until you zoom in further.
+      var line = fontU * 1.15;
+      var spots = preferLeft
+        ? [[true, 0], [false, 0], [true, -line], [false, -line], [true, line], [false, line]]
+        : [[false, 0], [true, 0], [false, -line], [true, -line], [false, line], [true, line]];
+      for (var q = 0; q < spots.length; q++) {
+        var end = spots[q][0], shift = spots[q][1];
+        var x = end ? px - dx : px + dx;
+        var y = py + dy + shift;
+        var bx = textBox(x, y, text, fontU, end);
+        if (insideMap(bx) && !clashes(bx)) { placedBoxes.push(bx); return { end: end, x: x, y: y }; }
+      }
+      return null;
+    }
+
+    var cityInfo = KS_CITIES.map(function(c, i) {
       var p = projectGate({ lat: c.lat, lon: c.lon });
-      return '<circle class="gate-map-city" data-city="' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2"></circle>' +
-        '<text class="gate-map-label gate-map-city-label" data-city="' + i + '" x="' + (p.x + 6).toFixed(1) + '" y="' + (p.y + 3).toFixed(1) + '">' + c.name + '</text>';
+      // A city's districts only show when that city is within (or near) the view, and zoomed in far enough to read them.
+      var margin = gateView.w * 0.15;
+      var inView = p.x >= gateView.x - margin && p.x <= gateView.x + gateView.w + margin &&
+                   p.y >= gateView.y - margin && p.y <= gateView.y + gateView.h + margin;
+      return { c: c, i: i, p: p, districtsOn: zoomScale >= DISTRICT_ZOOM_SCALE && inView && !!KS_DISTRICTS[c.name], placed: null };
+    });
+    function placeCity(info) {
+      if (!(info.i < MAJOR_CITY_COUNT || zoomScale >= CITY_LABEL_ZOOM_SCALE)) return;
+      info.placed = placeLabel(info.p.x, info.p.y, info.c.name, cityFont, cityDx, cityDy, info.districtsOn || !!info.c.left);
+    }
+    cityInfo.filter(function(n) { return n.i < MAJOR_CITY_COUNT; }).forEach(placeCity);
+    cityInfo.filter(function(n) { return n.i >= MAJOR_CITY_COUNT; }).forEach(placeCity);
+
+    var cities = cityInfo.map(function(info) {
+      var c = info.c, p = info.p;
+      var dot = '<circle class="gate-map-city" data-city="' + info.i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + cityDotR + '"></circle>';
+      var label = info.placed
+        ? '<text class="gate-map-label gate-map-city-label" data-city="' + info.i + '" style="font-size:' + cityFont.toFixed(2) + 'px"' + (info.placed.end ? ' text-anchor="end"' : '') + ' x="' + info.placed.x.toFixed(1) + '" y="' + info.placed.y.toFixed(1) + '">' + c.name + '</text>'
+        : '';
+      var districts = '';
+      if (info.districtsOn) {
+        districts = KS_DISTRICTS[c.name].map(function(d) {
+          var dp = projectGate({ lat: c.lat + d.dlat, lon: c.lon + d.dlon });
+          var pl = placeLabel(dp.x, dp.y, d.name, distFont, distDx, distDy, false);
+          return '<circle class="gate-map-district" cx="' + dp.x.toFixed(1) + '" cy="' + dp.y.toFixed(1) + '" r="' + distDotR + '"></circle>' +
+            (pl ? '<text class="gate-map-label gate-map-district-label" style="font-size:' + distFont.toFixed(2) + 'px"' + (pl.end ? ' text-anchor="end"' : '') + ' x="' + pl.x.toFixed(1) + '" y="' + pl.y.toFixed(1) + '">' + escapeHtml(d.name) + '</text>' : '');
+        }).join('');
+      }
+      return dot + label + districts;
     }).join('');
     var vb = gateView.x.toFixed(2) + ' ' + gateView.y.toFixed(2) + ' ' + gateView.w.toFixed(2) + ' ' + gateView.h.toFixed(2);
+    var titleFont = u(20).toFixed(2);
+    var outlinePts = KS_OUTLINE.map(function(pt) { var q = projectGate({ lat: pt[1], lon: pt[0] }); return q.x.toFixed(1) + ',' + q.y.toFixed(1); }).join(' ');
+    var gridLines = '';
+    for (var gx = 0; gx <= MAP_W; gx += 40) gridLines += '<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="' + MAP_H + '" vector-effect="non-scaling-stroke"></line>';
+    for (var gy = 0; gy <= MAP_H; gy += 40) gridLines += '<line x1="0" y1="' + gy + '" x2="' + MAP_W + '" y2="' + gy + '" vector-effect="non-scaling-stroke"></line>';
     wrap.innerHTML =
       '<div class="gate-map-wrap"><svg class="gate-map-svg" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg">' +
-        '<rect x="4" y="4" width="592" height="252" fill="#071022" stroke="rgba(125,192,255,0.5)" stroke-width="1"></rect>' +
-        '<text class="gate-map-title" x="300" y="150" text-anchor="middle">KANSAS</text>' +
+        '<defs><linearGradient id="ksFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a47a8" stop-opacity="0.5"></stop><stop offset="1" stop-color="#071a52" stop-opacity="0.78"></stop></linearGradient></defs>' +
+        '<rect x="-20" y="-20" width="640" height="300" fill="#030a1e"></rect>' +
+        '<g class="gate-map-grid">' + gridLines + '</g>' +
+        '<polygon class="gate-map-state" points="' + outlinePts + '" fill="url(#ksFill)" stroke="#8fd0ff" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke" style="filter: drop-shadow(0 0 ' + u(4).toFixed(2) + 'px rgba(110,180,255,0.9))"></polygon>' +
+        '<text class="gate-map-title" style="font-size:' + titleFont + 'px" x="300" y="150" text-anchor="middle">KANSAS</text>' +
         cities + markers +
       '</svg></div>';
+    if (wrap.querySelector && !renderGateMap.measuring) {
+      var svgEl = wrap.querySelector('svg');
+      // Layout size, not getBoundingClientRect: the window opens with a scale animation, and a
+      // transformed box would make the map look a tiny fraction of its real size on first open.
+      var cs = (svgEl && typeof getComputedStyle !== 'undefined') ? getComputedStyle(svgEl) : null;
+      var lw = cs ? parseFloat(cs.width) : NaN, lh = cs ? parseFloat(cs.height) : NaN;
+      if (lw > 0 && lh > 0) {
+        var eff = Math.min(lw, lh * (MAP_W / MAP_H));
+        if (Math.abs(eff - (gateMapEffW || 0)) / eff > 0.02) {
+          gateMapEffW = eff;
+          renderGateMap.measuring = true;
+          try { renderGateMap(); } finally { renderGateMap.measuring = false; }
+          return;
+        }
+      }
+    }
     wrap.querySelectorAll('[data-city]').forEach(function(el) {
       el.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -4212,7 +5009,7 @@
     document.getElementById('gateDetailOverlay').classList.remove('show');
     renderGateMap();
     showToast(g.secretRed
-      ? '⚠ The gate seals shut behind you. This was a RED GATE — you are trapped until its boss falls.'
+      ? 'The gate seals shut behind you. This was a RED GATE — you are trapped until its boss falls.'
       : 'You step into the ' + gateLabel(g) + ' gate.');
   }
 
@@ -4225,10 +5022,16 @@
   }
 
   document.getElementById('gateOpenBtn').addEventListener('click', function() {
-    resetGateView();
-    renderGateMap();
+    gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
     document.getElementById('gateOverlay').classList.add('show');
+    renderGateMap();
   });
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('resize', function() {
+      gateMapEffW = 0;
+      if (document.getElementById('gateOverlay').classList.contains('show')) renderGateMap();
+    });
+  }
   document.getElementById('gateCloseBtn').addEventListener('click', function() {
     document.getElementById('gateOverlay').classList.remove('show');
   });
@@ -4260,7 +5063,8 @@
     var btn = document.getElementById('penaltyOpenBtn');
     if (!btn) return;
     btn.style.display = owed.length ? 'flex' : 'none';
-    btn.textContent = '⚠️ PENALTY' + (owed.length > 1 ? ' (' + owed.length + ')' : '');
+    var lab = document.getElementById('penaltyBtnLabel');
+    if (lab) lab.textContent = 'PENALTY' + (owed.length > 1 ? ' (' + owed.length + ')' : '');
   }
 
   function prettyDay(day) {
@@ -4376,6 +5180,8 @@
     refreshShop();
     resolveDayTransition();
     if (maintainGates() && document.getElementById('gateOverlay').classList.contains('show')) renderGateMap();
+    renderAssessCountdown();
+    refreshAssessButton();
 
     var msLeft = Math.max(0, state.deadline - Date.now());
     var finished = allDone();
@@ -4426,6 +5232,44 @@
     saveState();
   }
 
+  // Fill the icon placeholders in the static markup.
+  document.querySelectorAll('[data-ico]').forEach(function(el) { el.innerHTML = ico(el.getAttribute('data-ico')); });
+
+  // Every window opens scrolled to its top, not wherever it was left last time.
+  (function resetScrollOnOpen() {
+    if (typeof MutationObserver === 'undefined') return;
+    var obs = new MutationObserver(function(muts) {
+      muts.forEach(function(m) {
+        var el = m.target;
+        var was = (m.oldValue || '').split(/\s+/).indexOf('show') >= 0;
+        if (el.classList.contains('show') && !was) el.scrollTop = 0;
+      });
+    });
+    document.querySelectorAll('.inv-overlay, .penalty-overlay').forEach(function(el) {
+      obs.observe(el, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+    });
+  })();
+
+  // Escape closes the topmost open window (never the missed-quest countdown, which must be read).
+  (function escapeToClose() {
+    if (!document.addEventListener || typeof getComputedStyle === 'undefined') return;
+    var CLOSERS = { invOverlay: 'invCloseBtn', codexOverlay: 'codexCloseBtn', detailOverlay: 'detailCloseBtn', shopOverlay: 'shopCloseBtn',
+      statsOverlay: 'statsCloseBtn', backupOverlay: 'backupCloseBtn', gateOverlay: 'gateCloseBtn', gateDetailOverlay: 'gateDetailCloseBtn',
+      assessOverlay: 'assessCloseBtn', assessResultOverlay: 'assessResultCloseBtn', assessCooldownOverlay: 'assessCooldownCloseBtn', penaltyOverlay: 'penaltyCloseBtn' };
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var top = null, topZ = -1;
+      Object.keys(CLOSERS).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el || !el.classList.contains('show')) return;
+        if (id === 'penaltyOverlay' && state.penaltyCountdownEnd) return;
+        var z = parseInt(getComputedStyle(el).zIndex, 10) || 0;
+        if (z >= topZ) { top = id; topZ = z; }
+      });
+      if (top) { e.preventDefault(); document.getElementById(CLOSERS[top]).click(); }
+    });
+  })();
+
   // Write every piece of progress to storage once, immediately, even if the
   // player hasn't touched anything yet. Without this, a backup taken before
   // any interaction could be missing keys (state, inventory, gold, stats,
@@ -4442,6 +5286,7 @@
   saveBuffs();
   saveGateEntry();
   saveGrantedMilestones();
+  saveHunter();
 
   render();
   renderLootArea();
