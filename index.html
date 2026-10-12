@@ -593,6 +593,14 @@
   .inv-tile.rarity-shop { border-color: rgba(255,180,84,0.55); }
   .inv-tile.cursed { box-shadow: inset 0 0 14px rgba(255,59,92,0.2); }
   .inv-tile.locked { opacity: .6; }
+  .inv-tile .it-price { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #ffd76a; margin-top: auto; padding-top: 2px; }
+  .inv-tile .it-price::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ffd76a; margin-right: 4px; box-shadow: 0 0 6px #ffd76a; }
+  .inv-tile.soldout { opacity: .4; }
+  .inv-tile.soldout .it-price { color: var(--text-dim); }
+  .inv-tile.soldout .it-price::before { display: none; }
+  .inv-tile.cantafford .it-price { color: #ff7a8e; }
+  .inv-tile.cantafford .it-price::before { background: #ff7a8e; box-shadow: none; }
+  .inv-tile .it-flag.sp { color: #ffb454; }
   @media (max-width: 340px) { .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 600px) { .inv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .inv-empty {
@@ -3559,7 +3567,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-inv-grid';
+  var APP_VERSION = '2026-10-12-shop-grid';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5131,17 +5139,11 @@
 
   function shopCardHtml(item) {
     var cls = item.rank === 'shop' ? '' : ' rarity-' + item.rank;
-    return '<div class="shop-item-card clickable' + cls + (item.sold ? ' soldout' : '') + '" data-shop-id="' + item.id + '">' +
-      '<div class="item-icon">' + iconFor(item) + '</div>' +
-      '<div class="shop-item-body">' +
-        '<span class="item-name">' + escapeHtml(item.name) + '</span>' +
-        '<span class="item-rarity rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
-        (item.special ? '<span class="item-special">SPECIAL OFFER</span>' : '') +
-        (isCursed(item) ? '<span class="item-cursed">CURSED</span>' : '') +
-        '<div class="item-flavor">' + escapeHtml(item.flavor) + '</div>' +
-        '<div class="shop-cost">' + (item.sold ? 'SOLD OUT' : item.cost + ' GOLD') + '</div>' +
-      '</div>' +
-    '</div>';
+    return '<button class="inv-tile' + cls + (item.sold ? ' soldout' : (goldBalance < item.cost ? ' cantafford' : '')) + (isCursed(item) ? ' cursed' : '') + '" data-shop-id="' + item.id + '">' +
+      '<span class="it-ico">' + iconFor(item) + '</span><span class="it-name">' + escapeHtml(item.name) + '</span>' +
+      '<span class="it-tag rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+      (item.special ? '<span class="it-flag sp">SALE</span>' : (isCursed(item) ? '<span class="it-flag" style="color:#ff6b86">CURSED</span>' : '')) +
+      '<span class="it-price">' + (item.sold ? 'SOLD OUT' : item.cost) + '</span></button>';
   }
 
   var shopTab = 'items';
@@ -5156,11 +5158,11 @@
     var stock = stockItems();
     list.innerHTML =
       '<div class="stats-section-title"><span>TODAY\'S STOCK</span></div>' +
-      (stock.length ? stock.map(shopCardHtml).join('') : '<div class="inv-empty">Nothing in stock today.</div>') +
+      (stock.length ? '<div class="inv-grid">' + stock.map(shopCardHtml).join('') + '</div>' : '<div class="inv-empty">Nothing in stock today.</div>') +
       '<div class="stats-section-title"><span>ALWAYS AVAILABLE</span></div>' +
-      SHOP_ITEMS.map(shopCardHtml).join('');
+      '<div class="inv-grid">' + SHOP_ITEMS.map(shopCardHtml).join('') + '</div>';
 
-    list.querySelectorAll('.shop-item-card').forEach(function(cardEl) {
+    list.querySelectorAll('.inv-tile[data-shop-id]').forEach(function(cardEl) {
       cardEl.addEventListener('click', function() {
         var item = findShopItem(cardEl.getAttribute('data-shop-id'));
         if (item) openItemDetail(item, 'shop');
@@ -6986,20 +6988,26 @@
     });
 
     // ---- shop tab ----
-    var shopRank = 'E';
+    var shopRank = 'E', shopSel = null;
     function renderShopTab(list) {
       var C0 = C(), ws = C0.shopWeapons().filter(function(w) { return w.rank === shopRank; });
       var tabs = 'EDCBAS'.split('').map(function(r) { return '<button class="codex-tab' + (r === shopRank ? ' active' : '') + '" data-wrank="' + r + '" style="color:' + (GATE_INFO[r] || {}).color + '">' + r + '</button>'; }).join('');
       list.innerHTML = '<div class="codex-tabs" style="margin-bottom:6px;">' + tabs + '</div>' +
         '<div class="loot-decision-row" style="margin:0 0 8px;"><button class="stash-btn" id="wShopOwnedBtn">YOUR WEAPONS (' + (clean(), data.owned.length) + ')</button></div>' +
         '<div class="stats-note" style="margin-top:0;">' + shopRank + '-rank weapons. Higher ranks hit harder and cost far more, and need a higher hunter level to wield. Anything you buy sells back for 80%.</div>' +
-        ws.map(function(w) { return cardHtml(w, 'shop'); }).join('');
+        (shopSel && def(shopSel) && def(shopSel).rank === shopRank ? cardHtml(def(shopSel), 'shop') : '') +
+        '<div class="inv-grid">' + ws.map(function(w) {
+          var col = (GATE_INFO[w.rank] || {}).color || '#c7cdd6', owned = ownsId(w.id), can = goldBalance >= w.price;
+          return '<button class="inv-tile' + (w.id === shopSel ? ' sel' : '') + (owned ? ' soldout' : (can ? '' : ' cantafford')) + '" style="border-color:' + col + '66" data-wsel="' + w.id + '"><span class="it-ico" style="color:' + col + '">' + BLADE + '</span><span class="it-name">' + escapeHtml(w.name) + '</span><span class="it-tag" style="color:' + col + '">' + w.cls.toUpperCase() + '</span>' + (w.req > hunterLevel ? '<span class="it-flag" style="color:#ff7a8e">LV ' + w.req + '</span>' : '') + '<span class="it-price">' + (owned ? 'OWNED' : w.price) + '</span></button>';
+        }).join('') + '</div>';
     }
     document.addEventListener('click', function(e) {
       var t = e.target; if (!t || !t.closest) return;
       var rb = t.closest('[data-wrank]');
-      if (rb && $('shopList').contains(rb)) { shopRank = rb.getAttribute('data-wrank'); renderShopList(); return; }
+      if (rb && $('shopList').contains(rb)) { shopRank = rb.getAttribute('data-wrank'); shopSel = null; renderShopList(); return; }
       if (t.id === 'wShopOwnedBtn') { openArmory(); return; }
+      var ws0 = t.closest('[data-wsel]');
+      if (ws0 && $('shopList').contains(ws0)) { var id0 = ws0.getAttribute('data-wsel'); shopSel = shopSel === id0 ? null : id0; renderShopList(); return; }
       var bb = t.closest('[data-wbuy]');
       if (bb && !bb.disabled) {
         var w = def(bb.getAttribute('data-wbuy')); if (!w || goldBalance < w.price || ownsId(w.id)) return;
