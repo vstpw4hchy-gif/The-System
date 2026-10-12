@@ -485,6 +485,9 @@
   .gate-marker circle.core { transition: r 0.15s ease; }
   .gate-marker:active circle.core { r: 10; }
   .gate-marker.special circle.core { animation: gateSpin 3s linear infinite; }
+  .gate-marker.breach circle.core { animation: breachPulse 1s ease-in-out infinite; }
+  .gate-marker.breach circle.gate-ring { animation: breachPulse 1s ease-in-out infinite; }
+  @keyframes breachPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   @keyframes gateSpin { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
   .gate-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 14px; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); }
   .gate-legend-item { display: flex; align-items: center; gap: 6px; }
@@ -2050,6 +2053,8 @@
   var OFF_RANK = { below: 0.04, above: 0.015 };    // per wave slot: a stray from the rank below / above
   var WAVE_MIX = [['grunt', 4], ['skirmisher', 2.2], ['brute', 1.4], ['caster', 1.6], ['guardian', 1.1]];
   var COMMON_K = { E: 0.436, D: 0.951, C: 0.8, B: 0.259, A: 0.336, S: 0.228 };   // calibrated: keeps a same-rank wave a fair, not crushing, fight
+  // Red gates warp the gate above the hunter's rank (1 or 2 ranks up). Their commons are not softened like normal commons are: cm lifts them back toward elite-grade damage, hp adds toughness. over applies when the hunter is already S rank and there is no rank left to climb.
+  var RED = { cm: 1.0, hp: 1.3, over: { atk: 2.0, hp: 1.5, ea: 1.25, eh: 1.25 } };
   var HORDE = { chance: 0.6, size: { E: [6, 8], D: [6, 8], C: [7, 9], B: [7, 9], A: [8, 10], S: [8, 10] }, hp: 0.5, atk: 0.62, k: { E: 0.166, D: 0.08, C: 0.212, B: 0.08, A: 0.08, S: 0.08 } };
   var EST = { perWaveEnemy: 2.4, elite: 20, boss: 30, secPerRound: 5, secPerFloor: 12 };
 
@@ -2117,7 +2122,7 @@
     // Hordes: many weak members of one family rush in a few at a time. Chosen on the catalog stream.
     var famNoun = catRank(rank).famNoun;
     floors.forEach(function (f) {
-      if (f.type !== 'wave' || crng() >= HORDE.chance) return;
+      if (f.type !== 'wave' || (!(popts && popts.kind === 'breach') && crng() >= HORDE.chance)) return;
       var hr = HORDE.size[rank] || [6, 8], n = hr[0] + Math.floor(crng() * (hr[1] - hr[0] + 1)), fam = theme, list = [];
       var pools = ['grunt', 'grunt', 'skirmisher', 'grunt', 'skirmisher'];
       for (var i = 0; i < n; i++) {
@@ -2127,28 +2132,44 @@
       if (rank !== 'E' && crng() < 0.5) { var ld = catalogPick(rank, crng() < 0.5 ? 'brute' : 'caster', fam, crng); if (ld) list.push({ arch: CATALOG.byId[ld].role, rank: rank, id: ld, name: CATALOG.byId[ld].name, fam: CATALOG.byId[ld].fam, leader: true }); }
       f.enemies = list; f.horde = { noun: famNoun[theme] || 'Horde', count: list.length };
     });
+    var kind = popts && popts.kind || null, mult = { levels: 1, gold: 1 };
+    if (kind === 'breach') {
+      // A dungeon break: two rampaging hordes and the leader that drove them out. No boss.
+      var ws = floors.filter(function (f) { return f.type === 'wave'; }), el = floors.filter(function (f) { return f.type === 'elite'; })[0];
+      floors = [ws[0], ws[1] || ws[0], el]; floors.forEach(function (f, i) { f.n = i + 1; });
+      mult = { levels: 0.5, gold: 0.7 };
+    } else if (kind === 'red') {
+      // A red gate holds more than it shows: one extra elite before the boss, paid for with a richer reward.
+      var rr = seededRng('red|' + rank + '|' + seed), pre = floors[floors.length - 2], eid = null, extra = { arch: 'elite', rank: rank };
+      var eid2 = catalogPick(rank, 'elite', theme, rr, floors.filter(function (f) { return f.type === 'elite'; }).map(function (f) { return f.enemies[0].id; }));
+      if (eid2) { extra.id = eid2; extra.name = CATALOG.byId[eid2].name; extra.fam = CATALOG.byId[eid2].fam; }
+      floors.splice(floors.length - 1, 0, { type: 'elite', enemies: [extra] }); floors.forEach(function (f, i) { f.n = i + 1; });
+      floors.forEach(function (f) { f.enemies.forEach(function (sp) { sp.red = true; if (popts.over) sp.over = true; }); });
+      mult = { levels: 1.5, gold: 2 };
+    } else if (kind === 'system') { mult = { levels: 1, gold: 2 }; }
     var rounds = 0;
     floors.forEach(function (f) { rounds += f.type === 'wave' ? EST.perWaveEnemy * (f.horde ? 3.4 : f.enemies.length) : (f.type === 'elite' ? EST.elite : EST.boss); });
     var secs = rounds * EST.secPerRound + floors.length * EST.secPerFloor, mid = secs / 60;
     return {
       rank: rank, seed: String(seed), theme: theme, themeName: catRank(rank).famName[theme], floors: floors, floorCount: floors.length,
       estRounds: Math.round(rounds), estMinutes: [Math.max(1, Math.round(mid * 0.75)), Math.max(2, Math.round(mid * 1.3))],
-      levels: GATE_LEVELS[rank], gold: GATE_GOLD[rank].slice()
+      levels: Math.max(1, Math.round(GATE_LEVELS[rank] * mult.levels)), gold: GATE_GOLD[rank].map(function (g) { return Math.round(g * mult.gold); }),
+      kind: kind, hasBoss: kind !== 'breach'
     };
   }
   // Builds a real combatant from a plan spec, tuned to the hunter who is about to fight it.
   function buildEnemy(spec, ctx) {
     ctx = ctx || {};
     if (spec.id && CATALOG.byId[spec.id]) {
-      var en = makeCat(spec.id, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, hpMult: (spec.horde ? HORDE.hp * (HORDE.k[spec.rank] || 1) : 1) * (spec.anom ? 1.4 : 1), atkMult: (spec.horde ? HORDE.atk * Math.pow(HORDE.k[spec.rank] || 1, 0.7) : (spec.arch === 'elite' || spec.arch === 'boss' ? 1 : (COMMON_K[spec.rank] || 1))) * (spec.anom ? 1.1 : 1) });
+      var en = makeCat(spec.id, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, hpMult: (spec.horde ? HORDE.hp * (HORDE.k[spec.rank] || 1) : 1) * (spec.anom ? 1.4 : 1) * (spec.red && !(spec.arch === 'elite' || spec.arch === 'boss') ? RED.hp : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.eh : RED.over.hp) : 1), atkMult: (spec.horde ? HORDE.atk * Math.pow(HORDE.k[spec.rank] || 1, 0.7) : (spec.arch === 'elite' || spec.arch === 'boss' ? 1 : (COMMON_K[spec.rank] || 1))) * (spec.anom ? 1.1 : 1) * (spec.red && spec.arch !== 'elite' && spec.arch !== 'boss' ? RED.cm : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.ea : RED.over.atk) : 1) });
       if (spec.anom) { en.anom = true; en.abilityId = abilityOf(spec.id); en.grantChance = en.abilityId ? ABILITY_DROP.anom : 0; }
       return en;
     }
     return makeEnemy(spec.arch, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, name: spec.name, id: spec.id });
   }
   // Levels earned: a full clear pays the rank's full reward; falling part-way pays a share of 60%.
-  function gateLevelsEarned(rank, floorsCleared, floorCount, won) {
-    var full = GATE_LEVELS[rank] || 0;
+  function gateLevelsEarned(rank, floorsCleared, floorCount, won, fullOverride) {
+    var full = fullOverride != null ? fullOverride : (GATE_LEVELS[rank] || 0);
     if (won) return full;
     return Math.round(full * 0.6 * clamp(floorsCleared / Math.max(1, floorCount), 0, 1));
   }
@@ -3068,11 +3089,13 @@
       if (d.ability) abilityOf(id);
     });
   }
-  function rollAbilityDrops(S, seed) {
+  // boost: {mult} scales every chance (red gates); {sure} makes boss drops certain (System-Exclusive gates).
+  function rollAbilityDrops(S, seed, boost) {
     var out = [];
     (S.enemies || []).forEach(function (e) {
       if (!e.abilityId || e.alive || !(e.grantChance > 0)) return;
-      if (hash01('drop|' + seed + '|' + e.uid) < e.grantChance && out.indexOf(e.abilityId) < 0) out.push(e.abilityId);
+      var ch = e.grantChance * (boost && boost.mult || 1); if (boost && boost.sure && e.role === 'boss') ch = 1;
+      if (hash01('drop|' + seed + '|' + e.uid) < ch && out.indexOf(e.abilityId) < 0) out.push(e.abilityId);
     });
     return out;
   }
@@ -3176,12 +3199,12 @@
   finalizeWeapons();
   function weaponDef(id) { return WEAPONS[id] || null; }
   function shopWeapons() { return Object.keys(WEAPONS).map(function (k) { return WEAPONS[k]; }).filter(function (w) { return w.src === 'shop'; }); }
-  function rollWeaponDrops(S, seed) {
+  function rollWeaponDrops(S, seed, boost) {
     var out = [];
     (S.enemies || []).forEach(function (e) {
       if (e.alive || !e.catalogId || e.anom) return;
       var d = CATALOG.byId[e.catalogId]; if (!d || !d.wdrop) return;
-      var ch = d.role === 'boss' ? W_DROP.boss : W_DROP.elite;
+      var ch = (d.role === 'boss' ? W_DROP.boss : W_DROP.elite) * (boost && boost.mult || 1); if (boost && boost.sure && d.role === 'boss') ch = 1;
       if (hash01('wroll|' + seed + '|' + e.uid) < ch && out.indexOf(d.wdrop) < 0) out.push(d.wdrop);
     });
     return out;
@@ -3245,7 +3268,7 @@
 
 
   var API = {
-    HORDE: HORDE, COMMON_K: COMMON_K,
+    HORDE: HORDE, COMMON_K: COMMON_K, RED: RED,
     T: T, planGate: planGate, buildEnemy: buildEnemy, gateLevelsEarned: gateLevelsEarned, threat: threat, GATE_PLAN: GATE_PLAN, GATE_LEVELS: GATE_LEVELS, GATE_GOLD: GATE_GOLD, OFF_RANK: OFF_RANK, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
@@ -3628,7 +3651,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-drops';
+  var APP_VERSION = '2026-10-12-gates-s9b';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5607,7 +5630,7 @@
     return true;
   }
   function gateEnergyCost(g) {
-    if (!g || g.special) return 0;
+    if (!g || g.special || g.breach) return 0;
     return GE.cost[g.rank] || 0;
   }
   function grantGateEnergy() {
@@ -6059,6 +6082,13 @@
     S: { color: '#ff3b5c', name: 'S-RANK', levels: 15,
       desc: 'A national emergency. What waits inside can put an entire nation at risk. Only elite, national-level hunters stand a chance.' }
   };
+  var BREACH_HOURS = 48, BREACH_CAP = 4;
+  var GATE_BREAK_INFO = {
+    color: '#ff5fb0', name: 'DUNGEON BREAK', full: 'DUNGEON BREAK',
+    desc: 'A gate that was left open too long. Its monsters spilled out and are rampaging. There is no boss, but the hordes are thick and a leader drives them. It scatters on its own within two days. Entering costs no Gate Energy.'
+  };
+  var GATE_RED_INFO = { color: '#ff3b5c', name: 'RED', full: 'RED GATE',
+    desc: 'Nobody knows what is inside a red gate. It warps one or two ranks above you as it seals behind you. There is no leaving until its boss falls. Even its common creatures are dangerous, and the rewards are richer.' };
   var GATE_SPECIAL_INFO = {
     color: '#ffd76a', name: 'SYSTEM-EXCLUSIVE',
     desc: 'A restricted portal, keyed to a specific item, level or System command. It will not open for just anyone.'
@@ -6239,6 +6269,16 @@
     };
   }
 
+  // When a gate is left uncleared a week it breaks, and its monsters spill out as a Dungeon Break at the same spot.
+  function spawnBreach(from) {
+    return {
+      id: 'g' + Date.now() + Math.random().toString(36).slice(2, 7),
+      rank: from.rank, special: false, breach: true,
+      lat: from.lat, lon: from.lon, createdAt: Date.now(),
+      seed: String(Math.floor(Math.random() * 1e9)), secretRed: false
+    };
+  }
+
   function spawnKeyGate() {
     var spot = randomGateSpot();
     return {
@@ -6345,7 +6385,7 @@
   }
 
   function gateExpiresAt(g) {
-    return g.createdAt + GATE_BREAK_DAYS * 86400000;
+    return g.createdAt + (g.breach ? BREACH_HOURS * 3600000 : GATE_BREAK_DAYS * 86400000);
   }
 
   function gateIsBroken(g) {
@@ -6365,10 +6405,18 @@
         if (lostE) setTimeout(function() { showToast('The gate broke while you were inside. The ' + lostE + ' Gate Energy you spent is lost.'); }, 0);
         saveGateEntry();
       }
+      var newBreaches = gates.filter(function(g) { return gateIsBroken(g) && !g.special && !g.breach && g.rank; }).map(spawnBreach);
       gates = gates.filter(function(g) { return !gateIsBroken(g); });
+      if (newBreaches.length) {
+        gates = gates.concat(newBreaches);
+        var br = gates.filter(function(g) { return g.breach; }).sort(function(a, b) { return a.createdAt - b.createdAt; });
+        var over = br.slice(0, Math.max(0, br.length - BREACH_CAP)).map(function(g) { return g.id; });
+        if (over.length) gates = gates.filter(function(g) { return over.indexOf(g.id) < 0; });
+        setTimeout(function() { showToast(newBreaches.length > 1 ? 'Dungeon Breaks! ' + newBreaches.length + ' uncleared gates broke and spilled their monsters out.' : 'DUNGEON BREAK! An uncleared ' + newBreaches[0].rank + '-rank gate broke and its monsters spilled out.'); }, 0);
+      }
     }
     var added = false;
-    while (gates.length < GATE_TARGET_COUNT) {
+    while (gates.filter(function(g) { return !g.breach; }).length < GATE_TARGET_COUNT) {
       gates.push(spawnGate(hunterLevel));
       added = true;
     }
@@ -6384,11 +6432,15 @@
   }
 
   function gateColor(g) {
-    return g.special ? GATE_SPECIAL_INFO.color : GATE_INFO[g.rank].color;
+    return g.breach ? GATE_BREAK_INFO.color : (g.special ? GATE_SPECIAL_INFO.color : GATE_INFO[g.rank].color);
   }
+  // A red gate looks like any other until you step through, so its true nature only shows once you are inside.
+  function gateRevealedRed(g) { return !!(g && g.secretRed && gateEntry && gateEntry.gateId === g.id && gateEntry.trapped); }
+  function gateInfoFor(g) { return g.breach ? GATE_BREAK_INFO : (gateRevealedRed(g) ? GATE_RED_INFO : (g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank])); }
+  function gateFull(g) { var i = gateInfoFor(g); return i.full || (i.name + ' GATE'); }
 
   function gateLabel(g) {
-    return g.special ? GATE_SPECIAL_INFO.name : GATE_INFO[g.rank].name;
+    return g.breach ? GATE_BREAK_INFO.name : (gateRevealedRed(g) ? GATE_RED_INFO.name : (g.special ? GATE_SPECIAL_INFO.name : GATE_INFO[g.rank].name));
   }
 
   // ---- Map zoom and pan ----------------------------------------------------------
@@ -6609,6 +6661,7 @@
     var items = GATE_RANKS.map(function(r) {
       return '<span class="gate-legend-item"><span class="gate-legend-dot" style="background:' + GATE_INFO[r].color + '; box-shadow:0 0 6px ' + GATE_INFO[r].color + ';"></span>' + r + '</span>';
     }).join('');
+    if (gates.some(function(g) { return g.breach; })) items += '<span class="gate-legend-item"><span class="gate-legend-dot" style="background:' + GATE_BREAK_INFO.color + '; box-shadow:0 0 6px ' + GATE_BREAK_INFO.color + ';"></span>BREAK</span>';
     items += '<span class="gate-legend-item"><span class="gate-legend-dot" style="background:' + GATE_SPECIAL_INFO.color + '; box-shadow:0 0 6px ' + GATE_SPECIAL_INFO.color + ';"></span>SYSTEM</span>';
     el.innerHTML = items;
   }
@@ -6624,7 +6677,7 @@
     if (gateEntry.trapped) {
       el.innerHTML = '<div class="gate-status-banner trapped">' + ico('lock') + ' <b>SEALED &mdash; RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.' + cont + '</div>';
     } else {
-      el.innerHTML = '<div class="gate-status-banner">' + ico('portal') + ' <b>INSIDE A ' + gateLabel(g) + ' GATE</b><br>' + (gateEntry.run ? 'Your run is under way.' : 'You can leave at will, but it stays open and uncleared until someone finishes it.') + cont + '</div>';
+      el.innerHTML = '<div class="gate-status-banner">' + ico('portal') + ' <b>INSIDE ' + (g.breach ? 'THE ' : 'A ') + gateFull(g) + '</b><br>' + (gateEntry.run ? 'Your run is under way.' : 'You can leave at will, but it stays open and uncleared until someone finishes it.') + cont + '</div>';
     }
   }
 
@@ -6649,13 +6702,14 @@
       var c = gateColor(g);
       var inside = gateEntry && gateEntry.gateId === g.id;
       var r = u(g.special ? 9 : (6 + GATE_RANKS.indexOf(g.rank)));
+      var isB = !!g.breach;
       var sw = u(1.5);
       var glow = u(5).toFixed(2);
       var dash = u(2.6).toFixed(2);
-      var rankText = (!g.special && zoomScale >= 2)
+      var rankText = ((!g.special || isB) && zoomScale >= 2)
         ? '<text class="gate-rank" x="' + (r + u(5)).toFixed(2) + '" y="' + u(3.5).toFixed(2) + '" style="font-size:' + u(10).toFixed(2) + 'px;fill:' + c + '" pointer-events="none">' + g.rank + '</text>'
         : '';
-      return '<g class="gate-marker' + (g.special ? ' special' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
+      return '<g class="gate-marker' + (g.special ? ' special' : '') + (isB ? ' breach' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
         '<circle class="gate-halo" r="' + (r + u(7)).toFixed(2) + '" fill="' + c + '" opacity="0.16" pointer-events="none"></circle>' +
         '<circle class="gate-ring" r="' + (r + u(3.4)).toFixed(2) + '" fill="none" stroke="' + c + '" stroke-width="' + sw.toFixed(2) + '" stroke-dasharray="' + dash + ' ' + dash + '" opacity="0.85" pointer-events="none"></circle>' +
         '<circle class="core" r="' + r.toFixed(2) + '" fill="' + c + '" stroke="#04060f" stroke-width="' + sw.toFixed(2) + '" style="filter: drop-shadow(0 0 ' + glow + 'px ' + c + ')"></circle>' +
@@ -6811,7 +6865,19 @@
     var i = order.indexOf(hunterGateRank());
     return order[Math.min(5, (i < 0 ? 0 : i) + 1)];
   }
-  function gatePlanFor(g) { return window.SystemCombat.planGate(gateEffectiveRank(g), gateSeed(g), { anom: g.special ? 0.25 : (g.secretRed ? 0.15 : 0) }); }
+  // Red gates keep their nature secret on the map, so the preview that is shown before entering ignores it.
+  // A red gate warps the moment you step in: it becomes a gate 1 or 2 ranks above YOUR rank (the jump is fixed by
+  // the gate's seed), whatever rank it showed on the map. The result is stored on the entry so it cannot shift mid-run.
+  function redRankFor(g) {
+    var hi = Math.max(0, GATE_RANKS.indexOf(hunterGateRank())), jump = 1 + (window.SystemCombat.hashSeed(gateSeed(g) + '|redjump') % 2), idx = hi + jump;
+    return { rank: GATE_RANKS[Math.min(5, idx)], over: idx > 5, jump: jump };
+  }
+  function gatePlanFor(g, preview) {
+    var red = g.secretRed && !g.breach && !g.special && !preview, rr = null;
+    if (red) rr = (gateEntry && gateEntry.gateId === g.id && gateEntry.redRank) ? { rank: gateEntry.redRank, over: !!gateEntry.redOver } : redRankFor(g);
+    var kind = g.breach ? 'breach' : (g.special ? 'system' : (red ? 'red' : null));
+    return window.SystemCombat.planGate(rr ? rr.rank : gateEffectiveRank(g), gateSeed(g), { kind: kind, over: !!(rr && rr.over), anom: g.special ? 0.25 : ((g.secretRed && !g.breach) ? (preview ? 0 : 0.3) : 0) });
+  }
   function planPipsHtml(plan) {
     return '<div class="plan-pips">' + plan.floors.map(function(f) {
       var t = f.type === 'wave' ? (f.horde ? 'H' : 'W') : (f.type === 'elite' ? 'E' : 'B');
@@ -6822,6 +6888,7 @@
     var waves = plan.floors.filter(function(f) { return f.type === 'wave'; }).length;
     var elites = plan.floors.filter(function(f) { return f.type === 'elite'; }).length;
     var hordes = plan.floors.filter(function(f) { return f.horde; }).length;
+    if (plan.hasBoss === false) return plan.floorCount + ' floors &middot; ' + waves + ' horde' + (waves === 1 ? '' : 's') + ' &middot; 1 leader';
     return plan.floorCount + ' floors &middot; ' + waves + ' wave' + (waves === 1 ? '' : 's') + (hordes ? ' (' + hordes + ' horde' + (hordes === 1 ? '' : 's') + ')' : '') + ' &middot; ' + elites + ' elite' + (elites === 1 ? '' : 's') + ' &middot; 1 boss';
   }
   var THREAT_COLORS = { trivial: '#7f93b3', easy: '#3dffb0', fair: '#ffd76a', deadly: '#ff9a3d', suicidal: '#ff3b5c' };
@@ -6831,23 +6898,23 @@
     var g = gateById(id);
     if (!g) return;
     var body = document.getElementById('gateDetailBody');
-    var info = g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank];
+    var info = g.breach ? GATE_BREAK_INFO : (g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank]);
     var cost = gateEnergyCost(g);
     var canPay = energy.value >= cost;
     var inside = gateEntry && gateEntry.gateId === g.id;
     var someoneElseInside = gateEntry && gateEntry.gateId !== g.id;
 
-    var plan = gatePlanFor(g);
+    var plan = gatePlanFor(g, true);
     var thr = window.SystemCombat.threat(plan.rank, hunterGateRank());
     var meta = '<div class="gate-detail-meta">' +
       '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
       '<b>THREAT:</b> <span style="color:' + THREAT_COLORS[thr.key] + ';">' + thr.label + '</span> <span style="opacity:.7;">for ' + ('EAS'.indexOf(hunterGateRank()) >= 0 ? 'an ' : 'a ') + hunterGateRank() + '-rank hunter</span><br>' +
       '<b>ESTIMATED TIME:</b> ' + plan.estMinutes[0] + '&ndash;' + plan.estMinutes[1] + ' min<br>' +
-      '<b>ENTRY COST:</b> ' + (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')') + '<br>' +
+      '<b>ENTRY COST:</b> ' + (g.breach ? 'free &mdash; it is already spilling out' : (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')')) + '<br>' +
       '<b>REWARD:</b> up to ' + plan.levels + ' level' + (plan.levels === 1 ? '' : 's') + ' &middot; ' + plan.gold[0] + '&ndash;' + plan.gold[1] + ' gold<br>' +
       '<span style="opacity:.75;">Falling part-way still pays a share of the reward.</span><br>' +
-      '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared' +
-      (g.special ? '<br><b>ORIGIN:</b> opened by a System Gate Key' : '') +
+      '<b>' + (g.breach ? 'SCATTERS IN:' : 'BREAKS IN:') + '</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared' +
+      (g.special ? '<br><b>ORIGIN:</b> opened by a System Gate Key<br><b>EXCLUSIVE:</b> its boss always leaves its signature (ability or weapon), and the gold is doubled' : '') + (g.breach ? '<br><b>ORIGIN:</b> a gate that broke' : '') +
       '</div>';
 
     var actions;
@@ -6867,8 +6934,8 @@
 
     body.innerHTML =
       '<div style="text-align:center;">' +
-        '<div class="gate-detail-rank" style="color:' + info.color + ';">' + (g.special ? '✦' : g.rank) + '</div>' +
-        '<div class="gate-detail-name">' + info.name + ' GATE</div>' +
+        '<div class="gate-detail-rank" style="color:' + info.color + ';">' + (g.breach ? '!' : (g.special ? '✦' : g.rank)) + '</div>' +
+        '<div class="gate-detail-name">' + (g.breach ? info.name + ' &middot; ' + g.rank + '-RANK' : info.name + ' GATE') + '</div>' +
       '</div>' +
       '<div class="gate-detail-desc">' + escapeHtml(info.desc) + '</div>' +
       meta + actions;
@@ -6895,13 +6962,15 @@
     if (Run.recoveringMs()) { showToast('You are still recovering. The next gate can be entered in ' + Run.fmtMs(Run.recoveringMs()) + '.'); return; }
     if (cost && !spendEnergy(cost)) return;
     gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed, paid: cost };
+    var rr0 = g.secretRed ? redRankFor(g) : null;
+    if (rr0) { gateEntry.redRank = rr0.rank; gateEntry.redOver = rr0.over; }
     saveGateEntry();
     document.getElementById('gateDetailOverlay').classList.remove('show');
     renderGateMap();
     Run.show();
     showToast(g.secretRed
-      ? 'The gate seals shut behind you. This was a RED GATE — you are trapped until its boss falls.'
-      : 'You step into the ' + gateLabel(g) + ' gate.');
+      ? 'The gate seals shut behind you and warps. This is no longer ' + ('EAS'.indexOf(g.rank) >= 0 ? 'an ' : 'a ') + g.rank + '-rank gate. It is a RED GATE, and you are trapped until its boss falls.'
+      : (g.breach ? 'You charge into the Dungeon Break.' : 'You step into the ' + gateLabel(g) + ' gate.'));
   }
 
   function leaveGate() {
@@ -7627,7 +7696,7 @@
       var e = gateEntry, g = e && gateById(e.gateId);
       if (e && !g && !(e.run && e.run.stage === 'done')) { gateEntry = null; persist(); renderGateMap(); return; }
       if (!e) return;
-      var info = g ? (g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank]) : GATE_INFO.E, run = e.run;
+      var info = g ? gateInfoFor(g) : GATE_INFO.E, run = e.run;
       var plan = g ? gatePlanFor(g) : null;
       var col = info.color, html = '', title = 'GATE';
       $('runCloseBtn').style.display = 'none';
@@ -7636,21 +7705,21 @@
         title = 'GATE RESULT';
         html = '<div class="run-card run-res"><h2 class="' + head[1] + '">' + head[0] + '</h2><div class="run-sub">' + escapeHtml(r.name || '') + ' &middot; ' + r.cleared + ' / ' + r.floors + ' FLOORS</div><div class="run-lines">' +
           'LEVELS <b>+' + r.levels + '</b> &middot; GOLD <b>+' + r.gold + '</b><br>' + ((r.dropGold || r.dropN) ? 'DROPS: <b>' + (r.dropGold ? '+' + r.dropGold + ' gold' : '') + (r.dropGold && r.dropN ? ', ' : '') + (r.dropN ? r.dropN + ' material' + (r.dropN > 1 ? 's' : '') : '') + '</b><br>' : '') + ((r.foundW && r.foundW.length) ? 'WEAPON FOUND: <b>' + r.foundW.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') + ((r.found && r.found.length) ? 'NEW ABILITY: <b>' + r.found.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') +
-          (r.kind === 'victory' ? 'The gate collapses behind you.<br>Cleared for good.' : (r.kind === 'defeat' ? 'You are carried out, wounded.<br>RECOVERING: <b>' + fmtMs(r.cooldown || 0) + '</b> before the next gate.' : 'You withdraw. The gate stays open.')) +
+          (r.kind === 'victory' ? (/BREAK/.test(r.name || '') ? 'The rampage is broken.<br>The monsters scatter.' : 'The gate collapses behind you.<br>Cleared for good.') : (r.kind === 'defeat' ? 'You are carried out, wounded.<br>RECOVERING: <b>' + fmtMs(r.cooldown || 0) + '</b> before the next gate.' : 'You withdraw. The gate stays open.')) +
           '</div></div><div class="loot-decision-row"><button class="use-btn" id="runDoneBtn">CONTINUE</button></div>';
       } else if (!run) {
-        title = info.name + ' GATE';
+        title = g ? gateFull(g) : 'GATE';
         var P0 = playerFor(C().chargeBonus(C().spendCharges(power).spent)), sp = C().spendCharges(power).spent;
         var qp = QP_CHARGES.filter(function(c) { return sp[c.key] > 0; }).map(function(c) { return c.short + ' x' + sp[c.key] + ' (' + c.does + ')'; });
-        html = '<div class="run-card"><div class="run-rank" style="color:' + col + ';text-shadow:0 0 18px ' + col + ';">' + (g.special ? '&#10022;' : g.rank) + '</div><div class="run-name">' + info.name + ' GATE</div><div class="run-sub">YOU STAND AT THE THRESHOLD</div>' +
-          '<div class="run-text">Floor after floor, your HP and fatigue carry over with only a partial recovery between fights. Every attack tires you, and at 100% fatigue you lose a turn. Pace yourself.</div>' +
+        html = '<div class="run-card"><div class="run-rank" style="color:' + col + ';text-shadow:0 0 18px ' + col + ';">' + (g.breach ? '!' : (g.special ? '&#10022;' : (gateRevealedRed(g) ? 'R' : g.rank))) + '</div><div class="run-name">' + (g.breach ? info.name : gateFull(g)) + '</div><div class="run-sub">YOU STAND AT THE THRESHOLD</div>' +
+          (gateRevealedRed(g) ? '<div class="run-warn" style="margin-top:8px;">The gate warped as it sealed. It is no longer ' + ('EAS'.indexOf(g.rank) >= 0 ? 'an ' : 'a ') + g.rank + '-rank gate. This is a RED GATE, with its own rules and a danger far beyond what the map showed. Even its common creatures are a real threat.</div>' : '') + '<div class="run-text">Floor after floor, your HP and fatigue carry over with only a partial recovery between fights. Every attack tires you, and at 100% fatigue you lose a turn. Pace yourself.</div>' +
           '<div style="margin-top:10px">' + bars(P0.maxHP, 0, P0.maxMana, P0) + '</div>' +
           '<div class="stats-note" style="margin-top:8px;">QUEST POWER SPENT: ' + (qp.length ? qp.join(' &middot; ') : 'none stored') + '</div>' +
           '<div class="run-warn">Once the first fight begins the Gate Energy is spent for good.</div></div>' +
           '<div class="loot-decision-row"><button class="use-btn" id="runBeginBtn">BEGIN</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runLeaveBtn">LEAVE GATE</button>') + '</div><div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="runWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button></div>';
         $('runCloseBtn').style.display = '';
       } else {
-        title = info.name + ' GATE';
+        title = g ? gateFull(g) : 'GATE';
         var f = plan.floors[run.floor], P = playerFor(run.bonus);
         var kindTxt = f.type === 'boss' ? 'BOSS FLOOR' : (f.type === 'elite' ? 'ELITE FLOOR' : (f.horde ? 'HORDE FLOOR' : 'WAVE'));
         html = '<div class="run-card"><div class="run-name" style="color:' + col + ';">FLOOR ' + (run.floor + 1) + ' OF ' + plan.floorCount + '</div><div class="run-sub">' + kindTxt + ' &middot; AHEAD</div>' + pips(plan, run) +
@@ -7686,7 +7755,7 @@
       run.stage = 'fight'; e.fought = true; persist();
       hide();
       Battle.open({
-        kind: 'gate', title: gateLabel(g) + ' \u00b7 FLOOR ' + (run.floor + 1) + '/' + plan.floorCount,
+        kind: 'gate', title: gateLabel(g) + (g.breach ? '' : '') + ' \u00b7 FLOOR ' + (run.floor + 1) + '/' + plan.floorCount,
         stats: stats, level: hunterLevel, power: run.bonus, hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
         enemies: enemies, seed: gateSeed(g) + '|f' + run.floor + '|a' + run.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
         noFlee: !!e.trapped, fleeLabel: 'RETREAT', meta: { gateId: g.id, floor: run.floor }
@@ -7695,7 +7764,7 @@
     function end(kind) {
       var e = gateEntry, g = e && gateById(e.gateId); if (!e || !e.run) return;
       var run = e.run, plan = gatePlanFor(g), won = kind === 'victory', rank = plan.rank;
-      var lv = C().gateLevelsEarned(rank, run.cleared, plan.floorCount, won);
+      var lv = C().gateLevelsEarned(rank, run.cleared, plan.floorCount, won, plan.levels);
       var base = plan.gold[0] + Math.random() * (plan.gold[1] - plan.gold[0]);
       var gold = won ? Math.round(base) : Math.round(base * 0.6 * run.cleared / Math.max(1, plan.floorCount));
       var cool = kind === 'defeat' ? (COOL_H[rank] || 1) * 3600000 : 0;
@@ -7703,7 +7772,7 @@
       for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); }
       if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
       if (won) { gates = gates.filter(function(x) { return x.id !== g.id; }); saveGates(); }
-      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateLabel(g) + ' GATE', dropGold: run.lootGold || 0, dropN: run.lootN || 0, found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
+      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateFull(g), dropGold: run.lootGold || 0, dropN: run.lootN || 0, found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
       persist(); retreatArm = 0;
       try { render(); } catch (x) {}
       show();
@@ -7723,8 +7792,8 @@
       if (r.result === 'victory') {
         run.cleared = run.floor + 1;
         var newAb = [], newWp = [];
-        try { C().rollWeaponDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Wpn.grant(id)) { newWp.push(id); (run.foundW = run.foundW || []).push(id); } }); } catch (x) {}
-        try { C().rollAbilityDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Abil.grant(id)) { newAb.push(id); (run.found = run.found || []).push(id); } }); } catch (x) {}
+        try { C().rollWeaponDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att, g.special ? { sure: true } : (e.trapped ? { mult: 1.6 } : null)).forEach(function(id) { if (Wpn.grant(id)) { newWp.push(id); (run.foundW = run.foundW || []).push(id); } }); } catch (x) {}
+        try { C().rollAbilityDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att, g.special ? { sure: true } : (e.trapped ? { mult: 1.6 } : null)).forEach(function(id) { if (Abil.grant(id)) { newAb.push(id); (run.found = run.found || []).push(id); } }); } catch (x) {}
         var dropTxt = '';
         try {
           var lr = C().rollLootDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att);
