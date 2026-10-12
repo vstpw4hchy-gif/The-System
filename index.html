@@ -2713,7 +2713,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-11-combat-s0';
+  var APP_VERSION = '2026-10-11-combat-s1b';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5449,7 +5449,8 @@
     var g = gateById(gateEntry.gateId);
     if (!g) { el.innerHTML = ''; return; }
     if (gateEntry.trapped) {
-      el.innerHTML = '<div class="gate-status-banner trapped">' + ico('lock') + ' <b>SEALED — RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.</div>';
+      el.innerHTML = '<div class="gate-status-banner trapped">' + ico('lock') + ' <b>SEALED — RED GATE</b><br>This gate shut behind you the moment you stepped through. There is no leaving until its boss is defeated.' +
+        (COMBAT_READY ? '' : '<div class="stats-note" style="margin-top:8px;">The gate battles are still being built, so for now the seal can be broken.</div><div class="loot-decision-row" style="margin-top:10px;"><button class="use-btn" id="gateLeaveBtn">BREAK THE SEAL</button></div>') + '</div>';
     } else {
       el.innerHTML = '<div class="gate-status-banner">' + ico('portal') + ' <b>INSIDE A ' + gateLabel(g) + ' GATE</b><br>You can leave at will, but it stays open and uncleared until someone finishes it.' +
         '<div class="loot-decision-row" style="margin-top:10px;"><button class="stash-btn" id="gateLeaveBtn">LEAVE GATE</button></div></div>';
@@ -5669,6 +5670,10 @@
     document.getElementById('gateDetailOverlay').classList.add('show');
   }
 
+  // Until the gate battles exist (combat update), nobody can defeat a red gate's boss, so the
+  // seal can be broken from the banner. Set to true once boss fights ship; then red gates truly seal.
+  var COMBAT_READY = false;
+
   function enterGate(id) {
     var g = gateById(id);
     if (!g || gateEntry) return;
@@ -5682,7 +5687,7 @@
   }
 
   function leaveGate() {
-    if (!gateEntry || gateEntry.trapped) return;
+    if (!gateEntry || (gateEntry.trapped && COMBAT_READY)) return;
     gateEntry = null;
     saveGateEntry();
     renderGateMap();
