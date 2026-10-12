@@ -576,6 +576,25 @@
     padding: 7px 14px;
     clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
   }
+
+  /* --- Inventory grid --- */
+  .inv-tabs { margin-top: 0; }
+  .inv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+  .inv-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 10px 4px 8px; min-height: 96px; text-align: center; cursor: pointer;
+    background: rgba(5,16,52,0.66); border: 1px solid var(--line); color: var(--text); font: inherit; }
+  .inv-tile:active, .inv-tile.sel { border-color: var(--line-bright); box-shadow: inset 0 0 0 1px var(--line-bright); }
+  .inv-tile .it-ico { font-size: 26px; line-height: 1.1; height: 30px; display: flex; align-items: center; justify-content: center; }
+  .inv-tile .it-ico svg { width: 28px; height: 28px; }
+  .inv-tile .it-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; line-height: 1.15; color: #eaf6ff; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; max-width: 100%; }
+  .inv-tile .it-tag { font-family: 'Share Tech Mono', monospace; font-size: 9.5px; letter-spacing: .08em; }
+  .inv-tile .it-flag { position: absolute; top: 3px; right: 4px; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--cyan); }
+  .inv-tile.rarity-legendary { border-color: rgba(255,215,106,0.65); box-shadow: 0 0 10px rgba(255,215,106,0.3); }
+  .inv-tile.rarity-heroic { border-color: rgba(178,139,255,0.5); }
+  .inv-tile.rarity-shop { border-color: rgba(255,180,84,0.55); }
+  .inv-tile.cursed { box-shadow: inset 0 0 14px rgba(255,59,92,0.2); }
+  .inv-tile.locked { opacity: .6; }
+  @media (max-width: 340px) { .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 600px) { .inv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .inv-empty {
     text-align: center;
     padding: 40px 20px;
@@ -1558,6 +1577,11 @@
   .bt-bar.fat > i { background: linear-gradient(90deg, #c9a52a, #ff9a3d 60%, #ff3b5c); }
   .bt-me-row { grid-template-columns: 58px 1fr 64px; }
   .bt-chip.gold { color: #ffd76a; border-color: rgba(255,215,106,0.55); }
+  .bt-wstrip { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; }
+  .bt-wchip { flex: 0 1 auto; max-width: 100%; padding: 5px 9px; background: rgba(6,20,62,0.7); border: 1px solid var(--line); color: var(--text-dim); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; touch-action: manipulation; }
+  .bt-wchip.sel { color: #fff; border-color: #ffd76a; box-shadow: inset 0 0 0 1px #ffd76a; background: rgba(60,48,10,0.55); }
+  .bt-winfo { flex: 1 0 100%; font-family: 'Share Tech Mono', monospace; font-size: 10.5px; color: #cdbb7a; line-height: 1.3; }
+  @media (max-height: 520px) and (orientation: landscape) { .bt-winfo { display: none; } .bt-wchip { padding: 3px 7px; font-size: 12px; } }
   /* ---------- ABILITIES ---------- */
   #abOverlay { z-index: 75; }
   .ab-card { border: 1px solid var(--rc, var(--line)); background: linear-gradient(180deg, rgba(10,30,80,0.55), rgba(3,10,34,0.8)); padding: 10px 12px 12px; margin: 10px 0; clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
@@ -1570,6 +1594,10 @@
   .ab-meta { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--cyan); margin: 6px 0 8px; }
   .ab-btn { width: 100%; padding: 9px; }
   .ab-btn:disabled { opacity: .4; }
+  #wpOverlay { z-index: 75; }
+  .shop-tabs { display: flex; gap: 6px; margin: 0 0 10px; }
+  .shop-tabs button { flex: 1; padding: 9px; background: rgba(6,20,62,0.6); border: 1px solid var(--line); color: var(--text-dim); font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: .1em; font-size: 14px; }
+  .shop-tabs button.active { color: #fff; border-color: var(--line-bright); background: linear-gradient(180deg, rgba(22,62,150,0.55), rgba(6,20,62,0.9)); }
   /* ---------- GATE RUN ---------- */
   #runOverlay { z-index: 70; }
   .run-card { border: 1px solid var(--line); background: linear-gradient(180deg, rgba(10,30,80,0.6), rgba(3,10,34,0.8)); padding: 14px 14px 12px; margin-bottom: 12px; }
@@ -1718,6 +1746,7 @@
       <div class="inv-title">INVENTORY</div>
       <button class="inv-close" id="invCloseBtn">CLOSE</button>
     </div>
+    <div class="shop-tabs inv-tabs" id="invTabs"><button data-itab="items" class="active">ITEMS</button><button data-itab="weapons">WEAPONS</button><button data-itab="equip">EQUIPMENT</button></div>
     <div id="invList"></div>
   </div>
 </div>
@@ -1751,6 +1780,7 @@
       <button class="inv-close" id="shopCloseBtn">CLOSE</button>
     </div>
     <div class="loot-box-text" style="margin-bottom:10px;">Spend the gold you earn from cleared quests. Today's stock changes every day and each item is limited to one. Anything you buy sells back for 80% of its price. Balance: <span id="shopGoldLine">0</span> gold.</div>
+    <div class="shop-tabs"><button id="shopTabItems" class="active">ITEMS</button><button id="shopTabWeapons">WEAPONS</button></div>
     <div class="shop-restock" id="shopRestock"></div>
     <div id="shopList"></div>
   </div>
@@ -1843,6 +1873,15 @@
       <button class="inv-close" id="abCloseBtn">CLOSE</button>
     </div>
     <div id="abBody"></div>
+  </div>
+</div>
+<div class="inv-overlay" id="wpOverlay">
+  <div class="inv-panel">
+    <div class="inv-header">
+      <div class="inv-title">YOUR WEAPONS</div>
+      <button class="inv-close" id="wpCloseBtn">CLOSE</button>
+    </div>
+    <div id="wpBody"></div>
   </div>
 </div>
 
@@ -2138,7 +2177,8 @@
       maxStamina: ds.maxStamina, fatigue: opts.fatigue != null ? clamp(opts.fatigue, 0, 100) : 0, collapsed: false,
       maxMana: ds.maxMana, mana: opts.mana != null ? clamp(opts.mana, 0, ds.maxMana) : ds.maxMana,
       st: {}, alive: true,
-      abilities: (opts.abilities || []).slice(0, 4)
+      abilities: (opts.abilities || []).slice(0, 4),
+      weapons: JSON.parse(JSON.stringify(opts.weapons || [])).slice(0, 3)
     };
   }
 
@@ -2202,7 +2242,8 @@
   }
   // Endurance (END and the running Quest Power) shrinks how much each attack tires you. The benchmark hunter for a level is 1.0.
   function fatMult(P) { return clamp((61.8 + 2.1 * P.level) / (P.maxStamina || 1), 0.35, 2.5); }
-  function fatGain(P, key) { return Math.max(1, Math.round(T.fat[key] * fatMult(P))); }
+  function wpnOf(P, id) { if (!id || !P.weapons) return null; for (var i = 0; i < P.weapons.length; i++) if (P.weapons[i].id === id) return P.weapons[i]; return null; }
+  function fatGain(P, key, wid) { var w = (key === 'basic' || key === 'power' || key === 'crit') ? wpnOf(P, wid) : null; return Math.max(1, Math.round(T.fat[key] * fatMult(P) * (1 + (w ? w.fat || 0 : 0)))); }
   function effAtk(S, u) {
     var a = u.atk;
     if (hasSt(u, 'weaken')) a *= 0.75;
@@ -2230,12 +2271,14 @@
     var K = 10 + 4.2 * defenderLevel;
     return K / (K + def);
   }
+  var _tagHit = null;
   function tagMult(target, tags) {
-    var weak = false, res = false;
+    var weak = null, res = null;
     (tags || []).forEach(function (t) {
-      if (target.weak && target.weak.indexOf(t) >= 0) weak = true;
-      if (target.resist && target.resist.indexOf(t) >= 0) res = true;
+      if (target.weak && target.weak.indexOf(t) >= 0 && !weak) weak = t;
+      if (target.resist && target.resist.indexOf(t) >= 0 && !res) res = t;
     });
+    _tagHit = weak || res || null;
     return weak ? T.weakMult : (res ? T.resistMult : 1);
   }
   function dealDamage(S, ev, src, dst, amount, meta) {
@@ -2252,7 +2295,7 @@
     dst.hp = Math.max(0, dst.hp - dealt);
     if (src && src.isPlayer) S.stats.dealt += dealt;
     if (dst.isPlayer) S.stats.taken += dealt;
-    ev.push({ t: 'dmg', src: src ? src.uid : null, dst: dst.uid, amt: dealt, absorbed: absorbed, crit: !!meta.crit, weak: !!meta.weak, resist: !!meta.resist, how: meta.how || '' });
+    ev.push({ t: 'dmg', src: src ? src.uid : null, dst: dst.uid, amt: dealt, absorbed: absorbed, crit: !!meta.crit, weak: !!meta.weak, resist: !!meta.resist, how: meta.how || '', tag: meta.tag || null });
     if (dst.hp <= 0 && dst.alive) {
       dst.alive = false; dst.hp = 0;
       if (dst.isEnemy) S.stats.kills++;
@@ -2269,16 +2312,26 @@
   // player basic-type hit
   function playerHit(S, ev, tgt, mult, tags, o) {
     o = o || {};
-    var P = S.player;
-    var critChance = clamp(P.crit + (o.critBonus || 0), 0, 0.95);
+    var P = S.player, w = o.weapon || null;
+    var critChance = clamp(P.crit + (o.critBonus || 0) + (w ? w.crit || 0 : 0), 0, 0.95);
     var crit = o.critOnlyScaling ? true : rnd(S) < critChance;      // Critical Strike always crits
     var m = o.critOnlyScaling ? T.critStrikeMult : mult * (crit ? T.critMult : 1);
-    var tm = tagMult(tgt, tags);
+    if (w) { tags = (tags || []).concat([w.kind]); if (w.elem) tags.push(w.elem); m *= 1 + (w.dmg || 0); }
+    var tm = tagMult(tgt, tags), hitTag = _tagHit;
     var raw = effAtk(S, P) * m * rr(S, 0.92, 1.08) * tm;
     if (tgt.guard) raw *= 0.5;
-    var dmg = raw * reduction(effDef(tgt), tgt.level);
+    var dmg = raw * reduction(effDef(tgt) * (1 - (w ? w.pierce || 0 : 0)), tgt.level);
     if (crit) S.stats.crits++;
-    return dealDamage(S, ev, P, tgt, dmg, { crit: crit, weak: tm > 1, resist: tm < 1, how: o.how });
+    var dealt = dealDamage(S, ev, P, tgt, dmg, { crit: crit, weak: tm > 1, resist: tm < 1, how: o.how, tag: hitTag });
+    if (w && dealt > 0) {
+      if (w.onhit && tgt.alive && rnd(S) < w.onhit.chance) { addStatus(tgt, w.onhit.id, w.onhit.dur || 3, w.onhit.id === 'stun' ? 0 : (w.onhit.id === 'poison' ? Math.max(1, r1(P.atk * 0.22)) : dotValue(w.onhit.id, P, tgt))); ev.push({ t: 'status', uid: tgt.uid, id: w.onhit.id }); }
+      if (w.leech) healUnit(ev, P, dealt * w.leech);
+      if (w.cleave) {
+        var other = aliveEnemies(S).filter(function (x) { return x.uid !== tgt.uid; })[0];
+        if (other) { var tm2 = tagMult(other, tags), t2 = _tagHit; dealDamage(S, ev, P, other, raw / tm * tm2 * reduction(effDef(other) * (1 - (w.pierce || 0)), other.level) * w.cleave, { weak: tm2 > 1, resist: tm2 < 1, how: o.how, tag: t2 }); }
+      }
+    }
+    return dealt;
   }
 
   // ---------- phases ----------
@@ -2339,16 +2392,16 @@
   function manaScale(L) { return (31.2 + 1.7 * L) / 48.2; }
   function manaCost(P, ab) { return Math.max(1, Math.round(ab.mana * manaScale(P.level))); }
   // cost = fatigue points the action adds (Defend: points it removes, as a negative number)
-  function legalActions(S) {
+  function legalActions(S, wid) {
     var P = S.player, out = [];
     function add(type, label, cost, ok, why, extra) { out.push(Object.assign({ type: type, label: label, cost: cost, ok: ok, why: why || '' }, extra || {})); }
     var ccd = S.cd.crit || 0;
-    add('basic', 'Attack', fatGain(P, 'basic'), true);
+    add('basic', 'Attack', fatGain(P, 'basic', wid), true);
     add('defend', 'Defend', -T.fat.defendRelief, true);
     add('evade', 'Evasion', fatGain(P, 'evade'), true);
     var pcd = S.cd.power || 0;
-    add('power', 'Power Strike', fatGain(P, 'power'), pcd <= 0, pcd > 0 ? 'cooldown' : '', { cd: pcd });
-    add('crit', 'Critical Strike', fatGain(P, 'crit'), ccd <= 0, ccd > 0 ? 'cooldown' : '', { cd: ccd });
+    add('power', 'Power Strike', fatGain(P, 'power', wid), pcd <= 0, pcd > 0 ? 'cooldown' : '', { cd: pcd });
+    add('crit', 'Critical Strike', fatGain(P, 'crit', wid), ccd <= 0, ccd > 0 ? 'cooldown' : '', { cd: ccd });
     P.abilities.forEach(function (id) {
       var ab = ABILITIES[id]; if (!ab) return;
       var cd = S.cd[id] || 0;
@@ -2467,17 +2520,17 @@
     var wasCharging = tgt && !!tgt.chargeMove;
     switch (a.type) {
       case 'basic':
-        ev.push({ t: 'act', who: 'P', type: 'basic' });
-        playerHit(S, ev, tgt, 1, ['basic', 'phys'], { how: 'basic' });
+        ev.push({ t: 'act', who: 'P', type: 'basic', weapon: (wpnOf(P, a.weapon) || {}).name || null });
+        playerHit(S, ev, tgt, 1, ['basic', 'phys'], { how: 'basic', weapon: wpnOf(P, a.weapon) });
         break;
       case 'power':
-        ev.push({ t: 'act', who: 'P', type: 'power' });
-        playerHit(S, ev, tgt, T.powerMult, ['power', 'phys'], { how: 'power' });
+        ev.push({ t: 'act', who: 'P', type: 'power', weapon: (wpnOf(P, a.weapon) || {}).name || null });
+        playerHit(S, ev, tgt, T.powerMult, ['power', 'phys'], { how: 'power', weapon: wpnOf(P, a.weapon) });
         if (wasCharging && tgt.alive) { tgt.chargeMove = null; addStatus(tgt, 'stun', 1, 0); ev.push({ t: 'interrupt', uid: tgt.uid }); }
         break;
       case 'crit':
-        ev.push({ t: 'act', who: 'P', type: 'crit' });
-        playerHit(S, ev, tgt, 1, ['crit', 'phys'], { how: 'crit', critBonus: T.critBonus, critOnlyScaling: true });
+        ev.push({ t: 'act', who: 'P', type: 'crit', weapon: (wpnOf(P, a.weapon) || {}).name || null });
+        playerHit(S, ev, tgt, 1, ['crit', 'phys'], { how: 'crit', critBonus: T.critBonus, critOnlyScaling: true, weapon: wpnOf(P, a.weapon) });
         break;
       case 'defend': ev.push({ t: 'act', who: 'P', type: 'defend' }); break;
       case 'evade': ev.push({ t: 'act', who: 'P', type: 'evade' }); break;
@@ -2506,7 +2559,7 @@
     var P = S.player, legal = legalActions(S), found = null;
     if (a.type === 'item' || a.type === 'collapse') return a;
     legal.forEach(function (l) { if (l.type === a.type && (a.type !== 'ability' || l.id === a.id)) found = l; });
-    if (!found || !found.ok) return { type: 'basic', target: a.target, downgraded: true };
+    if (!found || !found.ok) return { type: 'basic', target: a.target, downgraded: true, weapon: a.weapon };
     return a;
   }
   function act(S, action) {
@@ -2519,7 +2572,7 @@
     // a collapsed hunter cannot act this round
     if (P.collapsed) a = { type: 'collapse' };
     // fatigue from the chosen action
-    if (a.type === 'basic' || a.type === 'power' || a.type === 'crit' || a.type === 'evade') P.fatigue = Math.min(100, P.fatigue + fatGain(P, a.type));
+    if (a.type === 'basic' || a.type === 'power' || a.type === 'crit' || a.type === 'evade') P.fatigue = Math.min(100, P.fatigue + fatGain(P, a.type, a.weapon));
     if (a.type === 'defend') P.fatigue = Math.max(0, P.fatigue - T.fat.defendRelief);
     if (a.type === 'crit') S.cd.crit = T.fat.critCd + 1;
     if (a.type === 'power') S.cd.power = T.fat.powerCd + 1;
@@ -2649,7 +2702,26 @@
 
   // ---------- player policies + simulator ----------
   var TUNE_POL = { critBelow: 35, powerBelow: 80, defendAbove: 60, longK: 7 };
+  // The simulated player always draws the best weapon for the target it is about to hit.
+  function bestWeapon(S) {
+    var P = S.player, al = aliveEnemies(S), t = al[0]; if (!P.weapons || !P.weapons.length || !t) return null;
+    var best = null, bs = 1;
+    P.weapons.forEach(function (w) {
+      var tags = ['phys', w.kind].concat(w.elem ? [w.elem] : []), sc = (1 + (w.dmg || 0)) * tagMult(t, tags) * (1 + (w.crit || 0) * 0.75) / (1 + (w.fat || 0) * 0.3);
+      if (w.cleave && al.length > 1) sc *= 1 + w.cleave * 0.6; if (w.pierce) sc *= 1 + w.pierce * 0.4; if (w.onhit) sc *= 1.06;
+      if (sc > bs) { bs = sc; best = w; }
+    });
+    return best ? best.id : null;
+  }
   function policy(name) {
+    var core = policyCore(name);
+    return function (S, rng) {
+      var a = core(S, rng);
+      if (a && (a.type === 'basic' || a.type === 'power' || a.type === 'crit') && a.weapon == null) { var wid = bestWeapon(S); if (wid) a.weapon = wid; }
+      return a;
+    };
+  }
+  function policyCore(name) {
     return function (S, rng) {
       var P = S.player;
       var al = aliveEnemies(S), t = al[0] || null;
@@ -2844,7 +2916,7 @@
     }
     var e = makeEnemy(d.role, rank, o);
     if (opts.level) e.level = opts.level;
-    e.fam = d.fam; e.catalog = true; e.grantsAbility = !!d.ability;
+    e.catalogId = d.id; e.fam = d.fam; e.catalog = true; e.grantsAbility = !!d.ability;
     if (d.ability && depth === 0) { e.abilityId = 'a_' + d.id; e.grantChance = d.role === 'boss' ? ABILITY_DROP.boss : ABILITY_DROP.elite; }
     return e;
   }
@@ -2994,6 +3066,114 @@
   finalizeAbilities();
 
 
+  // ---------- weapons ----------
+  // Shop weapons are hand-named, eight styles in each of the six ranks. Signature weapons are derived from special
+  // elites and bosses (the same creatures that can teach an ability) and can only be found, never bought.
+  var W_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
+  var W_BASE = { E: 0.10, D: 0.16, C: 0.22, B: 0.30, A: 0.38, S: 0.46 };
+  var W_REQ = { E: 1, D: 13, C: 33, B: 69, A: 141, S: 285 };
+  var W_PRICE = { E: 150, D: 700, C: 2400, B: 7500, A: 22000, S: 65000 };
+  var W_SCALE = 0.35;
+  var W_DROP = { elite: 0.25, boss: 0.45 };
+  var W_CLASS = {
+    sword:    { label: 'Sword',          kind: 'blade',  dmg: 0.08,  crit: 0.04, fat: 0,     pf: 1.0 },
+    dagger:   { label: 'Dagger',         kind: 'pierce', dmg: -0.04, crit: 0.14, fat: -0.25, pf: 0.85 },
+    axe:      { label: 'Axe',            kind: 'blade',  dmg: 0.10,  fat: 0.10, cleave: 0.4, pf: 1.1 },
+    hammer:   { label: 'Hammer',         kind: 'blunt',  dmg: 0.24,  fat: 0.30, onhit: { id: 'stun', chance: 0.10, dur: 1 }, pf: 1.15 },
+    spear:    { label: 'Spear',          kind: 'pierce', dmg: 0.10,  pierce: 0.25, pf: 1.05 },
+    serrated: { label: 'Serrated Blade', kind: 'blade',  dmg: 0.06,  onhit: { id: 'bleed', chance: 0.3, dur: 3 }, pf: 1.2 },
+    flame:    { label: 'Flame Blade',    kind: 'blade',  elem: 'fire', dmg: 0.04, onhit: { id: 'burn', chance: 0.25, dur: 3 }, pf: 1.35 },
+    venom:    { label: 'Venom Blade',    kind: 'pierce', elem: 'poison', dmg: 0.02, onhit: { id: 'poison', chance: 0.25, dur: 3 }, pf: 1.3 }
+  };
+  var W_SHOP_NAMES = {
+    sword:    ['Rusty Shortsword', 'Hunter\'s Steel Blade', 'Wyrmbone Longsword', 'Aegis Edge', 'Sunsteel Greatsword', 'Horizon Severer'],
+    dagger:   ['Bone-Handled Dagger', 'Nightglass Stiletto', 'Viper Fang Kris', 'Phantom Dirk', 'Whisper of Thorns', 'Void Needle'],
+    axe:      ['Hatchet of the Hollow', 'Ironbark Cleaver', 'Warlord\'s Battleaxe', 'Reaver\'s Crescent', 'Dreadchopper', 'Axe of the Last Mountain'],
+    hammer:   ['Splintered Club', 'Ironbound Mace', 'Quakehammer', 'Siegebreaker Maul', 'Thunderclap Hammer', 'Worldshaker'],
+    spear:    ['Tin-Tipped Spear', 'Lancer\'s Pike', 'Stormline Glaive', 'Dragonthorn Lance', 'Skyfall Halberd', 'Spear of the Falling Star'],
+    serrated: ['Jagged Sawblade', 'Rippertooth Falchion', 'Bloodletter\'s Saber', 'Crimson Reaper', 'Hemorrhage', 'Sanguine Eclipse'],
+    flame:    ['Emberstick Blade', 'Cinderforged Sword', 'Magma Cutlass', 'Phoenix Talon', 'Solar Flamberge', 'Heart of the Star-Forge'],
+    venom:    ['Spiderbite Shiv', 'Greenfang Rapier', 'Wraithvenom Dirk', 'Hydra\'s Tooth', 'Plaguebringer Scythe', 'Mother of Poisons']
+  };
+  var W_NOUNS = { sword: ['Edge', 'Blade'], dagger: ['Shiv', 'Sting'], axe: ['Cleaver', 'Hewer'], hammer: ['Maul', 'Crusher'], spear: ['Pike', 'Lance'], serrated: ['Ripper', 'Tooth'], flame: ['Brand', 'Cinder'], venom: ['Fang', 'Barb'] };
+  var WEAPONS = {};
+  var W_STN = { bleed: 'Bleed', burn: 'Burn', poison: 'Poison', stun: 'Stun', slow: 'Slow' };
+  function wRound(v) { return Math.round(v * 100) / 100; }
+  function wDesc(w) {
+    var b = ['Damage ' + (w.dmg >= 0 ? '+' : '') + Math.round(w.dmg * 100) + '%'];
+    if (w.crit) b.push('+' + Math.round(w.crit * 100) + '% crit chance');
+    if (w.fat) b.push((w.fat > 0 ? '+' : '') + Math.round(w.fat * 100) + '% fatigue per attack');
+    if (w.pierce) b.push('ignores ' + Math.round(w.pierce * 100) + '% of defense');
+    if (w.cleave) b.push('also hits a second foe for ' + Math.round(w.cleave * 100) + '%');
+    if (w.onhit) b.push(Math.round(w.onhit.chance * 100) + '% to inflict ' + (W_STN[w.onhit.id] || w.onhit.id));
+    if (w.leech) b.push('heals ' + Math.round(w.leech * 100) + '% of damage dealt');
+    return b.join(' · ') + '.';
+  }
+  function mkWeapon(id, name, rank, cls, extra) {
+    var c = W_CLASS[cls], w = {
+      id: id, name: name, rank: rank, cls: cls, kind: c.kind, elem: c.elem || null, dmg: wRound((W_BASE[rank] + c.dmg + ((extra && extra.dmg) || 0)) * W_SCALE),
+      crit: c.crit || 0, fat: c.fat || 0, pierce: c.pierce || 0, cleave: c.cleave || 0, leech: (extra && extra.leech) || 0,
+      onhit: (extra && extra.onhit) || (c.onhit ? JSON.parse(JSON.stringify(c.onhit)) : null),
+      req: W_REQ[rank], price: Math.round(W_PRICE[rank] * c.pf / 5) * 5, src: (extra && extra.src) || 'shop', from: (extra && extra.from) || null
+    };
+    w.desc = wDesc(w);
+    WEAPONS[id] = w; return w;
+  }
+  (function buildShopWeapons() {
+    Object.keys(W_SHOP_NAMES).forEach(function (cls) {
+      W_SHOP_NAMES[cls].forEach(function (nm, i) { mkWeapon('wp_' + W_RANKS[i].toLowerCase() + '_' + cls, nm, W_RANKS[i], cls); });
+    });
+  })();
+  function wShort(name) {
+    var n = name.replace(/^The\s+/, ''), m = /\bof the (.+)$/.exec(n);
+    if (m) return m[1].trim();
+    n = n.split(/,\s|\s+the\s+/)[0].trim();
+    var w = n.split(' ');
+    if (w.length === 4 && w[1] === 'of') return w[3];
+    if (w.length === 3 && /^(Lord|General|Archon|Engine|Prince|Queen|Hunter|Hag|Priest|Sovereign|of)$/.test(w[1])) return w[2];
+    if (w.length > 1 && /^(Captain|Baron|Lord|Lady|Ser|Jarl|Skald|Inquisitor|High|Emperor|Archdemon|King)$/.test(w[0]) && (w.length >= 3 || /^(Captain|Baron|Ser|Jarl|Skald|Inquisitor|High|Archdemon)$/.test(w[0]))) { w.shift(); n = w.join(' '); }
+    return n;
+  }
+  function wPoss(n) { return /s$/i.test(n) ? n + '\'' : n + '\'s'; }
+  function finalizeWeapons() {
+    var used = {};
+    Object.keys(WEAPONS).forEach(function (k) { used[WEAPONS[k].name] = 1; });
+    Object.keys(CATALOG.byId).sort().forEach(function (id) {
+      var d = CATALOG.byId[id];
+      if (d.kind !== 'e' && d.kind !== 'b') return;
+      if (hash01('wdrop|' + id) >= (d.role === 'boss' ? 0.6 : 0.4)) return;
+      var cls = null, stat = null, drain = false;
+      d.moves.forEach(function (m) {
+        if (m.type === 'drain') drain = true;
+        var s = m.status && typeof m.status === 'object' ? m.status.id : null;
+        if (!stat && s) stat = s;
+      });
+      cls = ({ bleed: 'serrated', burn: 'flame', poison: 'venom', stun: 'hammer' })[stat];
+      if (!cls) { var pool = ['sword', 'axe', 'spear', 'dagger', 'hammer']; cls = pool[Math.floor(hash01('wcls|' + id) * pool.length)]; }
+      var nouns = W_NOUNS[cls], P0 = wPoss(wShort(d.name)), n0 = Math.floor(hash01('wn|' + id) * nouns.length), nm = P0 + ' ' + nouns[n0];
+      if (used[nm]) nm = P0 + ' ' + nouns[(n0 + 1) % nouns.length];
+      if (used[nm]) nm = P0 + ' ' + W_CLASS[cls].label;
+      if (used[nm]) nm = wPoss(d.name) + ' ' + nouns[0];
+      used[nm] = 1;
+      var w = mkWeapon('wd_' + id, nm, d.rank, cls, { dmg: 0.06, leech: drain ? 0.08 : 0, src: 'drop', from: d.name });
+      w.price = Math.round(W_PRICE[d.rank] * W_CLASS[cls].pf * 0.55 / 5) * 5;   // what a found weapon sells for
+      d.wdrop = w.id;
+    });
+  }
+  finalizeWeapons();
+  function weaponDef(id) { return WEAPONS[id] || null; }
+  function shopWeapons() { return Object.keys(WEAPONS).map(function (k) { return WEAPONS[k]; }).filter(function (w) { return w.src === 'shop'; }); }
+  function rollWeaponDrops(S, seed) {
+    var out = [];
+    (S.enemies || []).forEach(function (e) {
+      if (e.alive || !e.catalogId || e.anom) return;
+      var d = CATALOG.byId[e.catalogId]; if (!d || !d.wdrop) return;
+      var ch = d.role === 'boss' ? W_DROP.boss : W_DROP.elite;
+      if (hash01('wroll|' + seed + '|' + e.uid) < ch && out.indexOf(d.wdrop) < 0) out.push(d.wdrop);
+    });
+    return out;
+  }
+
 
   var API = {
     HORDE: HORDE, COMMON_K: COMMON_K,
@@ -3002,7 +3182,7 @@
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
     policy: policy, simulate: simulate, aliveEnemies: aliveEnemies,
-    TUNE_POL: TUNE_POL, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
+    TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -3379,7 +3559,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-combat-s7f';
+  var APP_VERSION = '2026-10-12-inv-grid';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -4326,9 +4506,13 @@
     if (shopLine) shopLine.textContent = String(goldBalance);
   }
 
+  var invTab = 'items';
   function renderInventoryList() {
     var list = document.getElementById('invList');
     purgeUsedItems();
+    document.querySelectorAll('#invTabs button').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-itab') === invTab); });
+    if (invTab === 'weapons') { Wpn.renderInvTab(list); return; }
+    if (invTab === 'equip') { list.innerHTML = '<div class="inv-empty">No equipment yet.<br>Armor, rings and boots will be found and bought here later.</div>'; return; }
     if (!visibleInventory().length) {
       list.innerHTML = '<div class="inv-empty">No items yet.<br>Clear a daily quest to earn your first drop.</div>';
       return;
@@ -4337,15 +4521,14 @@
     var sorted = visibleInventory().sort(function(a, b) {
       return rankOrder[a.rank] - rankOrder[b.rank];
     });
-    list.innerHTML = sorted.map(function(item) {
-      var dateStr = new Date(item.acquired).toLocaleDateString();
-      var meta = '<div class="item-meta">Acquired ' + dateStr + (item.used ? '' : ' &middot; sells for ' + sellValue(item) + ' gold') + '</div>';
-      return renderItemCardHtml(item, (item.used ? 'used ' : '') + 'clickable', meta).replace(
-        'class="item-card', 'data-item-id="' + item.id + '" class="item-card'
-      );
-    }).join('');
+    list.innerHTML = '<div class="inv-grid">' + sorted.map(function(item) {
+      return '<button class="inv-tile rarity-' + item.rank + (isCursed(item) ? ' cursed' : '') + '" data-item-id="' + item.id + '">' +
+        '<span class="it-ico">' + iconFor(item) + '</span><span class="it-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="it-tag rarity-' + item.rank + '">' + (RANK_LABELS[item.rank] || item.rank.toUpperCase()) + '</span>' +
+        (isCursed(item) ? '<span class="it-flag" style="color:#ff6b86">CURSED</span>' : '') + '</button>';
+    }).join('') + '</div>';
 
-    list.querySelectorAll('.item-card').forEach(function(cardEl) {
+    list.querySelectorAll('.inv-tile').forEach(function(cardEl) {
       cardEl.addEventListener('click', function() {
         var id = cardEl.getAttribute('data-item-id');
         var it = inventory.find(function(i) { return i.id === id; });
@@ -4924,6 +5107,10 @@
     renderInventoryList();
     document.getElementById('invOverlay').classList.add('show');
   });
+  document.getElementById('invTabs').addEventListener('click', function(e) {
+    var b = e.target.closest && e.target.closest('button[data-itab]'); if (!b) return;
+    invTab = b.getAttribute('data-itab'); renderInventoryList();
+  });
   document.getElementById('invCloseBtn').addEventListener('click', function() {
     document.getElementById('invOverlay').classList.remove('show');
   });
@@ -4957,11 +5144,15 @@
     '</div>';
   }
 
+  var shopTab = 'items';
   function renderShopList() {
     renderGoldDisplays();
     var restock = document.getElementById('shopRestock');
-    if (restock) restock.textContent = shopRestockText();
+    if (restock) restock.textContent = shopTab === 'weapons' ? '' : shopRestockText();
+    document.getElementById('shopTabItems').classList.toggle('active', shopTab === 'items');
+    document.getElementById('shopTabWeapons').classList.toggle('active', shopTab === 'weapons');
     var list = document.getElementById('shopList');
+    if (shopTab === 'weapons') { Wpn.renderShopTab(list); return; }
     var stock = stockItems();
     list.innerHTML =
       '<div class="stats-section-title"><span>TODAY\'S STOCK</span></div>' +
@@ -4977,6 +5168,8 @@
     });
   }
 
+  document.getElementById('shopTabItems').addEventListener('click', function() { shopTab = 'items'; renderShopList(); });
+  document.getElementById('shopTabWeapons').addEventListener('click', function() { shopTab = 'weapons'; renderShopList(); });
   document.getElementById('shopOpenBtn').addEventListener('click', function() {
     renderShopList();
     document.getElementById('shopOverlay').classList.add('show');
@@ -6682,6 +6875,142 @@
     if (e.target && e.target.id === 'gateContinueBtn') Run.show();
   });
 
+  // ---- Weapons -----------------------------------------------------------------------
+  // Weapons are bought in the shop (Weapons tab) or found on strong enemies. Up to three are carried into a gate;
+  // in battle you pick the weapon first and then how to strike with it. A weapon needs a minimum hunter level.
+  var Wpn = (function() {
+    var KEY = 'the-system-weapons', MAXCARRY = 3;
+    var data = load();
+    function C() { return window.SystemCombat; }
+    function $(id) { return document.getElementById(id); }
+    function load() {
+      var out = { owned: [], carry: [], n: 0 }, raw = null;
+      try { raw = localStorage.getItem(KEY); } catch (e) {}
+      if (raw) { try { var p = JSON.parse(raw); if (p && Array.isArray(p.owned)) out.owned = p.owned.filter(function(o) { return o && typeof o.u === 'string' && typeof o.id === 'string'; }); if (p && Array.isArray(p.carry)) out.carry = p.carry.filter(function(x) { return typeof x === 'string'; }); out.n = +p.n || out.owned.length; } catch (e) {} }
+      return out;
+    }
+    function save() {
+      if (restoring) return;
+      var ok = false;
+      try { localStorage.setItem(KEY, JSON.stringify(data)); ok = true; } catch (e) { ok = false; }
+      if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+    }
+    function def(id) { return C().weaponDef ? C().weaponDef(id) : null; }
+    function clean() {
+      data.owned = data.owned.filter(function(o) { return def(o.id); });
+      var us = data.owned.map(function(o) { return o.u; });
+      data.carry = data.carry.filter(function(u, i) { return us.indexOf(u) >= 0 && data.carry.indexOf(u) === i; }).slice(0, MAXCARRY);
+    }
+    function sellValue(w) { return w.src === 'shop' ? Math.round(w.price * 0.8) : w.price; }
+    function ownsId(id) { clean(); return data.owned.some(function(o) { return o.id === id; }); }
+    function grant(id) {
+      if (!def(id)) return false;
+      data.n += 1; data.owned.push({ u: 'w' + data.n + '_' + Date.now().toString(36), id: id });
+      var o = data.owned[data.owned.length - 1];
+      if (data.carry.length < MAXCARRY && def(id).req <= hunterLevel) data.carry.push(o.u);
+      save(); return true;
+    }
+    function entryOf(u) { return data.owned.filter(function(o) { return o.u === u; })[0] || { id: '' }; }
+    // The weapons that go into a battle: definitions the engine understands, restricted to what the hunter's level allows.
+    function carried() {
+      clean(); var out = [];
+      data.carry.forEach(function(u) { var w = def(entryOf(u).id); if (w && w.req <= hunterLevel && !out.some(function(x) { return x.id === w.id; })) out.push(w); });
+      return out;
+    }
+    function carriedCount() { return carried().length; }
+    function nameOf(id) { var w = def(id); return w ? w.name : id; }
+
+    function cardHtml(w, mode, u) {
+      var col = (GATE_INFO[w.rank] || {}).color || '#c7cdd6', lock = w.req > hunterLevel;
+      var head = '<div class="ab-top"><div class="ab-name">' + escapeHtml(w.name) + '</div><div class="ab-rank">' + w.rank + '-RANK</div></div>' +
+        '<div class="ab-from">' + escapeHtml(w.cls === 'serrated' ? 'SERRATED BLADE' : w.cls.toUpperCase()) + ' &middot; ' + w.kind.toUpperCase() + (w.elem ? ' &middot; ' + w.elem.toUpperCase() : '') + (w.from ? ' &middot; FROM ' + escapeHtml(w.from).toUpperCase() : '') + '</div>' +
+        '<div class="ab-desc">' + escapeHtml(w.desc) + '</div>' +
+        '<div class="ab-meta"' + (lock ? ' style="color:#ff7a8e"' : '') + '>REQUIRES LEVEL ' + w.req + (lock ? ' (YOU ARE ' + hunterLevel + ')' : '') + '</div>';
+      if (mode === 'shop') {
+        var owned = ownsId(w.id), can = goldBalance >= w.price;
+        return '<div class="ab-card" style="--rc:' + col + '">' + head + '<button class="use-btn ab-btn" data-wbuy="' + w.id + '"' + (owned || !can ? ' disabled' : '') + '>' + (owned ? 'OWNED' : (can ? 'BUY &middot; ' + w.price + ' GOLD' : 'NEED ' + w.price + ' GOLD')) + '</button></div>';
+      }
+      var on = data.carry.indexOf(u) >= 0;
+      return '<div class="ab-card' + (on ? ' on' : '') + '" style="--rc:' + col + '">' + head +
+        '<div class="loot-decision-row" style="margin-top:0;"><button class="' + (on ? 'stash-btn' : 'use-btn') + '" data-wcarry="' + u + '"' + (!on && (lock || data.carry.length >= MAXCARRY) ? ' disabled' : '') + '>' + (on ? 'UNEQUIP' : (lock ? 'LEVEL TOO LOW' : (data.carry.length >= MAXCARRY ? 'HANDS FULL' : 'EQUIP'))) + '</button>' +
+        '<button class="stash-btn" data-wsell="' + u + '">SELL &middot; ' + sellValue(w) + '</button></div></div>';
+    }
+    var armArm = null;
+    function renderArmory() {
+      clean();
+      var list = data.owned.slice().sort(function(a, b) { return 'EDCBAS'.indexOf(def(b.id).rank) - 'EDCBAS'.indexOf(def(a.id).rank) || def(a.id).name.localeCompare(def(b.id).name); });
+      var html = '<div class="stats-note" style="margin-top:0;">CARRYING ' + data.carry.length + ' / ' + MAXCARRY + ' &middot; in battle you choose which one to strike with. Selling pays gold at once. Gold: <b>' + goldBalance + '</b></div>';
+      if (!list.length) html += '<div class="panel" style="padding:14px;">You carry no weapons. Buy one in the shop (Weapons tab) or take one from a strong enemy.</div>';
+      list.forEach(function(o) { html += cardHtml(def(o.id), 'own', o.u); });
+      $('wpBody').innerHTML = html;
+    }
+    function openArmory() { renderArmory(); $('wpOverlay').classList.add('show'); }
+    function closeArmory() { $('wpOverlay').classList.remove('show'); armArm = null; try { if (typeof Run !== 'undefined' && Run && $('runOverlay').classList.contains('show')) Run.show(); } catch (e) {} try { if ($('shopOverlay').classList.contains('show')) renderShopList(); } catch (e) {} }
+    $('wpCloseBtn').addEventListener('click', closeArmory);
+    var invSel = null, invListEl = null;
+    function refresh() {
+      if ($('wpOverlay').classList.contains('show')) renderArmory();
+      if (invListEl && $('invOverlay').classList.contains('show') && invListEl.querySelector('.inv-wpn')) renderInvTab(invListEl);
+    }
+    function onAct(e) {
+      var b = e.target.closest && e.target.closest('button'); if (!b || b.disabled) return;
+      var c = b.getAttribute('data-wcarry'), s = b.getAttribute('data-wsell');
+      if (c) { var i = data.carry.indexOf(c); if (i >= 0) data.carry.splice(i, 1); else if (data.carry.length < MAXCARRY) data.carry.push(c); save(); refresh(); }
+      else if (s) {
+        if (armArm !== s) { armArm = s; b.textContent = 'SURE? SELL'; setTimeout(function() { if (armArm === s) { armArm = null; refresh(); } }, 3000); return; }
+        var o = entryOf(s), w = def(o.id); armArm = null;
+        data.owned = data.owned.filter(function(x) { return x.u !== s; }); data.carry = data.carry.filter(function(u) { return u !== s; });
+        if (invSel === s) invSel = null;
+        goldBalance += sellValue(w); saveGold(); save(); renderGoldDisplays(); showToast('Sold ' + w.name + ' for ' + sellValue(w) + ' gold.'); refresh();
+      }
+    }
+    $('wpBody').addEventListener('click', onAct);
+    var BLADE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4l-9 9M19 4h-4M19 4v4M8 11l5 5M6 18l-2 2M7 17l2 2"/></svg>';
+    function renderInvTab(list) {
+      clean(); invListEl = list;
+      var arr = data.owned.slice().sort(function(a, b) { return 'EDCBAS'.indexOf(def(b.id).rank) - 'EDCBAS'.indexOf(def(a.id).rank) || def(a.id).name.localeCompare(def(b.id).name); });
+      if (!arr.length) { list.innerHTML = '<div class="inv-empty inv-wpn">No weapons yet.<br>Buy one in the shop (Weapons tab) or take one from a strong enemy.</div>'; return; }
+      if (!arr.some(function(o) { return o.u === invSel; })) invSel = null;
+      var html = '<div class="inv-wpn"><div class="stats-note" style="margin-top:0;">CARRYING ' + data.carry.length + ' / ' + MAXCARRY + ' &middot; tap a weapon to equip or sell it.</div>';
+      if (invSel) html += cardHtml(def(entryOf(invSel).id), 'own', invSel);
+      html += '<div class="inv-grid">' + arr.map(function(o) {
+        var w = def(o.id), col = (GATE_INFO[w.rank] || {}).color || '#c7cdd6', on = data.carry.indexOf(o.u) >= 0;
+        return '<button class="inv-tile' + (o.u === invSel ? ' sel' : '') + (w.req > hunterLevel ? ' locked' : '') + '" style="border-color:' + col + '66" data-wu="' + o.u + '"><span class="it-ico" style="color:' + col + '">' + BLADE + '</span><span class="it-name">' + escapeHtml(w.name) + '</span><span class="it-tag" style="color:' + col + '">' + w.rank + '-RANK</span>' + (on ? '<span class="it-flag">EQUIPPED</span>' : (w.req > hunterLevel ? '<span class="it-flag" style="color:#ff7a8e">LV ' + w.req + '</span>' : '')) + '</button>';
+      }).join('') + '</div></div>';
+      list.innerHTML = html;
+    }
+    document.getElementById('invList').addEventListener('click', function(e) {
+      var t = e.target.closest && e.target.closest('.inv-tile[data-wu]');
+      if (t) { var u = t.getAttribute('data-wu'); invSel = invSel === u ? null : u; armArm = null; renderInvTab(this); return; }
+      if (e.target.closest && e.target.closest('.inv-wpn')) onAct(e);
+    });
+
+    // ---- shop tab ----
+    var shopRank = 'E';
+    function renderShopTab(list) {
+      var C0 = C(), ws = C0.shopWeapons().filter(function(w) { return w.rank === shopRank; });
+      var tabs = 'EDCBAS'.split('').map(function(r) { return '<button class="codex-tab' + (r === shopRank ? ' active' : '') + '" data-wrank="' + r + '" style="color:' + (GATE_INFO[r] || {}).color + '">' + r + '</button>'; }).join('');
+      list.innerHTML = '<div class="codex-tabs" style="margin-bottom:6px;">' + tabs + '</div>' +
+        '<div class="loot-decision-row" style="margin:0 0 8px;"><button class="stash-btn" id="wShopOwnedBtn">YOUR WEAPONS (' + (clean(), data.owned.length) + ')</button></div>' +
+        '<div class="stats-note" style="margin-top:0;">' + shopRank + '-rank weapons. Higher ranks hit harder and cost far more, and need a higher hunter level to wield. Anything you buy sells back for 80%.</div>' +
+        ws.map(function(w) { return cardHtml(w, 'shop'); }).join('');
+    }
+    document.addEventListener('click', function(e) {
+      var t = e.target; if (!t || !t.closest) return;
+      var rb = t.closest('[data-wrank]');
+      if (rb && $('shopList').contains(rb)) { shopRank = rb.getAttribute('data-wrank'); renderShopList(); return; }
+      if (t.id === 'wShopOwnedBtn') { openArmory(); return; }
+      var bb = t.closest('[data-wbuy]');
+      if (bb && !bb.disabled) {
+        var w = def(bb.getAttribute('data-wbuy')); if (!w || goldBalance < w.price || ownsId(w.id)) return;
+        goldBalance -= w.price; saveGold(); grant(w.id); renderGoldDisplays();
+        showToast('Bought ' + w.name + '. Added to Inventory > Weapons.' + (w.req > hunterLevel ? ' You need level ' + w.req + ' to wield it.' : ''));
+        renderShopList();
+      }
+    });
+    return { grant: grant, carried: carried, carriedCount: carriedCount, nameOf: nameOf, def: def, openArmory: openArmory, renderShopTab: renderShopTab, renderInvTab: renderInvTab, owned: function() { clean(); return data.owned.slice(); } };
+  })();
+
   // ---- Abilities ---------------------------------------------------------------------
   // Special abilities are learned from rare elites and bosses (and from Anomalies in System and Red gates).
   // Up to four are equipped for battle. Job abilities will join this list once a job is assigned.
@@ -6803,9 +7132,10 @@
         switch (ev.t) {
           case 'illegal': out.push(['sys', ev.msg]); break;
           case 'act':
-            if (ev.type === 'basic') out.push(['you', 'You strike.']);
-            else if (ev.type === 'power') out.push(['you', 'You unleash a POWER STRIKE!']);
-            else if (ev.type === 'crit') out.push(['you', 'You aim a CRITICAL STRIKE!']);
+            var wp = ev.weapon ? ' with ' + ev.weapon : '';
+            if (ev.type === 'basic') out.push(['you', 'You strike' + wp + '.']);
+            else if (ev.type === 'power') out.push(['you', 'You unleash a POWER STRIKE' + wp + '!']);
+            else if (ev.type === 'crit') out.push(['you', 'You aim a CRITICAL STRIKE' + wp + '!']);
             else if (ev.type === 'defend') out.push(['you', 'You brace for impact.']);
             else if (ev.type === 'evade') out.push(['you', 'You ready an evasive step.']);
             else if (ev.type === 'ability') out.push(['you', 'You use ' + ev.name + '!']);
@@ -6907,7 +7237,7 @@
       return '<button class="bt-act ' + cls + '" data-act="' + id + '"' + (ok ? '' : ' disabled') + '>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
     }
     function renderActs() {
-      var S = SS(), over = !!S.over || busy, legal = C().legalActions(S), L = {};
+      var S = SS(), over = !!S.over || busy, legal = C().legalActions(S, cur.wsel), L = {};
       legal.forEach(function(l) { if (l.type !== 'ability') L[l.type] = l; });
       var abil = legal.filter(function(l) { return l.type === 'ability'; });
       var T = C().T, ch = S.enemies.some(function(e) { return e.alive && e.chargeMove; });
@@ -6918,6 +7248,11 @@
         }).join('') + '</div>' + actBtn('back', '', 'BACK', '', true);
       } else {
         var Pl = S.player, F = Pl.fatigue;
+        if (Pl.weapons && Pl.weapons.length) {
+          var cw = Pl.weapons.filter(function(w) { return w.id === cur.wsel; })[0];
+          html += '<div class="bt-wstrip"><button class="bt-wchip' + (!cw ? ' sel' : '') + '" data-act="wsel:">FISTS</button>' + Pl.weapons.map(function(w) { return '<button class="bt-wchip' + (cw && cw.id === w.id ? ' sel' : '') + '" data-act="wsel:' + w.id + '">' + esc(w.name) + '</button>'; }).join('') +
+            '<div class="bt-winfo">' + (cw ? esc(cw.desc) : 'Bare-handed. No bonuses.') + '</div></div>';
+        }
         function fl(l) { return l ? ((F + l.cost >= 100) ? 'EXHAUSTS YOU' : '+' + l.cost + '% FATIGUE') : ''; }
         if (Pl.collapsed) {
           html += '<div class="bt-sub-panel" style="grid-template-columns:1fr">' + actBtn('basic', 'power rec', 'TOO EXHAUSTED', 'YOUR TURN IS LOST &mdash; TAP TO CONTINUE', !over) + '</div>';
@@ -6956,12 +7291,12 @@
       if (h) { try { h(Object.assign({ result: done.S.over || 'fled', S: done.S, meta: done.meta }, extra || {})); } catch (e) {} }
     }
     function learn(evs, action) {
-      var S = cur.S; if (!action || ['basic', 'power', 'crit'].indexOf(action.type) < 0) return;
+      var S = cur.S;
       evs.forEach(function(ev) {
-        if (ev.t !== 'dmg' || ev.src !== 'P' || ev.dst === 'P' || !(ev.weak || ev.resist)) return;
+        if (ev.t !== 'dmg' || ev.src !== 'P' || ev.dst === 'P' || !ev.tag || !(ev.weak || ev.resist)) return;
         var e = S.enemies.filter(function(x) { return x.uid === ev.dst; })[0]; if (!e) return;
         var key = e.id || e.name; cur.known = cur.known || {}; cur.known[key] = cur.known[key] || {};
-        cur.known[key][action.type] = ev.weak ? 'weak' : 'resist';
+        cur.known[key][ev.tag] = ev.weak ? 'weak' : 'resist';
       });
     }
     function floatText(uid, txt, cls) {
@@ -7062,7 +7397,7 @@
     function perform(action) {
       if (!cur || cur.S.over || locked) return;
       locked = true;
-      action.target = cur.sel;
+      action.target = cur.sel; if (cur.wsel && (action.type === 'basic' || action.type === 'power' || action.type === 'crit')) action.weapon = cur.wsel;
       var pre = clone(cur.S);
       var evs = C().act(cur.S, action);
       learn(evs, action);
@@ -7074,9 +7409,9 @@
     function open(o) {
       var Cm = C();
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
-      var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [] });
+      var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [] });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
-      cur = { v: 1, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, fleeConfirm: o.fleeConfirm, doneLabel: o.doneLabel, note: o.note || '' };
+      cur = { v: 1, wsel: (o.weapons && o.weapons.length) ? o.weapons[0].id : null, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, fleeConfirm: o.fleeConfirm, doneLabel: o.doneLabel, note: o.note || '' };
       save(); show(true);
     }
     function show(fresh) {
@@ -7102,6 +7437,7 @@
     $('btActs').addEventListener('click', function(e) {
       var b = e.target.closest && e.target.closest('button[data-act]'); if (!b || b.disabled || !cur) return;
       var a = b.getAttribute('data-act');
+      if (a.indexOf('wsel:') === 0) { if (busy || locked) return; cur.wsel = a.slice(5) || null; save(); renderActs(); return; }
       if (a === 'abilities') { subOpen = true; renderActs(); return; }
       if (a === 'back') { subOpen = false; renderActs(); return; }
       if (a.indexOf('ab:') === 0) { perform({ type: 'ability', id: a.slice(3) }); return; }
@@ -7164,7 +7500,7 @@
         var r = run.result || {}, head = r.kind === 'victory' ? ['VICTORY', 'win'] : (r.kind === 'defeat' ? ['DEFEATED', 'lose'] : ['RETREATED', 'out']);
         title = 'GATE RESULT';
         html = '<div class="run-card run-res"><h2 class="' + head[1] + '">' + head[0] + '</h2><div class="run-sub">' + escapeHtml(r.name || '') + ' &middot; ' + r.cleared + ' / ' + r.floors + ' FLOORS</div><div class="run-lines">' +
-          'LEVELS <b>+' + r.levels + '</b> &middot; GOLD <b>+' + r.gold + '</b><br>' + ((r.found && r.found.length) ? 'NEW ABILITY: <b>' + r.found.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') +
+          'LEVELS <b>+' + r.levels + '</b> &middot; GOLD <b>+' + r.gold + '</b><br>' + ((r.foundW && r.foundW.length) ? 'WEAPON FOUND: <b>' + r.foundW.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') + ((r.found && r.found.length) ? 'NEW ABILITY: <b>' + r.found.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') +
           (r.kind === 'victory' ? 'The gate collapses behind you.<br>Cleared for good.' : (r.kind === 'defeat' ? 'You are carried out, wounded.<br>RECOVERING: <b>' + fmtMs(r.cooldown || 0) + '</b> before the next gate.' : 'You withdraw. The gate stays open.')) +
           '</div></div><div class="loot-decision-row"><button class="use-btn" id="runDoneBtn">CONTINUE</button></div>';
       } else if (!run) {
@@ -7176,7 +7512,7 @@
           '<div style="margin-top:10px">' + bars(P0.maxHP, 0, P0.maxMana, P0) + '</div>' +
           '<div class="stats-note" style="margin-top:8px;">QUEST POWER SPENT: ' + (qp.length ? qp.join(' &middot; ') : 'none stored') + '</div>' +
           '<div class="run-warn">Once the first fight begins the Gate Energy is spent for good.</div></div>' +
-          '<div class="loot-decision-row"><button class="use-btn" id="runBeginBtn">BEGIN</button><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runLeaveBtn">LEAVE GATE</button>') + '</div>';
+          '<div class="loot-decision-row"><button class="use-btn" id="runBeginBtn">BEGIN</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runLeaveBtn">LEAVE GATE</button>') + '</div><div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="runWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button></div>';
         $('runCloseBtn').style.display = '';
       } else {
         title = info.name + ' GATE';
@@ -7185,7 +7521,7 @@
         html = '<div class="run-card"><div class="run-name" style="color:' + col + ';">FLOOR ' + (run.floor + 1) + ' OF ' + plan.floorCount + '</div><div class="run-sub">' + kindTxt + ' &middot; AHEAD</div>' + pips(plan, run) +
           (run.msg ? '<div class="run-text" style="margin-top:8px;">' + escapeHtml(run.msg) + '</div>' : '') +
           '<div style="margin-top:10px">' + bars(run.hp, run.fat || 0, run.mana, P) + '</div></div>' +
-          '<div class="loot-decision-row"><button class="use-btn" id="runAdvanceBtn">ADVANCE</button><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runRetreatBtn">' + (retreatArm ? 'SURE? RETREAT' : 'RETREAT') + '</button>') + '</div>' +
+          '<div class="loot-decision-row"><button class="use-btn" id="runAdvanceBtn">ADVANCE</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runRetreatBtn">' + (retreatArm ? 'SURE? RETREAT' : 'RETREAT') + '</button>') + '</div><div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="runWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button></div>' +
           (e.trapped ? '<div class="run-warn">This gate is sealed. The only way out is through its boss.</div>' : '<div class="stats-note" style="margin-top:10px;">Retreating pays a share of the reward for floors cleared. Gate Energy is not refunded.</div>');
         $('runCloseBtn').style.display = '';
       }
@@ -7216,7 +7552,7 @@
       hide();
       Battle.open({
         kind: 'gate', title: gateLabel(g) + ' \u00b7 FLOOR ' + (run.floor + 1) + '/' + plan.floorCount,
-        stats: stats, level: hunterLevel, power: run.bonus, hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(),
+        stats: stats, level: hunterLevel, power: run.bonus, hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
         enemies: enemies, seed: gateSeed(g) + '|f' + run.floor + '|a' + run.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
         noFlee: !!e.trapped, fleeLabel: 'RETREAT', meta: { gateId: g.id, floor: run.floor }
       });
@@ -7232,7 +7568,7 @@
       for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); }
       if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
       if (won) { gates = gates.filter(function(x) { return x.id !== g.id; }); saveGates(); }
-      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateLabel(g) + ' GATE', found: (run.found || []).map(Abil.nameOf) };
+      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateLabel(g) + ' GATE', found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
       persist(); retreatArm = 0;
       try { render(); } catch (x) {}
       show();
@@ -7251,12 +7587,13 @@
       if (r.fled || r.result === 'fled') { end('retreat'); return; }
       if (r.result === 'victory') {
         run.cleared = run.floor + 1;
-        var newAb = [];
+        var newAb = [], newWp = [];
+        try { C().rollWeaponDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Wpn.grant(id)) { newWp.push(id); (run.foundW = run.foundW || []).push(id); } }); } catch (x) {}
         try { C().rollAbilityDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Abil.grant(id)) { newAb.push(id); (run.found = run.found || []).push(id); } }); } catch (x) {}
         if (run.floor + 1 >= plan.floorCount) { end('victory'); return; }
         var rec = C().recoverBetween(P, plan.floors[run.floor].type === 'elite' ? 'rest' : 'wave');
         run.hp = rec.hp; run.fat = rec.fatigue; run.mana = rec.mana;
-        run.msg = (newAb.length ? 'NEW ABILITY LEARNED: ' + newAb.map(Abil.nameOf).join(', ') + '. ' : '') + 'FLOOR ' + run.cleared + ' CLEARED. ' + (plan.floors[run.floor].type === 'elite' ? 'You catch your breath in the quiet.' : 'A brief pause. You recover some strength.');
+        run.msg = (newWp.length ? 'WEAPON FOUND: ' + newWp.map(Wpn.nameOf).join(', ') + '. ' : '') + (newAb.length ? 'NEW ABILITY LEARNED: ' + newAb.map(Abil.nameOf).join(', ') + '. ' : '') + 'FLOOR ' + run.cleared + ' CLEARED. ' + (plan.floors[run.floor].type === 'elite' ? 'You catch your breath in the quiet.' : 'A brief pause. You recover some strength.');
         run.floor += 1; run.att = 0; run.stage = 'ready'; persist(); show(); return;
       }
       if (e.trapped) {
@@ -7281,6 +7618,7 @@
       else if (id === 'runRetreatBtn') retreat();
       else if (id === 'runLeaveBtn') leaveFresh();
       else if (id === 'runAbBtn') Abil.open();
+      else if (id === 'runWpBtn') Wpn.openArmory();
       else if (id === 'runDoneBtn') finishRun();
     });
     $('runCloseBtn').addEventListener('click', hide);
@@ -7527,7 +7865,7 @@
     if (!document.addEventListener || typeof getComputedStyle === 'undefined') return;
     var CLOSERS = { invOverlay: 'invCloseBtn', codexOverlay: 'codexCloseBtn', detailOverlay: 'detailCloseBtn', shopOverlay: 'shopCloseBtn',
       statsOverlay: 'statsCloseBtn', backupOverlay: 'backupCloseBtn', gateOverlay: 'gateCloseBtn', gateDetailOverlay: 'gateDetailCloseBtn',
-      abOverlay: 'abCloseBtn', assessOverlay: 'assessCloseBtn', assessResultOverlay: 'assessResultCloseBtn', assessCooldownOverlay: 'assessCooldownCloseBtn', penaltyOverlay: 'penaltyCloseBtn' };
+      abOverlay: 'abCloseBtn', wpOverlay: 'wpCloseBtn', assessOverlay: 'assessCloseBtn', assessResultOverlay: 'assessResultCloseBtn', assessCooldownOverlay: 'assessCooldownCloseBtn', penaltyOverlay: 'penaltyCloseBtn' };
     document.addEventListener('keydown', function(e) {
       if (e.key !== 'Escape') return;
       var top = null, topZ = -1;
