@@ -1567,6 +1567,12 @@
   .bt-act:disabled { opacity: .38; }
   .bt-act.rec { box-shadow: inset 0 0 0 1px var(--green); }
   .bt-act.power { border-color: rgba(255,154,61,0.7); } .bt-act.crit { border-color: rgba(255,215,106,0.7); } .bt-act.defend { border-color: rgba(61,255,176,0.55); } .bt-act.evade { border-color: rgba(178,139,255,0.7); }
+  .bt-acts { max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .bt-act.itemsbtn { grid-column: 1 / -1; min-height: 40px; border-color: rgba(125,192,255,0.7); }
+  .eq-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
+  .eq-slot { min-height: 74px; padding: 8px 2px 6px; } .eq-slot.empty { opacity: .5; border-style: dashed; }
+  .eq-slot .it-ico { font-size: 22px; height: 24px; } .eq-slot .it-name { font-size: 10.5px; }
+  .eq-slot .it-tag, .inv-tile .it-tag { font-family: 'Share Tech Mono', monospace; font-size: 8.5px; letter-spacing: .06em; color: var(--text-dim); }
   .bt-sub-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
   .bt-result { position: absolute; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; background: rgba(0,3,9,0.86); padding: 18px; }
   .bt-result.show { display: flex; }
@@ -1808,7 +1814,7 @@
       <button class="inv-close" id="shopCloseBtn">CLOSE</button>
     </div>
     <div class="loot-box-text" style="margin-bottom:10px;">Spend the gold you earn from cleared quests. Today's stock changes every day and each item is limited to one. Anything you buy sells back for 80% of its price. Balance: <span id="shopGoldLine">0</span> gold.</div>
-    <div class="shop-tabs"><button id="shopTabItems" class="active">ITEMS</button><button id="shopTabWeapons">WEAPONS</button></div>
+    <div class="shop-tabs"><button id="shopTabItems" class="active">ITEMS</button><button id="shopTabWeapons">WEAPONS</button><button id="shopTabArmor">ARMOR</button></div>
     <div class="shop-restock" id="shopRestock"></div>
     <div id="shopList"></div>
   </div>
@@ -2207,9 +2213,9 @@
       def: (2 + 0.5 * VIT) * (1 + (bonus.def || 0)),
       maxStamina: (60 + 0.6 * END) * (1 + (bonus.stamina || 0)),
       maxMana: (30 + 0.4 * END + 0.3 * level) * (1 + (bonus.mana || 0)),
-      speed: 10 + AGI,
-      crit: clamp(0.05 + AGI * 0.0015, 0, 0.40),
-      evasion: clamp(0.03 + AGI * 0.002, 0, 0.40)
+      speed: (10 + AGI) * (1 + (bonus.speed || 0)),
+      crit: clamp(0.05 + AGI * 0.0015 + (bonus.crit || 0), 0, 0.50),
+      evasion: clamp(0.03 + AGI * 0.002 + (bonus.evasion || 0), 0, 0.50)
     };
     ['maxHP', 'atk', 'def', 'maxStamina', 'maxMana'].forEach(function (k) { o[k] = Math.max(1, r1(o[k])); });
     return o;
@@ -2273,7 +2279,7 @@
 
   // ---------- statuses ----------
   var STATUS_NAMES = { bleed: 'Bleed', burn: 'Burn', poison: 'Poison', stun: 'Stun', weaken: 'Weaken', guardbreak: 'Guard Break',
-    slow: 'Slow', regen: 'Regen', shield: 'Shield', berserk: 'Berserk', atkup: 'Empowered', defup: 'Fortified', haste: 'Haste', focus: 'Focus' };
+    slow: 'Slow', regen: 'Regen', shield: 'Shield', berserk: 'Berserk', atkup: 'Empowered', defup: 'Fortified', haste: 'Haste', focus: 'Focus', keen: 'Keen', blur: 'Blur' };
   function addStatus(u, id, dur, v) {
     var cur = u.st[id];
     if (cur) { cur.dur = Math.max(cur.dur, dur); cur.v = Math.max(cur.v || 0, v || 0); }
@@ -2359,7 +2365,7 @@
   function playerHit(S, ev, tgt, mult, tags, o) {
     o = o || {};
     var P = S.player, w = o.weapon || null;
-    var critChance = clamp(P.crit + (o.critBonus || 0) + (w ? w.crit || 0 : 0), 0, 0.95);
+    var critChance = clamp(P.crit + (o.critBonus || 0) + (w ? w.crit || 0 : 0) + (hasSt(P, 'keen') ? 0.25 : 0), 0, 0.95);
     var crit = o.critOnlyScaling ? true : rnd(S) < critChance;      // Critical Strike always crits
     var m = o.critOnlyScaling ? T.critStrikeMult : mult * (crit ? T.critMult : 1);
     if (w) { tags = (tags || []).concat([w.kind]); if (w.elem) tags.push(w.elem); m *= 1 + (w.dmg || 0); }
@@ -2465,6 +2471,13 @@
   }
 
   // ---------- effects from abilities / items ----------
+  function hitStatus(S, ev, t, f) {
+    var P = S.player;
+    if (f.status && t.alive && rnd(S) < (f.status.chance == null ? 1 : f.status.chance)) {
+      addStatus(t, f.status.id, f.status.dur || 3, f.status.v != null ? f.status.v : dotValue(f.status.id, P, t));
+      ev.push({ t: 'status', uid: t.uid, id: f.status.id });
+    }
+  }
   function applyEffects(S, ev, effects, tgt, tags) {
     var P = S.player;
     (effects || []).forEach(function (f) {
@@ -2479,7 +2492,19 @@
           break;
         }
         case 'aoe': {
-          aliveEnemies(S).slice().forEach(function (t) { if (t.alive) playerHit(S, ev, t, f.mult || 1, tags, { how: 'ability' }); });
+          aliveEnemies(S).slice().forEach(function (t) { if (t.alive) { playerHit(S, ev, t, f.mult || 1, tags, { how: 'ability' }); hitStatus(S, ev, t, f); } });
+          break;
+        }
+        case 'chain': {
+          var chainT = [];
+          if (tgt && tgt.alive) chainT.push(tgt);
+          aliveEnemies(S).forEach(function (x) { if (chainT.length < (f.n || 2) && chainT.indexOf(x) < 0) chainT.push(x); });
+          chainT.forEach(function (t) { if (t.alive) { playerHit(S, ev, t, f.mult || 1, tags, { how: 'ability' }); hitStatus(S, ev, t, f); } });
+          break;
+        }
+        case 'splash': {
+          var pt = tgt || targetOf(S, null);
+          aliveEnemies(S).slice().forEach(function (t) { if (t.alive) { playerHit(S, ev, t, t === pt ? (f.mult || 1) : (f.side || 0.5), tags, { how: 'ability' }); hitStatus(S, ev, t, f); } });
           break;
         }
         case 'heal': healUnit(ev, P, P.maxHP * (f.pct || 0.2)); break;
@@ -2546,7 +2571,7 @@
     var wasCharged = !!e.chargeMove; e.chargeMove = null;
     for (var h = 0; h < hits; h++) {
       if (!P.alive) break;
-      var dodge = P.evasion;
+      var dodge = P.evasion + (hasSt(P, 'blur') ? 0.2 : 0);
       if (stance === 'evade') dodge = (type === 'heavy' ? T.evadeHeavy + P.evasion : (type === 'multi' ? T.evadeMulti + P.evasion : T.evadeSingle + P.evasion));
       if (hasSt(P, 'stun') || P.collapsed) dodge = 0;
       dodge = clamp(dodge, 0, T.evadeMax);
@@ -3456,13 +3481,192 @@
   }
 
 
+  // ================= Equipment and combat items =================
+  var EQ_SLOTS = ['head', 'chest', 'shoulders', 'arms', 'hands', 'waist', 'legs', 'feet'];
+  var EQ_SLOT_NAMES = { head: 'HEAD', chest: 'CHEST', shoulders: 'SHOULDERS', arms: 'ARMS', hands: 'HANDS', waist: 'WAIST', legs: 'LEGS', feet: 'FEET' };
+  var EQ_CLOTHING_MAX = 3;
+  var EQUIP = {};
+  function eqSlug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''); }
+  function eqAdd(d) { EQUIP[d.id] = d; return d; }
+  // Found pieces (they drop as loot and sell for gold). bonus = fractions of a stat (crit/evasion are added points).
+  // foe = what the piece does to enemies (fractions, negative = weaker). gold = extra gold from gates and drops.
+  function eqLoot(name, icon, kind, slot, rarity, flavor, bonus, foe, gold, extra) {
+    return eqAdd(Object.assign({ id: 'q_' + eqSlug(name), name: name, icon: icon, kind: kind, slot: slot || null, rarity: rarity, flavor: flavor, bonus: bonus || {}, foe: foe || {}, gold: gold || 0, req: 1,
+      price: { common: 20, rare: 60, heroic: 160, legendary: 500 }[rarity], src: 'loot' }, extra || {}));
+  }
+  // clothing (no slot, wear up to three)
+  eqLoot('Worn Lucky Laces', '👟', 'clothing', null, 'common', 'Knotted so many times they remember your stride.', { speed: 0.03, evasion: 0.01 });
+  eqLoot('Sweat-Stained Wrap', '🧣', 'clothing', null, 'common', 'It has soaked up a hundred hard sessions and kept the worst of them. Warm.', { stamina: 0.05 });
+  eqLoot('Scuffed Practice Gloves', '🧤', 'clothing', null, 'common', 'The leather is thin, but it remembers your grip.', { atk: 0.03 });
+  eqLoot('Warm Wool Scarf', '🧶', 'clothing', null, 'common', 'Itchy and thick. Nothing makes you tire in it.', { stamina: 0.04, hp: 0.02 });
+  eqLoot("Windrunner's Anklet", '📿', 'clothing', null, 'rare', 'Every step feels like a downhill one.', { speed: 0.06, evasion: 0.02 });
+  eqLoot('Tailwind Sash', '🎽', 'clothing', null, 'rare', 'A little wind at your back. Lighter on your feet and slower to tire.', { speed: 0.04, stamina: 0.05 });
+  eqLoot('Shadow Cowl', '🥷', 'clothing', null, 'rare', 'Enemies look right past you. Stealth.', { evasion: 0.05, crit: 0.02 });
+  eqLoot('Cloak of the Quiet Step', '🧥', 'clothing', null, 'heroic', 'Wrapped around the shoulders, the rest of the world gets quieter. Stealth.', { evasion: 0.07, speed: 0.04 }, { speed: -0.04 });
+  eqLoot("Merchant King's Signet", '💍', 'clothing', null, 'heroic', 'Stamp it on any deal and the profit doubles back.', { hp: 0.04 }, {}, 0.18);
+  eqLoot('Frostwoven Mantle', '🧊', 'clothing', null, 'heroic', 'Cold to the eye, warm to wear. Nothing tires you.', { stamina: 0.10, hp: 0.06 });
+  eqLoot('Mask of a Thousand Faces', '🎭', 'clothing', null, 'legendary', 'Enemies cannot decide which face to fear. Stealth.', { evasion: 0.09, crit: 0.05 }, { atk: -0.05 });
+  eqLoot('Veil of Midnight', '🌑', 'clothing', null, 'legendary', 'A shadow that has decided to follow you. Stealth and warmth.', { evasion: 0.10, speed: 0.05, stamina: 0.08 }, { atk: -0.04 });
+  // armor (one piece per slot)
+  eqLoot('Iron-Banded Wristguard', '🥊', 'armor', 'arms', 'rare', 'Heavy on the arm, lighter on the mind.', { atk: 0.04, def: 0.04 });
+  eqLoot("Titan's Bracer", '🛡️', 'armor', 'arms', 'heroic', 'Forged for someone twice your size, and it fits perfectly.', { atk: 0.09, def: 0.05 });
+  eqLoot('Phantom Greaves', '👢', 'armor', 'legs', 'heroic', 'Your footsteps no longer make a sound.', { speed: 0.07, evasion: 0.04, def: 0.04 });
+  eqLoot("Stormcaller's Mantle", '🌩️', 'armor', 'shoulders', 'heroic', 'The thunder does some of the heavy lifting for you.', { atk: 0.06, def: 0.05 }, { def: -0.06 });
+  eqLoot('Stormstep Boots', '🥾', 'armor', 'feet', 'legendary', 'You outrun the thunder every time.', { speed: 0.12, evasion: 0.06, def: 0.05 });
+  eqLoot('Tempest Regalia', '⛈️', 'armor', 'chest', 'legendary', 'Armor woven from a storm that never ends.', { def: 0.14, hp: 0.12 }, { atk: -0.07 });
+  eqLoot('Midas Gauntlet', '🥇', 'armor', 'hands', 'legendary', 'Everything you touch turns to profit.', { atk: 0.07, crit: 0.03 }, {}, 0.30);
+  // shop armor: eight pieces in each of six ranks
+  var EQ_REQ = { E: 1, D: 13, C: 33, B: 69, A: 141, S: 285 };
+  var EQ_PRICE = { E: 100, D: 450, C: 1500, B: 4800, A: 14000, S: 42000 };
+  var EQ_M = { E: 0.03, D: 0.045, C: 0.065, B: 0.09, A: 0.12, S: 0.16 };
+  var EQ_MAT = { E: 'Leather', D: 'Hardened', C: 'Iron', B: 'Steel', A: 'Mithril', S: 'Dragonbone' };
+  var EQ_NOUN = { head: 'Helm', chest: 'Cuirass', shoulders: 'Pauldrons', arms: 'Vambraces', hands: 'Gauntlets', waist: 'Girdle', legs: 'Greaves', feet: 'Sabatons' };
+  var EQ_ICON = { head: '⛑️', chest: '🦺', shoulders: '🛡️', arms: '🥊', hands: '🧤', waist: '🎗️', legs: '👖', feet: '🥾' };
+  var EQ_PF = { head: 1, chest: 1.3, shoulders: 1, arms: 0.9, hands: 0.8, waist: 0.7, legs: 1.1, feet: 0.8 };
+  var EQ_TPL = {
+    head: function (m, r) { var o = { bonus: { def: m * 0.8, hp: m * 0.4 }, foe: {} }; if ('CBAS'.indexOf(r) >= 0) o.foe.atk = -m * 0.35; return o; },
+    chest: function (m, r) { var o = { bonus: { hp: m * 1.0, def: m * 0.7 }, foe: {} }; if ('BAS'.indexOf(r) >= 0) o.foe.atk = -m * 0.35; return o; },
+    shoulders: function (m, r) { var o = { bonus: { def: m * 0.6, atk: m * 0.4 }, foe: {} }; if ('BAS'.indexOf(r) >= 0) o.foe.def = -m * 0.5; return o; },
+    arms: function (m) { return { bonus: { atk: m * 0.8, def: m * 0.3 }, foe: {} }; },
+    hands: function (m) { return { bonus: { atk: m * 0.5, crit: m * 0.3 }, foe: {} }; },
+    waist: function (m) { return { bonus: { stamina: m * 1.0, hp: m * 0.3 }, foe: {} }; },
+    legs: function (m, r) { var o = { bonus: { def: m * 0.5, speed: m * 0.6 }, foe: {} }; if ('AS'.indexOf(r) >= 0) o.foe.speed = -m * 0.4; return o; },
+    feet: function (m) { return { bonus: { speed: m * 0.8, evasion: m * 0.25 }, foe: {} }; }
+  };
+  'EDCBAS'.split('').forEach(function (r) {
+    EQ_SLOTS.forEach(function (slot) {
+      var t = EQ_TPL[slot](EQ_M[r], r), name = EQ_MAT[r] + ' ' + EQ_NOUN[slot];
+      Object.keys(t.bonus).forEach(function (k) { t.bonus[k] = Math.round(t.bonus[k] * 1000) / 1000; });
+      Object.keys(t.foe).forEach(function (k) { t.foe[k] = Math.round(t.foe[k] * 1000) / 1000; });
+      eqAdd({ id: 'qs_' + r + '_' + slot, name: name, icon: EQ_ICON[slot], kind: 'armor', slot: slot, rarity: null, rank: r, flavor: r + '-rank ' + EQ_MAT[r].toLowerCase() + ' armor for the ' + slot + '.', bonus: t.bonus, foe: t.foe, gold: 0,
+        req: EQ_REQ[r], price: Math.round(EQ_PRICE[r] * EQ_PF[slot] / 5) * 5, src: 'shop' });
+    });
+  });
+  function eqDef(id) { return EQUIP[id] || null; }
+  function shopEquip() { return Object.keys(EQUIP).map(function (k) { return EQUIP[k]; }).filter(function (e) { return e.src === 'shop'; }); }
+  function lootEquip(rarity) { return Object.keys(EQUIP).map(function (k) { return EQUIP[k]; }).filter(function (e) { return e.src === 'loot' && (!rarity || e.rarity === rarity); }); }
+  // Totals for what is worn. Only the first piece in each armor slot counts and only the first three clothes.
+  function equipTotals(defs) {
+    var bonus = {}, foe = {}, gold = 0, seenSlot = {}, clothes = 0;
+    (defs || []).forEach(function (d) {
+      if (!d) return;
+      if (d.kind === 'armor') { if (seenSlot[d.slot]) return; seenSlot[d.slot] = 1; } else { if (clothes >= EQ_CLOTHING_MAX) return; clothes++; }
+      Object.keys(d.bonus || {}).forEach(function (k) { bonus[k] = (bonus[k] || 0) + d.bonus[k]; });
+      Object.keys(d.foe || {}).forEach(function (k) { foe[k] = (foe[k] || 0) + d.foe[k]; });
+      gold += d.gold || 0;
+    });
+    Object.keys(foe).forEach(function (k) { foe[k] = Math.max(-0.35, foe[k]); });
+    return { bonus: bonus, foe: foe, gold: gold };
+  }
+  // Weaken the enemies a piece of gear frowns upon (fractions: -0.05 = 5% lower).
+  function applyFoeMods(enemies, foe) {
+    (enemies || []).forEach(function (e) {
+      if (foe.atk) e.atk = Math.max(1, r1(e.atk * (1 + foe.atk)));
+      if (foe.def) e.def = Math.max(0, r1(e.def * (1 + foe.def)));
+      if (foe.speed) e.speed = Math.max(1, r1(e.speed * (1 + foe.speed)));
+    });
+    return enemies;
+  }
+  var EQ_STAT_NAMES = { atk: 'ATTACK', def: 'DEFENSE', hp: 'HP', stamina: 'ENDURANCE', mana: 'MANA', speed: 'SPEED', crit: 'CRIT', evasion: 'EVASION', gold: 'GOLD' };
+  function eqText(d) {
+    var out = [];
+    Object.keys(d.bonus || {}).forEach(function (k) { out.push('+' + (Math.round(d.bonus[k] * 1000) / 10) + '% ' + EQ_STAT_NAMES[k]); });
+    if (d.gold) out.push('+' + Math.round(d.gold * 100) + '% GOLD');
+    Object.keys(d.foe || {}).forEach(function (k) { out.push('ENEMIES ' + Math.abs(Math.round(d.foe[k] * 1000) / 10) + '% ' + (d.foe[k] < 0 ? 'LOWER ' : 'HIGHER ') + EQ_STAT_NAMES[k]); });
+    return out.join(' · ');
+  }
+
+  // ---- combat uses of items ----
+  // New consumables made for battle (their quest effect is defined in the app).
+  var ITEM_COMBAT = {
+    'Smoke Pellet': { scope: 'all', effects: [{ k: 'enemyStatus', all: true, id: 'weaken', dur: 3 }, { k: 'enemyStatus', all: true, id: 'poison', dur: 3 }] },
+    'Firecracker String': { scope: 'all', effects: [{ k: 'aoe', mult: 0.6, status: { id: 'burn', dur: 3 } }] },
+    'Throwing Knife Bundle': { scope: 'one', effects: [{ k: 'chain', n: 2, mult: 0.9, status: { id: 'bleed', dur: 4 } }] },
+    'Flask of Acid': { scope: 'one', effects: [{ k: 'damage', mult: 1.5, status: { id: 'poison', dur: 5 } }] },
+    'Thunder Charm': { scope: 'all', effects: [{ k: 'aoe', mult: 0.8 }, { k: 'enemyStatus', all: true, id: 'stun', dur: 1, chance: 0.35 }] },
+    'Healing Salve': { scope: 'self', effects: [{ k: 'heal', pct: 0.35 }, { k: 'cleanse' }] },
+    'Bomb Satchel': { scope: 'one', effects: [{ k: 'splash', mult: 2.0, side: 1.0, status: { id: 'burn', dur: 3 } }] },
+    'Elixir of Fury': { scope: 'self', effects: [{ k: 'selfStatus', id: 'berserk', dur: 3 }, { k: 'selfStatus', id: 'keen', dur: 3 }] },
+    'Net of Binding': { scope: 'all', effects: [{ k: 'enemyStatus', all: true, id: 'guardbreak', dur: 3 }, { k: 'enemyStatus', all: true, id: 'weaken', dur: 3 }, { k: 'enemyStatus', all: true, id: 'slow', dur: 3 }] },
+    'Phoenix Draught': { scope: 'self', effects: [{ k: 'heal', pct: 0.6 }, { k: 'shield', pct: 0.12, dur: 3 }] },
+    'Lightning Rod': { scope: 'one', effects: [{ k: 'chain', n: 3, mult: 1.5, status: { id: 'burn', dur: 2, chance: 0.5 } }] },
+    'Starfall Scroll': { scope: 'all', effects: [{ k: 'aoe', mult: 2.4, status: { id: 'burn', dur: 3 } }] },
+    'Dragon Breath Elixir': { scope: 'all', effects: [{ k: 'aoe', mult: 1.8, status: { id: 'burn', dur: 5 } }] },
+    "Sovereign's Command": { scope: 'all', effects: [{ k: 'enemyStatus', all: true, id: 'stun', dur: 2 }, { k: 'enemyStatus', all: true, id: 'weaken', dur: 3 }] },
+    "Titan's Draught": { scope: 'self', effects: [{ k: 'heal', pct: 1.0 }, { k: 'fatigue', v: 100 }, { k: 'shield', pct: 0.25, dur: 3 }] }
+  };
+  // Old items keep their quest effect; each also gets a use in battle where one makes sense.
+  function combatFromEffect(e) {
+    if (!e) return null;
+    var ef = [], sc = 'self', n;
+    switch (e.type) {
+      case 'tempStat':
+        n = e.amount;
+        if (e.stat === 'STR') ef = [{ k: 'selfStatus', id: 'atkup', dur: 2 + n }];
+        else if (e.stat === 'AGI') ef = [{ k: 'selfStatus', id: 'blur', dur: 2 + n }, { k: 'selfStatus', id: 'keen', dur: 1 + n }];
+        else if (e.stat === 'END') ef = [{ k: 'fatigue', v: Math.min(100, 14 * n) }, { k: 'mana', v: Math.min(100, 8 * n) }];
+        else ef = [{ k: 'heal', pct: Math.min(0.5, 0.08 + 0.08 * n) }];
+        break;
+      case 'extendDeadline': ef = [{ k: 'enemyStatus', all: true, id: 'weaken', dur: 1 + e.hours }, { k: 'fatigue', v: 5 * e.hours }]; sc = 'all'; break;
+      case 'shavePct': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.pct * 1.2)) }]; break;
+      case 'shaveOnePct': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.pct * 1.2)) }, { k: 'enemyStatus', id: 'bleed', dur: 3 }]; sc = 'one'; break;
+      case 'shaveReps': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.reps * 0.9)) }, { k: 'enemyStatus', id: 'bleed', dur: 3 }]; sc = 'one'; break;
+      case 'shaveRun': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.km * 20)) }]; break;
+      case 'skipOne': ef = [{ k: 'enemyStatus', id: 'stun', dur: 2 }, { k: 'enemyStatus', id: 'weaken', dur: 3 }]; sc = 'one'; break;
+      case 'waiveAll': ef = e.rewards ? [{ k: 'enemyStatus', all: true, id: 'stun', dur: 2 }, { k: 'heal', pct: 0.3 }] : [{ k: 'enemyStatus', all: true, id: 'stun', dur: 1 }, { k: 'shield', pct: 0.12, dur: 3 }]; sc = 'all'; break;
+      case 'skipRun': ef = [{ k: 'enemyStatus', all: true, id: 'guardbreak', dur: 3 }]; sc = 'all'; break;
+      case 'halveAll': ef = [{ k: 'enemyStatus', all: true, id: 'weaken', dur: 4 }, { k: 'enemyStatus', all: true, id: 'guardbreak', dur: 3 }]; sc = 'all'; break;
+      case 'gainMult': ef = [{ k: 'selfStatus', id: 'keen', dur: 2 + e.clears }]; break;
+      case 'luck': ef = [{ k: 'selfStatus', id: 'keen', dur: 2 + 2 * e.rolls }]; break;
+      case 'penaltyShield': ef = [{ k: 'shield', pct: 0.12 * e.charges, dur: 4 }, { k: 'selfStatus', id: 'defup', dur: 3 }]; break;
+      case 'clearOwed': ef = [{ k: 'cleanse' }, { k: 'heal', pct: e.count === 'all' ? 0.5 : 0.15 }]; break;
+      case 'penaltyReroll': ef = [{ k: 'cleanse' }]; break;
+      case 'combo': {
+        var parts = (e.effects || []).map(combatFromEffect).filter(Boolean);
+        if (!parts.length) return null;
+        parts.forEach(function (p) { ef = ef.concat(p.effects); if (p.scope === 'one') sc = 'one'; else if (p.scope === 'all' && sc !== 'one') sc = 'all'; });
+        break;
+      }
+      default: return null;
+    }
+    return ef.length ? { scope: sc, effects: ef } : null;
+  }
+  // What an item does when it is used in battle (null = it cannot be used there).
+  function combatUse(name, effect) {
+    if (ITEM_COMBAT[name]) return ITEM_COMBAT[name];
+    return combatFromEffect(effect);
+  }
+  var ST_TXT = { atkup: 'EMPOWERED', defup: 'FORTIFIED', haste: 'HASTE', berserk: 'BERSERK', keen: 'KEEN', blur: 'BLUR', weaken: 'WEAKEN', guardbreak: 'GUARD BREAK', slow: 'SLOW', stun: 'STUN', burn: 'BURN', poison: 'POISON', bleed: 'BLEED' };
+  function stTxt(f) { return f.status ? ' and inflicting ' + ST_TXT[f.status.id] + ' (' + (f.status.dur || 3) + ' rounds' + (f.status.chance != null && f.status.chance < 1 ? ', ' + Math.round(f.status.chance * 100) + '% chance' : '') + ')' : ''; }
+  function describeCombat(use) {
+    if (!use) return '';
+    var out = [];
+    use.effects.forEach(function (f) {
+      switch (f.k) {
+        case 'damage': out.push('Hits one enemy for x' + f.mult + (f.status ? ' and applies ' + ST_TXT[f.status.id] + ' (' + (f.status.dur || 3) + ' rounds)' : '')); break;
+        case 'aoe': out.push('Hits ALL enemies for x' + f.mult + stTxt(f)); break;
+        case 'chain': out.push('Hits ' + f.n + ' enemies for x' + f.mult + ' each' + stTxt(f)); break;
+        case 'splash': out.push('Hits the target for x' + f.mult + ' and everyone else for x' + f.side + stTxt(f)); break;
+        case 'heal': out.push('Heals ' + Math.round(f.pct * 100) + '% HP'); break;
+        case 'fatigue': out.push('Removes ' + f.v + '% fatigue'); break;
+        case 'mana': out.push('Restores ' + f.v + ' mana'); break;
+        case 'shield': out.push('Shield for ' + Math.round(f.pct * 100) + '% HP'); break;
+        case 'cleanse': out.push('Cleanses your afflictions'); break;
+        case 'selfStatus': out.push('You gain ' + ST_TXT[f.id] + ' (' + f.dur + ' rounds)'); break;
+        case 'enemyStatus': out.push((f.all ? 'ALL enemies' : 'Target') + ': ' + ST_TXT[f.id] + ' (' + f.dur + ' round' + (f.dur > 1 ? 's' : '') + (f.chance != null && f.chance < 1 ? ', ' + Math.round(f.chance * 100) + '% chance' : '') + ')'); break;
+      }
+    });
+    return out.join('. ') + '.';
+  }
+
+
   var API = {
     HORDE: HORDE, COMMON_K: COMMON_K, RED: RED,
     T: T, planGate: planGate, buildEnemy: buildEnemy, gateLevelsEarned: gateLevelsEarned, threat: threat, GATE_PLAN: GATE_PLAN, GATE_LEVELS: GATE_LEVELS, GATE_GOLD: GATE_GOLD, OFF_RANK: OFF_RANK, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
-    policy: policy, simulate: simulate, opening: opening, isFast: isFast, aliveEnemies: aliveEnemies,
+    policy: policy, simulate: simulate, opening: opening, EQUIP: EQUIP, EQ_SLOTS: EQ_SLOTS, EQ_SLOT_NAMES: EQ_SLOT_NAMES, EQ_CLOTHING_MAX: EQ_CLOTHING_MAX, eqDef: eqDef, shopEquip: shopEquip, lootEquip: lootEquip, equipTotals: equipTotals, applyFoeMods: applyFoeMods, eqText: eqText, combatUse: combatUse, describeCombat: describeCombat, ITEM_COMBAT: ITEM_COMBAT, isFast: isFast, aliveEnemies: aliveEnemies,
     TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, JOBS: JOBS, JOB_ORDER: JOB_ORDER, JOB_LEVELS: JOB_LEVELS, JOB_QUEST_LEVEL: JOB_QUEST_LEVEL, JOB_RES: JOB_RES, JOB_DIMS: JOB_DIMS, jobOf: jobOf, jobAbilitiesFor: jobAbilitiesFor, assignJob: assignJob, fightProfile: fightProfile, planTrial: planTrial, TRIAL: TRIAL, trialRankFor: trialRankFor, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
@@ -3532,6 +3736,7 @@
   var FX = {
     temp: function(stat, amount, hours) { return { type: 'tempStat', stat: stat, amount: amount, hours: hours }; },
     gold: function(amount) { return { type: 'instantGold', amount: amount }; },
+    energy: function(amount) { return { type: 'gateEnergy', amount: amount }; },
     goldPct: function(pct) { return { type: 'goldPct', pct: pct }; },
     extend: function(hours) { return { type: 'extendDeadline', hours: hours }; },
     pct: function(pct) { return { type: 'shavePct', pct: pct }; },
@@ -3573,19 +3778,19 @@
       ['🔩', 'Cracked Stamina Charm', 'A dull trinket that still hums faintly, like it remembers being useful.', FX.reps(10)],
       ['🧵', 'Frayed Grip Tape', 'Peeling at the edges, but your hands stop slipping.', FX.temp('STR', 1, 12)],
       ['🥤', 'Dented Canteen', 'Whatever is inside is lukewarm and somehow exactly enough.', FX.temp('END', 1, 12)],
-      ['👟', 'Worn Lucky Laces', 'Knotted so many times they remember your stride.', FX.temp('AGI', 1, 12)],
+      ['💨', 'Smoke Pellet', 'Crack it and the room fills with grey. Everyone in it gets sluggish.', FX.gold(25)],
       ['📿', 'Chipped Vitality Bead', 'One bead off a broken string, still warm to the touch.', FX.temp('VIT', 1, 12)],
       ['👝', 'Pouch of Old Coins', 'Light, jingling, and it somehow always matches what you already carry.', FX.goldPct(4)],
       ['💰', 'Tarnished Coin Purse', "Empty on its own. It fills to match what's already in your pocket.", FX.goldPct(5)],
       ['🧭', 'Bent Compass', 'The needle wobbles, but it always points toward a little more time.', FX.extend(1)],
-      ['🧣', 'Sweat-Stained Wrap', 'It has soaked up a hundred hard sessions and kept the worst of them.', FX.pct(10)],
+      ['🧨', 'Firecracker String', 'Loud, bright and not remotely subtle. It burns a little Gate Energy into your reserves as it goes.', FX.energy(30)],
       ['🔔', "Pacer's Bell", 'Its dull chime makes the last kilometer feel a bit shorter.', FX.km(0.5)],
       ['🪵', 'Splintered Training Staff', 'Rough enough to remind you that hard work leaves marks.', FX.onePct(20)],
       ['🍙', 'Stale Ration Ball', 'Not tasty, but it gets the job done.', FX.gain(10, 1)],
       ['🌿', 'Bitter Herb Bundle', 'Chew slowly. The taste is a reminder that patience pays.', FX.goldMult(20, 1)],
       ['🐇', "Dull Rabbit's Foot", 'Worn smooth by too many wishes.', FX.luck(1)],
       ['⏳', 'Cracked Hourglass', 'The sand still falls, just in a different order every time.', FX.reroll()],
-      ['🧤', 'Scuffed Practice Gloves', 'The leather is thin, but it remembers your grip.', FX.grant('STR', 0.5)],
+      ['🔪', 'Throwing Knife Bundle', 'Five blades, balanced for someone who is not quite sure about throwing knives.', FX.gold(30)],
       ['⏱️', 'Wobbly Stopwatch', 'Loses a second here, gains one there, and somehow always leaves you fitter.', FX.grant('END', 0.5)],
       ['🧰', 'Battered Toolbox', 'The lid rattles. Something inside is worth keeping.', FX.loot(1)],
       ['🎗️', 'Faded Victory Ribbon', 'Awarded for something long forgotten. It still remembers what winning felt like.', FX.combo(FX.luck(1), FX.gain(5, 1))],
@@ -3602,14 +3807,14 @@
     rare: [
       ['🪪', 'Fractured Gate Sigil', 'Half a credential. Something on the other end still remembers your name.', FX.gateKey()],
       ['🧪', 'Vial of Swift Recovery', 'The liquid inside never stops swirling, even when the vial is still.', FX.km(1)],
-      ['🥊', 'Iron-Banded Wristguard', 'Heavy on the arm, lighter on the mind.', FX.temp('STR', 2, 24)],
-      ['🪶', "Windrunner's Anklet", 'Every step feels like a downhill one.', FX.temp('AGI', 2, 24)],
+      ['🫗', 'Flask of Acid', 'It eats through the cork. Handle with something you do not need.', FX.energy(45)],
+      ['⚡', 'Thunder Charm', 'A coin of crackling blue. It remembers the storm it was struck from.', FX.combo(FX.gold(40), FX.energy(30))],
       ['🔥', 'Ember Flask', 'Sip it and the fire in your lungs stops feeling like a warning.', FX.temp('END', 2, 24)],
       ['🌱', 'Heartroot Tonic', 'Bitter, green, and oddly reassuring.', FX.temp('VIT', 2, 24)],
       ['🗃️', "Merchant's Lockbox", 'The lock springs open and quietly adds its own interest to your balance.', FX.goldPct(8)],
       ['📒', 'Gilded Ledger', 'Every page is a receipt, and the sum always rounds up in your favor.', FX.goldPct(10)],
       ['🕰️', "Traveler's Pocketwatch", 'It runs slow whenever you need it to.', FX.extend(2)],
-      ['🎽', 'Tailwind Sash', 'A little wind at your back turns every rep lighter.', FX.pct(15)],
+      ['🩹', 'Healing Salve', 'Smells like pine and old courage. It closes what is open.', FX.gold(60)],
       ['🗡️', 'Whetstone of the Relentless', 'Every edge it touches forgets what it means to be dull.', FX.reps(20)],
       ['🪞', 'Silver Mirror', "It shows tomorrow's face and asks you to choose again.", FX.combo(FX.reroll(), FX.extend(1))],
       ['🕯️', 'Focus Incense', 'The smoke curls into the shape of a plan.', FX.gain(20, 1)],
@@ -3632,19 +3837,19 @@
     ],
     heroic: [
       ['📜', "Warden's Passkey", 'Sealed with a sigil no ordinary lock would recognize.', FX.gateKey()],
-      ['🧥', 'Cloak of the Quiet Step', 'Wrapped around the shoulders, the rest of the world gets a little quieter.', FX.waive(false)],
-      ['🛡️', "Titan's Bracer", 'Forged for someone twice your size, and it fits perfectly.', FX.temp('STR', 3, 48)],
-      ['👢', 'Phantom Greaves', 'Your footsteps no longer make a sound.', FX.temp('AGI', 3, 48)],
+      ['💣', 'Bomb Satchel', 'Round, black, with a fuse someone has already trimmed for you.', FX.energy(70)],
+      ['🍷', 'Elixir of Fury', 'Deep red and still faintly boiling. You will not like the next minute, but your enemies will like it less.', FX.combo(FX.gold(100), FX.gain(15, 1))],
+      ['🕸️', 'Net of Binding', 'Woven by something that does not want to be named. Whatever it lands on stops being able to run.', FX.energy(60)],
       ['🐉', 'Dragonheart Ember', 'A coal that never cools, glowing in your chest.', FX.temp('END', 3, 48)],
       ['🕊️', 'Sanctuary Dove', 'Where it perches, nothing hurts as much.', FX.temp('VIT', 3, 48)],
       ['🏺', 'Amphora of Coin', 'Sealed with wax, heavy with gold that multiplies whatever you already hold.', FX.goldPct(15)],
       ['👑', 'Royal Purse', 'Embroidered with the crest of a kingdom that paid its hunters well.', FX.goldPct(18)],
       ['⌛', 'Chrono Sand', 'Pour it out and the evening stretches.', FX.extend(3)],
-      ['🌩️', "Stormcaller's Mantle", 'The thunder does some of the heavy lifting for you.', FX.pct(25)],
+      ['🍶', 'Phoenix Draught', 'Warm to the touch, bright as an ember. The bottle never quite cools.', FX.gold(150)],
       ['⚔️', "Berserker's Oath", 'Swear it and the last thirty reps no longer feel necessary.', FX.reps(30)],
       ['🦊', 'Twin-Tailed Talisman', 'The fox grins and one whole task simply vanishes.', FX.skipOne()],
       ['💎', "Sage's Mindstone", 'Your thoughts come out crisp and your gains come in faster.', FX.gain(35, 2)],
-      ['💍', "Merchant King's Signet", 'Stamp it on any deal and the profit doubles back.', FX.goldMult(60, 2)],
+      ['🔱', 'Lightning Rod', 'Hold it up and the sky takes a keen interest in whatever is nearby.', FX.combo(FX.energy(50), FX.gold(60))],
       ['🎲', 'Star-Woven Dice', 'Every roll seems to land exactly where you hoped.', FX.luck(3)],
       ['🔰', 'Aegis Sigil', 'A quiet promise that the next fall will not hurt.', FX.shield(1)],
       ['🔮', 'Absolution Orb', 'It clouds, clears, and shows a debt already forgiven.', FX.clear(1)],
@@ -3665,17 +3870,17 @@
       ['🔓', "Architect's Master Key", 'Carved for a door that does not exist yet. It will, the moment you turn this.', FX.gateKey()],
       ['🗝️', 'Fragment of the Ascendant Will', 'Vanishingly rare. Holding it makes tomorrow feel optional.', FX.waive(true)],
       ['🪨', 'Colossus Heartstone', 'It beats once a minute, and the ground trembles.', FX.temp('STR', 5, 72)],
-      ['🥾', 'Stormstep Boots', 'You outrun the thunder every time.', FX.temp('AGI', 5, 72)],
+      ['📜', 'Starfall Scroll', 'Read it aloud and the ceiling remembers it used to be sky.', FX.energy(150)],
       ['🌋', 'Eternal Furnace', 'A forge that never dims and never asks for fuel.', FX.temp('END', 5, 72)],
       ['🦅', 'Phoenix Plume', 'Wounds close as if they were never there.', FX.temp('VIT', 5, 72)],
       ['🐲', "Dragon's Hoard", 'One coin at a time, a mountain of them, and it just doubled yours.', FX.goldPct(100)],
       ['🏦', "Sovereign's Vault", 'Only opens for someone who has earned it, and pays out more than double.', FX.goldPct(120)],
       ['🌌', 'Timeless Hourglass', 'The stars stop turning while you catch your breath.', FX.extend(4)],
-      ['⛈️', 'Tempest Regalia', 'Armor woven from a storm that never ends.', FX.pct(40)],
+      ['🐲', 'Dragon Breath Elixir', 'One swallow and every breath after is fire. Aim away from friends.', FX.combo(FX.gold(300), FX.energy(80))],
       ['🚩', "Warlord's Standard", 'Raise it and the army marches for you.', FX.reps(50)],
-      ['🎭', 'Mask of a Thousand Faces', 'Wear it and the day looks a lot less like a challenge.', FX.combo(FX.pct(20), FX.extend(2))],
+      ['🏺', "Titan's Draught", 'Poured from a vessel too large for any hand. Every wound pretends it was never there.', FX.gold(600)],
       ['👁️', "Oracle's Third Eye", 'It shows you exactly where the gains are hiding.', FX.gain(75, 3)],
-      ['🥇', 'Midas Gauntlet', 'Everything you touch turns to profit.', FX.goldMult(150, 3)],
+      ['📯', "Sovereign's Command", 'A horn that has only ever been sounded once, and everyone present remembers where they were standing.', FX.combo(FX.energy(120), FX.goldMult(60, 1))],
       ['🎰', 'Cosmic Dice', 'Loaded by something older than luck.', FX.luck(5)],
       ['🏰', 'Bulwark of Ages', 'A wall that has held for a thousand years and will hold for a thousand more.', FX.shield(3)],
       ['⚖️', 'Grand Absolution', 'Every debt weighed, every scale balanced.', FX.clear('all')],
@@ -3775,6 +3980,7 @@
       case 'statGrant': return 'Permanently gain +' + fmt(eff.amount) + ' ' + eff.stat + '.';
       case 'title': return 'Take the title "' + eff.title + '", shown on your Status screen.';
       case 'combo': return eff.effects.map(effectText).join(' Also: ');
+      case 'equipment': return 'A piece of equipment. It goes straight into Inventory > Equipment.';
       case 'mystery': return 'Unknown. Its effect is revealed when used.';
       case 'gateKey': return 'Redeem to open a System-Exclusive Gate on the map. These gates never appear on their own — only a key opens one.';
     }
@@ -3840,7 +4046,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-opening-strike';
+  var APP_VERSION = '2026-10-12-item-dots';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3933,6 +4139,18 @@
       buffs.luck--;
       saveBuffs();
     }
+    // about one drop in four is a piece of equipment instead of an item
+    try {
+      var Cq = window.SystemCombat;
+      if (Cq && Cq.lootEquip && Math.random() < 0.25) {
+        var eqs = Cq.lootEquip(tier);
+        if (eqs.length) {
+          var q = eqs[Math.floor(Math.random() * eqs.length)];
+          return { rank: tier, icon: q.icon, name: q.name, flavor: q.flavor, mystery: false, effect: { type: 'equipment', id: q.id },
+                   buff: 'Equipment (' + (q.kind === 'armor' ? 'armor, ' + Cq.EQ_SLOT_NAMES[q.slot].toLowerCase() : 'clothing') + '): ' + Cq.eqText(q) + '. It goes straight into Inventory > Equipment.' };
+        }
+      }
+    } catch (e) {}
     var pool = ITEM_POOL.filter(function(it) { return it.rank === tier; });
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -4600,7 +4818,12 @@
         ? '<b>REVEALED:</b> ' + escapeHtml(item.revealed)
         : '<b>EFFECT:</b> Unknown. It is revealed when the item is used.';
     }
-    return '<b>EFFECT:</b> ' + escapeHtml(item.buff);
+    var line = '<b>EFFECT:</b> ' + escapeHtml(item.buff);
+    try {
+      var Cb = window.SystemCombat, use = Cb && Cb.combatUse ? Cb.combatUse(item.name, getEffect(item)) : null;
+      if (use) line += '<br><b>IN BATTLE:</b> ' + escapeHtml(Cb.describeCombat(use)) + ' (' + ({ one: 'one target', all: 'all enemies', self: 'you' }[use.scope] || '') + ')';
+    } catch (e) {}
+    return line;
   }
 
   function isCursed(item) {
@@ -4698,6 +4921,12 @@
 
   function resolvePendingItem(useNow) {
     if (!state.pendingItem) return;
+    if (state.pendingItem.effect && state.pendingItem.effect.type === 'equipment') {
+      var qn = state.pendingItem.name; Eqp.grant(state.pendingItem.effect.id);
+      state.pendingItem = null; state.pendingRevealed = false; state.lastLootId = null; saveState();
+      showToast(qn + ' added to Inventory > Equipment.');
+      renderLootArea(); renderInventoryBadge(); return;
+    }
     var entry = makeEntry(state.pendingItem, false);
     inventory.unshift(entry);
     saveInventory();
@@ -4747,13 +4976,13 @@
 
     if (state.pendingItem && state.pendingRevealed) {
       var card = renderItemCardHtml(state.pendingItem, '');
-      var usable = canUseNow(state.pendingItem);
+      var usable = canUseNow(state.pendingItem), isEq = !!(state.pendingItem.effect && state.pendingItem.effect.type === 'equipment');
       lootArea.innerHTML = card +
         '<div class="loot-decision-row">' +
-          (usable ? '<button class="use-btn" id="lootUseBtn">USE NOW</button>' : '') +
-          '<button class="stash-btn" id="lootStashBtn"' + (usable ? '' : ' style="flex:none; width:100%;"') + '>STASH IN INVENTORY</button>' +
+          (usable && !isEq ? '<button class="use-btn" id="lootUseBtn">USE NOW</button>' : '') +
+          '<button class="' + (isEq ? 'use-btn' : 'stash-btn') + '" id="lootStashBtn"' + (usable && !isEq ? '' : ' style="flex:none; width:100%;"') + '>' + (isEq ? 'ADD TO EQUIPMENT' : 'STASH IN INVENTORY') + '</button>' +
         '</div>' +
-        (usable ? '' : '<div class="loot-resolved-tag">This item changes an active quest, so use it from your Inventory before you clear a future quest.</div>');
+        (usable || isEq ? '' : '<div class="loot-resolved-tag">This item changes an active quest, so use it from your Inventory before you clear a future quest.</div>');
       var useBtn = document.getElementById('lootUseBtn');
       if (useBtn) useBtn.addEventListener('click', function() { resolvePendingItem(true); });
       document.getElementById('lootStashBtn').addEventListener('click', function() { resolvePendingItem(false); });
@@ -4794,7 +5023,7 @@
     purgeUsedItems();
     document.querySelectorAll('#invTabs button').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-itab') === invTab); });
     if (invTab === 'weapons') { Wpn.renderInvTab(list); return; }
-    if (invTab === 'equip') { list.innerHTML = '<div class="inv-empty">No equipment yet.<br>Armor, rings and boots will be found and bought here later.</div>'; return; }
+    if (invTab === 'equip') { Eqp.renderInvTab(list); return; }
     if (invTab === 'mats') { Mats.renderInvTab(list); return; }
     if (!visibleInventory().length) {
       list.innerHTML = '<div class="inv-empty">No items yet.<br>Clear a daily quest to earn your first drop.</div>';
@@ -4998,6 +5227,7 @@
         var names = [];
         for (var i = 0; i < eff.count; i++) {
           var found = rollLootItem();
+          if (found.effect && found.effect.type === 'equipment') { Eqp.grant(found.effect.id); names.push(found.name + ' (equipment)'); continue; }
           inventory.unshift(makeEntry(found, false));
           names.push(found.mystery ? 'a mystery item' : found.name);
         }
@@ -5425,11 +5655,13 @@
   function renderShopList() {
     renderGoldDisplays();
     var restock = document.getElementById('shopRestock');
-    if (restock) restock.textContent = shopTab === 'weapons' ? '' : shopRestockText();
+    if (restock) restock.textContent = shopTab !== 'items' ? '' : shopRestockText();
     document.getElementById('shopTabItems').classList.toggle('active', shopTab === 'items');
     document.getElementById('shopTabWeapons').classList.toggle('active', shopTab === 'weapons');
+    document.getElementById('shopTabArmor').classList.toggle('active', shopTab === 'armor');
     var list = document.getElementById('shopList');
     if (shopTab === 'weapons') { Wpn.renderShopTab(list); return; }
+    if (shopTab === 'armor') { Eqp.renderShopTab(list); return; }
     var stock = stockItems();
     list.innerHTML =
       '<div class="stats-section-title"><span>TODAY\'S STOCK</span></div>' +
@@ -5447,6 +5679,7 @@
 
   document.getElementById('shopTabItems').addEventListener('click', function() { shopTab = 'items'; renderShopList(); });
   document.getElementById('shopTabWeapons').addEventListener('click', function() { shopTab = 'weapons'; renderShopList(); });
+  document.getElementById('shopTabArmor').addEventListener('click', function() { shopTab = 'armor'; renderShopList(); });
   document.getElementById('shopOpenBtn').addEventListener('click', function() {
     renderShopList();
     document.getElementById('shopOverlay').classList.add('show');
@@ -5758,7 +5991,7 @@
   function combatStatsHtml() {
     var C = window.SystemCombat;
     if (!C) return '';
-    var ds = C.deriveStats(stats, hunterLevel, mergeJobBonus({}));
+    var ds = C.deriveStats(combatStats(), hunterLevel, mergeJobBonus({}));
     var sp = C.spendCharges(power), bonus = C.chargeBonus(sp.spent);
     var rows = [
       ['HP', ds.maxHP], ['ATTACK', ds.atk], ['DEFENSE', ds.def], ['ENDURANCE', ds.maxStamina],
@@ -7425,11 +7658,184 @@
     return { grant: grant, carried: carried, carriedCount: carriedCount, nameOf: nameOf, def: def, openArmory: openArmory, renderShopTab: renderShopTab, renderInvTab: renderInvTab, owned: function() { clean(); return data.owned.slice(); } };
   })();
 
+  // ---- Equipment -----------------------------------------------------------------------
+  // Armor goes one piece per slot (head, chest, shoulders, arms, hands, waist, legs, feet). Clothing has no slot
+  // but only three pieces can be worn at once. Worn gear adds to your combat stats and can weaken enemies.
+  var Eqp = (function() {
+    var KEY = 'the-system-equipment';
+    var data = load();
+    function C() { return window.SystemCombat; }
+    function $(id) { return document.getElementById(id); }
+    function load() {
+      var out = { owned: [], worn: [], n: 0 }, raw = null;
+      try { raw = localStorage.getItem(KEY); } catch (e) {}
+      if (raw) { try { var p = JSON.parse(raw); if (p && Array.isArray(p.owned)) out.owned = p.owned.filter(function(o) { return o && typeof o.u === 'string' && typeof o.id === 'string'; }); if (p && Array.isArray(p.worn)) out.worn = p.worn.filter(function(u) { return typeof u === 'string'; }); if (p && typeof p.n === 'number') out.n = p.n; } catch (e) {} }
+      return out;
+    }
+    function save() {
+      if (restoring) return;
+      var ok = false;
+      try { localStorage.setItem(KEY, JSON.stringify(data)); ok = true; } catch (e) { ok = false; }
+      if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+    }
+    function def(id) { return C() && C().eqDef ? C().eqDef(id) : null; }
+    function entryOf(u) { return data.owned.filter(function(o) { return o.u === u; })[0] || null; }
+    function clean() {
+      data.owned = data.owned.filter(function(o) { return def(o.id); });
+      var us = data.owned.map(function(o) { return o.u; });
+      data.worn = data.worn.filter(function(u, i) { return us.indexOf(u) >= 0 && data.worn.indexOf(u) === i; });
+    }
+    function isWorn(u) { return data.worn.indexOf(u) >= 0; }
+    function sellValue(d) { return d.src === 'shop' ? Math.round(d.price * 0.8) : d.price; }
+    function ownsId(id) { clean(); return data.owned.some(function(o) { return o.id === id; }); }
+    function slotWorn(slot) { return data.worn.filter(function(u) { var e = entryOf(u); return e && def(e.id).slot === slot; })[0] || null; }
+    function clothesWorn() { return data.worn.filter(function(u) { var e = entryOf(u); return e && def(e.id).kind === 'clothing'; }); }
+    function canWear(d) { return d.req <= hunterLevel; }
+    function wear(u) {
+      var e = entryOf(u), d = e && def(e.id); if (!d || isWorn(u)) return false;
+      if (!canWear(d)) { showToast('You need level ' + d.req + ' to wear that.'); return false; }
+      if (d.kind === 'armor') { var old = slotWorn(d.slot); if (old) data.worn = data.worn.filter(function(x) { return x !== old; }); }
+      else if (clothesWorn().length >= C().EQ_CLOTHING_MAX) { showToast('You can only wear ' + C().EQ_CLOTHING_MAX + ' pieces of clothing. Take one off first.'); return false; }
+      data.worn.push(u); return true;
+    }
+    function grant(id) {
+      if (!def(id)) return false;
+      data.n += 1; var u = 'e' + data.n + '_' + Date.now().toString(36);
+      data.owned.push({ u: u, id: id });
+      var d = def(id);
+      // a new piece is put on at once when its place is free
+      if (canWear(d) && ((d.kind === 'armor' && !slotWorn(d.slot)) || (d.kind === 'clothing' && clothesWorn().length < C().EQ_CLOTHING_MAX))) data.worn.push(u);
+      save(); return true;
+    }
+    function wornDefs() { clean(); return data.worn.map(function(u) { var d = def(entryOf(u).id); return canWear(d) ? d : null; }).filter(Boolean); }
+    function totals() { return C() && C().equipTotals ? C().equipTotals(wornDefs()) : { bonus: {}, foe: {}, gold: 0 }; }
+    // Old garment items that used to sit in Items now live here.
+    function migrate(inv) {
+      if (!C() || !C().EQUIP) return 0;
+      var byName = {}; Object.keys(C().EQUIP).forEach(function(k) { var d = C().EQUIP[k]; if (d.src === 'loot') byName[d.name] = d.id; });
+      var moved = 0;
+      for (var i = inv.length - 1; i >= 0; i--) {
+        var it = inv[i];
+        if (it && !it.used && byName[it.name] && it.rank !== 'shop') { grant(byName[it.name]); inv.splice(i, 1); moved++; }
+      }
+      return moved;
+    }
+    var COL = { common: '#c7cdd6', rare: '#4da3ff', heroic: '#b28bff', legendary: '#ffd76a' };
+    function colOf(d) { return d.rarity ? COL[d.rarity] : ((GATE_INFO[d.rank] || {}).color || '#c7cdd6'); }
+    function tag(d) { return d.rarity ? d.rarity.toUpperCase() : d.rank + '-RANK'; }
+    function kindText(d) { return d.kind === 'armor' ? 'ARMOR · ' + C().EQ_SLOT_NAMES[d.slot] : 'CLOTHING'; }
+    function cardHtml(d, mode, u) {
+      var lock = d.req > hunterLevel;
+      var head = '<div class="ab-top"><div class="ab-name">' + escapeHtml(d.name) + '</div><div class="ab-rank">' + tag(d) + '</div></div>' +
+        '<div class="ab-from">' + kindText(d) + '</div><div class="ab-desc">' + escapeHtml(d.flavor) + '</div>' +
+        '<div class="ab-desc" style="color:#9fe8c0;">' + escapeHtml(C().eqText(d)) + '</div>' +
+        '<div class="ab-meta"' + (lock ? ' style="color:#ff7a8e"' : '') + '>' + (d.req > 1 ? 'REQUIRES LEVEL ' + d.req + (lock ? ' (YOU ARE ' + hunterLevel + ')' : '') : 'NO LEVEL REQUIRED') + '</div>';
+      if (mode === 'shop') {
+        var owned = ownsId(d.id), can = goldBalance >= d.price;
+        return '<div class="ab-card" style="--rc:' + colOf(d) + '">' + head + '<button class="use-btn ab-btn" data-ebuy="' + d.id + '"' + (owned || !can ? ' disabled' : '') + '>' + (owned ? 'OWNED' : (can ? 'BUY &middot; ' + d.price + ' GOLD' : 'NEED ' + d.price + ' GOLD')) + '</button></div>';
+      }
+      var on = isWorn(u);
+      return '<div class="ab-card' + (on ? ' on' : '') + '" style="--rc:' + colOf(d) + '">' + head +
+        '<div class="loot-decision-row" style="margin-top:0;"><button class="' + (on ? 'stash-btn' : 'use-btn') + '" data-ewear="' + u + '"' + (!on && lock ? ' disabled' : '') + '>' + (on ? 'TAKE OFF' : (lock ? 'LEVEL TOO LOW' : 'WEAR')) + '</button>' +
+        '<button class="stash-btn" data-esell="' + u + '">SELL &middot; ' + sellValue(d) + '</button></div></div>';
+    }
+    function totalsLine() {
+      var t = totals(), parts = [];
+      var txt = C().eqText({ bonus: t.bonus, foe: t.foe, gold: t.gold });
+      return txt || 'Nothing worn yet.';
+    }
+    var invSel = null, sellArm = null, invEl = null;
+    function slotTile(label, u) {
+      var d = u ? def(entryOf(u).id) : null;
+      return '<button class="inv-tile eq-slot' + (d ? '' : ' empty') + (u && u === invSel ? ' sel' : '') + '"' + (d ? ' data-eu="' + u + '" style="border-color:' + colOf(d) + '99"' : '') + '><span class="it-ico">' + (d ? d.icon : '·') + '</span><span class="it-name">' + (d ? escapeHtml(d.name) : 'EMPTY') + '</span><span class="it-tag">' + label + '</span></button>';
+    }
+    function renderInvTab(list) {
+      clean(); invEl = list;
+      if (invSel && !entryOf(invSel)) invSel = null;
+      var slots = C().EQ_SLOTS.map(function(s) { return slotTile(C().EQ_SLOT_NAMES[s], slotWorn(s)); }).join('');
+      var cl = clothesWorn(), cloth = '';
+      for (var i = 0; i < C().EQ_CLOTHING_MAX; i++) cloth += slotTile('CLOTHING', cl[i] || null);
+      var arr = data.owned.slice().sort(function(a, b) {
+        var da = def(a.id), db = def(b.id);
+        return (isWorn(b.u) ? 1 : 0) - (isWorn(a.u) ? 1 : 0) || (db.kind === 'armor' ? 1 : 0) - (da.kind === 'armor' ? 1 : 0) || da.name.localeCompare(db.name);
+      });
+      var html = '<div class="inv-eq"><div class="stats-note" style="margin-top:0;">WORN: <b>' + totalsLine() + '</b></div>' +
+        '<div class="stats-section-title"><span>ARMOR · ONE PIECE PER SLOT</span></div><div class="inv-grid eq-grid">' + slots + '</div>' +
+        '<div class="stats-section-title"><span>CLOTHING · UP TO ' + C().EQ_CLOTHING_MAX + '</span></div><div class="inv-grid eq-grid">' + cloth + '</div>' +
+        (invSel ? cardHtml(def(entryOf(invSel).id), 'own', invSel) : '') +
+        '<div class="stats-section-title"><span>EVERYTHING YOU OWN (' + arr.length + ')</span></div>';
+      if (!arr.length) html += '<div class="inv-empty">No equipment yet.<br>Buy armor in the shop (Armor tab) or find gear as loot.</div>';
+      else html += '<div class="inv-grid">' + arr.map(function(o) {
+        var d = def(o.id);
+        return '<button class="inv-tile' + (o.u === invSel ? ' sel' : '') + (d.req > hunterLevel ? ' locked' : '') + '" style="border-color:' + colOf(d) + '66" data-eu="' + o.u + '"><span class="it-ico">' + d.icon + '</span><span class="it-name">' + escapeHtml(d.name) + '</span><span class="it-tag">' + (isWorn(o.u) ? 'WORN' : (d.kind === 'armor' ? C().EQ_SLOT_NAMES[d.slot] : 'CLOTHING')) + '</span></button>';
+      }).join('') + '</div>';
+      list.innerHTML = html + '</div>';
+    }
+    function refresh() { if (invEl && $('invOverlay').classList.contains('show') && invEl.querySelector('.inv-eq')) renderInvTab(invEl); try { Run.refreshStats && 0; } catch (e) {} }
+    function onAct(e) {
+      var b = e.target.closest && e.target.closest('button'); if (!b || b.disabled) return;
+      var w = b.getAttribute('data-ewear'), s = b.getAttribute('data-esell');
+      if (w) { if (isWorn(w)) data.worn = data.worn.filter(function(x) { return x !== w; }); else wear(w); save(); refresh(); }
+      else if (s) {
+        if (sellArm !== s) { sellArm = s; b.textContent = 'SURE? SELL'; setTimeout(function() { if (sellArm === s) { sellArm = null; refresh(); } }, 3000); return; }
+        var o = entryOf(s), d = def(o.id); sellArm = null;
+        data.owned = data.owned.filter(function(x) { return x.u !== s; }); data.worn = data.worn.filter(function(u) { return u !== s; });
+        if (invSel === s) invSel = null;
+        goldBalance += sellValue(d); saveGold(); save(); renderGoldDisplays(); showToast('Sold ' + d.name + ' for ' + sellValue(d) + ' gold.'); refresh();
+      }
+    }
+    $('invList').addEventListener('click', function(e) {
+      var t = e.target.closest && e.target.closest('.inv-tile[data-eu]');
+      if (t) { var u = t.getAttribute('data-eu'); invSel = invSel === u ? null : u; sellArm = null; renderInvTab(this); return; }
+      if (e.target.closest && e.target.closest('.inv-eq')) onAct(e);
+    });
+    // ---- shop tab ----
+    var shopRank = 'E', shopSel = null;
+    function renderShopTab(list) {
+      var ds = C().shopEquip().filter(function(d) { return d.rank === shopRank; });
+      var order = {}; C().EQ_SLOTS.forEach(function(s, i) { order[s] = i; }); ds.sort(function(a, b) { return order[a.slot] - order[b.slot]; });
+      var tabs = 'EDCBAS'.split('').map(function(r) { return '<button class="codex-tab' + (r === shopRank ? ' active' : '') + '" data-erank="' + r + '" style="color:' + (GATE_INFO[r] || {}).color + '">' + r + '</button>'; }).join('');
+      list.innerHTML = '<div class="codex-tabs" style="margin-bottom:6px;">' + tabs + '</div>' +
+        '<div class="loot-decision-row" style="margin:0 0 8px;"><button class="stash-btn" id="eShopOwnedBtn">YOUR EQUIPMENT (' + (clean(), data.owned.length) + ')</button></div>' +
+        '<div class="stats-note" style="margin-top:0;">' + shopRank + '-rank armor. One piece per slot is worn. Higher ranks protect more and cost far more, and need a higher hunter level. Anything you buy sells back for 80%.</div>' +
+        (shopSel && def(shopSel) && def(shopSel).rank === shopRank ? cardHtml(def(shopSel), 'shop') : '') +
+        '<div class="inv-grid">' + ds.map(function(d) {
+          var owned = ownsId(d.id), can = goldBalance >= d.price;
+          return '<button class="inv-tile' + (d.id === shopSel ? ' sel' : '') + (owned ? ' soldout' : (can ? '' : ' cantafford')) + '" style="border-color:' + colOf(d) + '66" data-esel="' + d.id + '"><span class="it-ico">' + d.icon + '</span><span class="it-name">' + escapeHtml(d.name) + '</span><span class="it-tag">' + C().EQ_SLOT_NAMES[d.slot] + '</span><span class="it-price">' + (owned ? 'OWNED' : d.price) + '</span></button>';
+        }).join('') + '</div>';
+    }
+    document.addEventListener('click', function(e) {
+      var t = e.target; if (!t || !t.closest) return;
+      var sl = $('shopList');
+      var rb = t.closest('[data-erank]');
+      if (rb && sl.contains(rb)) { shopRank = rb.getAttribute('data-erank'); shopSel = null; renderShopList(); return; }
+      if (t.id === 'eShopOwnedBtn') { $('shopOverlay').classList.remove('show'); invTab = 'equip'; renderInventoryList(); $('invOverlay').classList.add('show'); return; }
+      var es = t.closest('[data-esel]');
+      if (es && sl.contains(es)) { var id0 = es.getAttribute('data-esel'); shopSel = shopSel === id0 ? null : id0; renderShopList(); return; }
+      var bb = t.closest('[data-ebuy]');
+      if (bb && !bb.disabled && sl.contains(bb)) {
+        var d = def(bb.getAttribute('data-ebuy')); if (!d || goldBalance < d.price || ownsId(d.id)) return;
+        goldBalance -= d.price; saveGold(); grant(d.id); renderGoldDisplays();
+        showToast('Bought ' + d.name + '. Added to Inventory > Equipment.' + (d.req > hunterLevel ? ' You need level ' + d.req + ' to wear it.' : ''));
+        renderShopList();
+      }
+    });
+    return { grant: grant, totals: totals, wornDefs: wornDefs, migrate: migrate, renderInvTab: renderInvTab, renderShopTab: renderShopTab, def: def, save: save };
+  })();
+  (function() { try { if (Eqp.migrate(inventory)) { saveInventory(); renderInventoryBadge(); } } catch (e) {} })();
+
   // ---- Job helpers -------------------------------------------------------------------
   function jobDef() { var C0 = window.SystemCombat; return (C0 && C0.jobOf && hunterProfile.job) ? C0.jobOf(hunterProfile.job) : null; }
   function mergeJobBonus(b) {
     var o = {}; Object.keys(b || {}).forEach(function(k) { o[k] = b[k]; });
     var j = jobDef(); if (j) Object.keys(j.bonus).forEach(function(k) { o[k] = (o[k] || 0) + j.bonus[k]; });
+    try { var eb = Eqp.totals().bonus; Object.keys(eb).forEach(function(k) { o[k] = (o[k] || 0) + eb[k]; }); } catch (e) {}
+    return o;
+  }
+  // Your stats for a fight: what you have earned plus any timed stat boosts from items still running.
+  function combatStats() {
+    var o = {}; Object.keys(stats).forEach(function(k) { o[k] = stats[k]; });
+    try { var nowT = Date.now(); (buffs.temp || []).forEach(function(t) { if (t.expiresAt > nowT && o[t.stat] != null) o[t.stat] += t.amount; }); } catch (e) {}
     return o;
   }
   var BONUS_NAMES = { atk: 'ATTACK', def: 'DEFENSE', hp: 'HP', stamina: 'ENDURANCE', mana: 'MANA' };
@@ -7701,13 +8107,41 @@
     function actBtn(id, cls, label, sub, ok) {
       return '<button class="bt-act ' + cls + '" data-act="' + id + '"' + (ok ? '' : ' disabled') + '>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
     }
+    var ITEM_LIMIT = 3, itemSel = null;
+    // Everything in your inventory that can be used in a fight, grouped by name.
+    function battleItems() {
+      var seen = {}, out = [];
+      visibleInventory().forEach(function(it) {
+        if (it.mystery) return;
+        var use = null; try { use = C().combatUse(it.name, getEffect(it)); } catch (e) {}
+        if (!use) return;
+        if (seen[it.name]) { seen[it.name].n++; return; }
+        seen[it.name] = { name: it.name, icon: it.icon, use: use, n: 1 }; out.push(seen[it.name]);
+      });
+      return out;
+    }
+    function useInventoryItemInBattle(name) {
+      var it = visibleInventory().filter(function(x) { return x.name === name; })[0]; if (!it) return;
+      it.used = true; saveInventory(); purgeUsedItems(); renderInventoryBadge();
+    }
     function renderActs() {
       var S = SS(), over = !!S.over || busy, legal = C().legalActions(S, cur.wsel), L = {};
       legal.forEach(function(l) { if (l.type !== 'ability') L[l.type] = l; });
       var abil = legal.filter(function(l) { return l.type === 'ability'; });
       var T = C().T, ch = S.enemies.some(function(e) { return e.alive && e.chargeMove; });
       var html = '';
-      if (subOpen) {
+      if (subOpen === 'items') {
+        var its = battleItems(), selIt = its.filter(function(x) { return x.name === itemSel; })[0] || null;
+        html += '<div class="bt-sub-panel">' + its.map(function(x) {
+          return '<button class="bt-act' + (selIt && selIt.name === x.name ? ' rec' : '') + '" data-act="isel:' + esc(x.name) + '"' + (over ? ' disabled' : '') + '><span>' + x.icon + ' ' + esc(x.name) + (x.n > 1 ? ' x' + x.n : '') + '</span><small>' + ({ one: 'ONE TARGET', all: 'ALL ENEMIES', self: 'YOU' }[x.use.scope]) + '</small></button>';
+        }).join('') + '</div>';
+        if (selIt) {
+          var tg = (S.enemies[cur.sel] && S.enemies[cur.sel].alive) ? S.enemies[cur.sel].name : null;
+          html += '<div class="bt-winfo" style="grid-column:1/-1;">' + esc(C().describeCombat(selIt.use)) + (selIt.use.scope === 'one' && tg ? ' Target: <b>' + esc(tg) + '</b>.' : '') + ' Using an item takes your turn. (' + (ITEM_LIMIT - (cur.itemsUsed || 0)) + ' use' + (ITEM_LIMIT - (cur.itemsUsed || 0) === 1 ? '' : 's') + ' left this fight.)</div>' +
+            actBtn('iuse', 'power rec', 'USE ' + esc(selIt.name.toUpperCase()), '', !over);
+        }
+        html += actBtn('back', '', 'BACK', '', true);
+      } else if (subOpen) {
         html += '<div class="bt-sub-panel">' + abil.map(function(a) {
           return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? ((a.cost ? a.cost + ' MANA' : '') + (a.fat ? (a.cost ? ' &middot; ' : '') + '+' + a.fat + '% FATIGUE' : '') || 'FREE') : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA'), a.ok && !over);
         }).join('') + '</div>' + actBtn('back', '', 'BACK', '', true);
@@ -7728,6 +8162,8 @@
           html += actBtn('defend', 'defend', 'DEFEND', '-' + T.fat.defendRelief + '% FATIGUE &middot; -60% dmg', !over);
           html += actBtn('evade', 'evade', 'EVADE', fl(L.evade), !over);
           html += actBtn('abilities', '', 'ABILITIES', abil.length ? abil.length + ' READY' : 'NONE', !over && abil.length > 0);
+          var nIt = battleItems().length;
+          html += actBtn('items', 'itemsbtn', 'ITEMS', (cur.itemsUsed || 0) >= ITEM_LIMIT ? 'NO HANDS FREE' : (nIt ? nIt + ' USABLE' : 'NONE'), !over && nIt > 0 && (cur.itemsUsed || 0) < ITEM_LIMIT);
         }
       }
       $('btActs').innerHTML = html;
@@ -7882,6 +8318,7 @@
 
     function open(o) {
       var Cm = C();
+      try { var foe = Eqp.totals().foe; if (foe && Object.keys(foe).length) Cm.applyFoeMods(o.enemies, foe); } catch (e) {}
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
       var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [] });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
@@ -7917,6 +8354,16 @@
       var a = b.getAttribute('data-act');
       if (a.indexOf('wsel:') === 0) { if (busy || locked) return; cur.wsel = a.slice(5) || null; save(); renderActs(); return; }
       if (a === 'abilities') { subOpen = true; renderActs(); return; }
+      if (a === 'items') { subOpen = 'items'; itemSel = null; renderActs(); return; }
+      if (a.indexOf('isel:') === 0) { itemSel = a.slice(5); renderActs(); return; }
+      if (a === 'iuse') {
+        var pick = battleItems().filter(function(x) { return x.name === itemSel; })[0];
+        if (!pick || busy || locked || (cur.itemsUsed || 0) >= ITEM_LIMIT) return;
+        cur.itemsUsed = (cur.itemsUsed || 0) + 1; itemSel = null;
+        useInventoryItemInBattle(pick.name);
+        perform({ type: 'item', name: pick.name, effects: pick.use.effects });
+        return;
+      }
       if (a === 'back') { subOpen = false; renderActs(); return; }
       if (a.indexOf('ab:') === 0) { perform({ type: 'ability', id: a.slice(3) }); return; }
       perform({ type: a });
@@ -7954,7 +8401,7 @@
     }
     function hasMana() { return Abil.usesMana(); }   // the mana bar only shows once you carry an ability
     function playerFor(bonus) {
-      var ds = C().deriveStats(stats, hunterLevel, mergeJobBonus(bonus));
+      var ds = C().deriveStats(combatStats(), hunterLevel, mergeJobBonus(bonus));
       return C().makePlayer(ds, { name: 'YOU' });
     }
     function pips(plan, run) {
@@ -8030,7 +8477,7 @@
       hide();
       Battle.open({
         kind: 'gate', title: gateLabel(g) + (g.breach ? '' : '') + ' \u00b7 FLOOR ' + (run.floor + 1) + '/' + plan.floorCount,
-        stats: stats, level: hunterLevel, power: mergeJobBonus(run.bonus), hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
+        stats: combatStats(), level: hunterLevel, power: mergeJobBonus(run.bonus), hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
         enemies: enemies, seed: gateSeed(g) + '|f' + run.floor + '|a' + run.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
         noFlee: !!e.trapped, fleeLabel: 'RETREAT', meta: { gateId: g.id, floor: run.floor }
       });
@@ -8041,6 +8488,7 @@
       var lv = C().gateLevelsEarned(rank, run.cleared, plan.floorCount, won, plan.levels);
       var base = plan.gold[0] + Math.random() * (plan.gold[1] - plan.gold[0]);
       var gold = won ? Math.round(base) : Math.round(base * 0.6 * run.cleared / Math.max(1, plan.floorCount));
+      try { gold = Math.round(gold * (1 + Eqp.totals().gold)); } catch (e) {}
       var cool = kind === 'defeat' ? (COOL_H[rank] || 1) * 3600000 : 0;
       if (cool) setRecovery(Date.now() + cool);
       for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); }
@@ -8071,6 +8519,7 @@
         var dropTxt = '';
         try {
           var lr = C().rollLootDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att);
+          try { lr.gold = Math.round(lr.gold * (1 + Eqp.totals().gold)); } catch (e) {}
           if (lr.gold) { goldBalance += lr.gold; saveGold(); renderGoldDisplays(); run.lootGold = (run.lootGold || 0) + lr.gold; }
           if (lr.mats.length) { Mats.add(lr.mats); run.lootN = (run.lootN || 0) + lr.mats.length; }
           dropTxt = (lr.gold ? '+' + lr.gold + ' GOLD DROPPED. ' : '') + (lr.mats.length ? lr.mats.length + ' MATERIAL' + (lr.mats.length > 1 ? 'S' : '') + ' COLLECTED. ' : '');
@@ -8146,7 +8595,7 @@
       if (eligible()) { var f = null; try { f = localStorage.getItem(FLAG); } catch (e) {} if (!f) { try { localStorage.setItem(FLAG, '1'); } catch (e) {} setTimeout(function() { showToast('The System has issued a JOB CHANGE QUEST. Find it on the main screen.'); }, 0); } }
     }
     function bars() {
-      var ds = C().deriveStats(stats, hunterLevel, mergeJobBonus({}));
+      var ds = C().deriveStats(combatStats(), hunterLevel, mergeJobBonus({}));
       return '<div class="bt-me-row"><span>HP</span><div class="bt-bar hpgood"><i style="width:100%"></i></div><span>' + Math.round(ds.maxHP) + '/' + Math.round(ds.maxHP) + '</span></div>';
     }
     function pips(p) {
@@ -8198,7 +8647,7 @@
       $('runOverlay').classList.remove('show');
       Battle.open({
         kind: 'trial', title: 'JOB CHANGE QUEST · ' + (f.type === 'boss' ? 'THE WARDEN' : 'TRIAL ' + (st.floor + 1) + '/4'),
-        stats: stats, level: hunterLevel, power: {}, abilities: Abil.loadout(), weapons: Wpn.carried(),
+        stats: combatStats(), level: hunterLevel, power: mergeJobBonus({}), abilities: Abil.loadout(), weapons: Wpn.carried(),
         enemies: enemies, seed: 'trial|' + st.seed + '|' + st.floor + '|' + st.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
         noFlee: false, fleeLabel: 'ABANDON', meta: { floor: st.floor }
       });
