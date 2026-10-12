@@ -1541,7 +1541,7 @@
   .bt-name { font-weight: 700; font-size: 14px; line-height: 1.05; letter-spacing: .02em; min-width: 0; }
   .bt-sub { font-family: 'Share Tech Mono', monospace; font-size: 9.5px; color: var(--rc, var(--text-dim)); letter-spacing: .08em; }
   .bt-bar { position: relative; height: 9px; margin-top: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(125,192,255,0.25); overflow: hidden; }
-  .bt-bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #c8264a, #ff5a78); transition: width .35s; }
+  .bt-bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #c8264a, #ff5a78); transition: width .6s ease-out; }
   .bt-bar.sta > i { background: linear-gradient(90deg, #c9a52a, #ffe27a); }
   .bt-bar.mana > i { background: linear-gradient(90deg, #2b5fd0, #7cc4ff); }
   .bt-bar.hpgood > i { background: linear-gradient(90deg, #17a36c, #3dffb0); }
@@ -2413,21 +2413,28 @@
     if (m.type === 'summon' && false) return false;
     return true;
   }
-  function pickIntents(S) {
+  function isFast(S, e) { return e.alive && effSpeed(e) > effSpeed(S.player) + 0.01; }
+  function pickEnemyMove(S, e) {
+    var mv = null;
+    if (e.chargeMove) mv = e.chargeMove;
+    else {
+      var pool = e.moves.filter(function (m) { return moveAvailable(e, m); });
+      if (!pool.length) pool = [e.moves[0]];
+      var tot = pool.reduce(function (a, m) { return a + (m.weight || 1); }, 0);
+      var x = rnd(S) * tot;
+      for (var i = 0; i < pool.length; i++) { x -= (pool[i].weight || 1); if (x <= 0) { mv = pool[i]; break; } }
+      if (!mv) mv = pool[pool.length - 1];
+    }
+    S.intents[e.uid] = mv;
+  }
+  function pickIntents(S, keepFast) {
+    var old = S.intents || {};
     S.intents = {};
     S.enemies.forEach(function (e) {
       if (!e.alive) return;
-      var mv = null;
-      if (e.chargeMove) mv = e.chargeMove;
-      else {
-        var pool = e.moves.filter(function (m) { return moveAvailable(e, m); });
-        if (!pool.length) pool = [e.moves[0]];
-        var tot = pool.reduce(function (a, m) { return a + (m.weight || 1); }, 0);
-        var x = rnd(S) * tot;
-        for (var i = 0; i < pool.length; i++) { x -= (pool[i].weight || 1); if (x <= 0) { mv = pool[i]; break; } }
-        if (!mv) mv = pool[pool.length - 1];
-      }
-      S.intents[e.uid] = mv;
+      // an enemy faster than you acts at the very start of the next round, so the move it will use was already chosen
+      if (keepFast && old[e.uid] && isFast(S, e) && !e.chargeMove) { S.intents[e.uid] = old[e.uid]; return; }
+      pickEnemyMove(S, e);
     });
   }
 
@@ -2637,8 +2644,9 @@
     }
     var stance = a.type === 'defend' ? 'defend' : (a.type === 'evade' ? 'evade' : null);
 
-    // actors by speed (player wins ties)
-    var actors = [{ u: P, s: effSpeed(P) + 0.01 }];
+    // Agility only decides the opening of a fight (see opening()). After that you act first each round, then the
+    // enemies go in speed order (a slowed enemy drops down the order).
+    var actors = [{ u: P, s: Infinity }];
     S.enemies.forEach(function (e) { if (e.alive) actors.push({ u: e, s: effSpeed(e) }); });
     actors.sort(function (x, y) { return y.s - x.s; });
     var playerActed = false;
@@ -2654,6 +2662,31 @@
 
     if (P.alive && !S.over && a.type !== 'collapse' && P.fatigue >= 100) { P.fatigue = 100; P.collapsed = true; ev.push({ t: 'exhausted' }); }
     if (!S.over) endRound(S, ev, a);
+    if (S.over) ev.push({ t: 'over', result: S.over });
+    S.log = ev;
+    return ev;
+  }
+  // The opening of a fight: every enemy faster than the hunter acts, fastest first, before the hunter chooses.
+  function fastPhase(S, ev) {
+    var P = S.player;
+    var fast = S.enemies.filter(function (e) { return isFast(S, e); }).sort(function (x, y) { return effSpeed(y) - effSpeed(x); });
+    fast.forEach(function (e) {
+      if (S.over || !e.alive || !P.alive) return;
+      enemyAct(S, ev, e, null);
+      checkPhases(S, ev);
+      if (!P.alive) S.over = 'defeat';
+      else if (!aliveEnemies(S).length && !(S.reserve && S.reserve.length)) S.over = 'victory';
+    });
+    if (S.over) return;
+    // the fast ones now commit to their next move (shown to you), the rest keep what they had
+    fast.forEach(function (e) { if (e.alive) { pickEnemyMove(S, e); } });
+  }
+  // Called once when a fight begins: the fast enemies get their opening move.
+  function opening(S) {
+    if (S.over || S.opened) return [];
+    S.opened = true;
+    var ev = [];
+    fastPhase(S, ev);
     if (S.over) ev.push({ t: 'over', result: S.over });
     S.log = ev;
     return ev;
@@ -2854,6 +2887,7 @@
     var prng = { s: hashSeed('pol' + opts.seed) || 1 };
     var rng = function () { prng.s = (prng.s + 0x6D2B79F5) >>> 0; var t = prng.s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     var guard = 0;
+    opening(S);
     while (!S.over && guard++ < 400) act(S, pol(S, rng));
     return S;
   }
@@ -3428,7 +3462,7 @@
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
-    policy: policy, simulate: simulate, aliveEnemies: aliveEnemies,
+    policy: policy, simulate: simulate, opening: opening, isFast: isFast, aliveEnemies: aliveEnemies,
     TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, JOBS: JOBS, JOB_ORDER: JOB_ORDER, JOB_LEVELS: JOB_LEVELS, JOB_QUEST_LEVEL: JOB_QUEST_LEVEL, JOB_RES: JOB_RES, JOB_DIMS: JOB_DIMS, jobOf: jobOf, jobAbilitiesFor: jobAbilitiesFor, assignJob: assignJob, fightProfile: fightProfile, planTrial: planTrial, TRIAL: TRIAL, trialRankFor: trialRankFor, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
@@ -3806,7 +3840,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-map-icons';
+  var APP_VERSION = '2026-10-12-opening-strike';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -7503,7 +7537,7 @@
   var Battle = (function() {
     var KEY = 'the-system-battle';
     var cur = null, handlers = {}, fleeArm = 0, subOpen = false, locked = false;
-    var V = null, busy = false, actingUid = null, fast = false, prevPct = {};   // V = what the screen shows while a round plays out step by step
+    var V = null, busy = false, actingUid = null, fast = false, prevPct = {}, prevMe = {}, nextMe = {};   // V = what the screen shows while a round plays out step by step
     function SS() { return V || cur.S; }
     function $(id) { return document.getElementById(id); }
     function esc(s) { return String(s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -7641,16 +7675,28 @@
         for (var k = 0; k < bars.length; k++) bars[k].style.width = bars[k].getAttribute('data-to') + '%';
       }); });
     }
+    // Your bars are redrawn from scratch every time, so each one starts at the width it had last time and then
+    // slides to the new one (this is what makes HP, fatigue and mana move smoothly instead of jumping).
+    function slideBar(key, cls, pct) {
+      var from = prevMe[key] != null ? prevMe[key] : pct; nextMe[key] = pct;
+      return '<div class="bt-bar ' + cls + '"><i data-to="' + pct + '" style="width:' + from + '%"></i></div>';
+    }
     function barRow(label, cls, v, max) {
-      return '<div class="bt-me-row"><span>' + label + '</span><div class="bt-bar ' + cls + '"><i style="width:' + Math.max(0, Math.min(100, v / max * 100)) + '%"></i></div><span>' + Math.ceil(v) + '/' + Math.round(max) + '</span></div>';
+      return '<div class="bt-me-row"><span>' + label + '</span>' + slideBar(label, cls, Math.max(0, Math.min(100, v / max * 100))) + '<span>' + Math.ceil(v) + '/' + Math.round(max) + '</span></div>';
     }
     function renderMe() {
+      nextMe = {};
       var P = SS().player, SN = C().STATUS_NAMES;
       var ft = C().fatigueTier(P), fchip = ft === 2 ? '<span class="bt-chip bad">EXHAUSTED &middot; LOSES NEXT TURN</span>' : (ft === 1 ? '<span class="bt-chip bad">TIRED</span>' : '');
       var st = fchip + Object.keys(P.st || {}).map(function(id) { return '<span class="bt-chip ' + (BAD[id] ? 'bad' : 'good') + '">' + (SN[id] || id).toUpperCase() + '</span>'; }).join('');
-      var fat = '<div class="bt-me-row"><span>FATIGUE</span><div class="bt-bar fat"><i style="width:' + Math.max(0, Math.min(100, P.fatigue)) + '%"></i></div><span>' + Math.round(P.fatigue) + '%</span></div>';
+      var fat = '<div class="bt-me-row"><span>FATIGUE</span>' + slideBar('FATIGUE', 'fat', Math.max(0, Math.min(100, P.fatigue))) + '<span>' + Math.round(P.fatigue) + '%</span></div>';
       var mana = (P.abilities || []).some(function(id) { var a0 = C().abilities[id]; return a0 && a0.mana > 0; }) ? barRow('MANA', 'mana', P.mana, P.maxMana) : '';
       $('btMe').innerHTML = barRow('HP', 'hpgood', P.hp, P.maxHP) + fat + mana + (st ? '<div class="bt-chips">' + st + '</div>' : '');
+      prevMe = nextMe;
+      requestAnimationFrame(function() { requestAnimationFrame(function() {
+        var bs = document.querySelectorAll('#btMe .bt-bar > i[data-to]');
+        for (var k = 0; k < bs.length; k++) bs[k].style.width = bs[k].getAttribute('data-to') + '%';
+      }); });
     }
     function actBtn(id, cls, label, sub, ok) {
       return '<button class="bt-act ' + cls + '" data-act="' + id + '"' + (ok ? '' : ' disabled') + '>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
@@ -7731,6 +7777,13 @@
       var segs = [{ who: 'P', evs: [] }], endPhase = false;
       evs.forEach(function(ev) {
         var starts = (ev.t === 'move' || (ev.t === 'stunned' && ev.uid !== 'P'));
+        // Your own action can come after the enemies (when they are faster), so it opens its own step wherever it falls.
+        var mine = (ev.t === 'act' && ev.who === 'P') || ev.t === 'collapse' || (ev.t === 'stunned' && ev.uid === 'P');
+        if (mine) {
+          var last = segs[segs.length - 1];
+          if (!(last.who === 'P' && (last.evs.length === 0 || last.evs.every(function(x) { return x.t === 'stunned' || x.t === 'collapse' || x.t === 'illegal'; })))) { endPhase = false; segs.push({ who: 'P', evs: [] }); }
+          segs[segs.length - 1].evs.push(ev); return;
+        }
         var endStarts = (!endPhase && segs.length > 1 && (ev.t === 'arrive' || ev.t === 'exhausted' || (ev.t === 'dmg' && ev.src == null)));
         if (starts) { endPhase = false; segs.push({ who: ev.uid, evs: [] }); }
         else if (endStarts) { endPhase = true; segs.push({ who: 'END', evs: [] }); }
@@ -7773,12 +7826,14 @@
     }
     async function play(pre, evs) {
       V = clone(pre); busy = true; actingUid = null; fast = false;
-      pushLog([['sys', '— round ' + cur.S.round + ' —']]);
+      pushLog([['sys', cur.S.round === 0 ? '— they strike first —' : '— round ' + cur.S.round + ' —']]);
       renderAll();
-      var segs = segments(evs);
+      var segs = segments(evs), pIdx = segs.length;
+      for (var q = 0; q < segs.length; q++) { if (segs[q].who === 'P' && segs[q].evs.length) { pIdx = q; break; } }
       try {
         for (var i = 0; i < segs.length; i++) {
           var seg = segs[i], lines = describe(seg.evs);
+          if (seg.who === 'P' && !seg.evs.length) continue;
           if (seg.who === 'P') {
             // Your action resolves first. Spent stamina and mana show straight away.
             V.player.fatigue = cur.S.player.fatigue; V.player.collapsed = cur.S.player.collapsed; V.player.mana = cur.S.player.mana;
@@ -7795,12 +7850,12 @@
             if (card && card.scrollIntoView) { try { card.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
             var head = lines.length ? lines[0][1] : (foe.name + ' acts.');
             banner(esc(foe.name).toUpperCase(), esc(head.replace(foe.name + ' ', '')));
-            await wait(850);
+            await wait(i < pIdx ? 480 : 850);
             var tot = 0, hit = false; seg.evs.forEach(function(ev) { if (ev.t === 'dmg' && ev.dst === 'P') { tot += ev.amt; hit = true; } });
             var dodged = seg.evs.some(function(ev) { return ev.t === 'dodge'; });
             pushLog(lines); applyHits(seg); renderAll(); showHits(seg);
             banner(esc(foe.name).toUpperCase(), esc(head.replace(foe.name + ' ', '')) + (hit ? ' &mdash; <b>' + tot + ' damage</b>' : (dodged ? ' &mdash; <b>DODGED</b>' : '')));
-            await wait(hit || dodged ? 1000 : 700);
+            await wait(i < pIdx ? (hit || dodged ? 600 : 400) : (hit || dodged ? 1000 : 700));
             applyDeaths(seg); renderAll();
             actingUid = null; banner(null); renderAll(); await wait(220);
           }
@@ -7830,9 +7885,12 @@
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
       var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [] });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
-      prevPct = {};
+      prevPct = {}; prevMe = {};
       cur = { v: 1, wsel: (o.weapons && o.weapons.length) ? o.weapons[0].id : null, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, fleeConfirm: o.fleeConfirm, doneLabel: o.doneLabel, note: o.note || '' };
       save(); show(true);
+      // enemies faster than you get their move before you can choose
+      var pre0 = clone(cur.S), ev0 = Cm.opening(cur.S);
+      if (ev0.length) { locked = true; save(); play(pre0, ev0); }
     }
     function show(fresh) {
       subOpen = false; fleeArm = 0; locked = false; V = null; busy = false; actingUid = null;
