@@ -894,6 +894,23 @@
   .stats-source-gain { font-family: 'Share Tech Mono', monospace; font-size: 11.5px; color: var(--green); margin-top: 5px; }
   .stats-note { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 8px; }
   .exercise.waived { opacity: 0.6; }
+  .qp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .qp-chip { background: linear-gradient(180deg, rgba(20,56,138,0.30), rgba(4,14,46,0.66)); border: 1px solid rgba(125,192,255,0.38); padding: 8px 4px 7px; text-align: center; min-width: 0; }
+  .qp-chip .qp-name { font-family: 'Share Tech Mono', monospace; font-size: 9.5px; color: #a9dcff; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qp-chip .qp-val { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700; color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.9); margin: 3px 0 5px; }
+  .qp-chip .qp-bar { height: 4px; background: rgba(2,10,36,0.85); border: 1px solid rgba(125,192,255,0.4); overflow: hidden; }
+  .qp-chip .qp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #1d5fe0, #8fd0ff); box-shadow: 0 0 6px rgba(110,180,255,0.9); }
+  .qp-chip .qp-pool { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); margin-top: 4px; }
+  .qp-headline { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.2em; text-align: center; color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.95); margin-bottom: 10px; text-transform: uppercase; }
+  .qp-note { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; color: var(--text-dim); line-height: 1.5; margin-top: 8px; text-align: center; }
+  .qp-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid rgba(125,192,255,0.2); }
+  .qp-row .qp-rname { flex: 1 1 auto; min-width: 0; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em; color: #eaf6ff; }
+  .qp-row .qp-rname small { display: block; font-family: 'Share Tech Mono', monospace; font-weight: 400; font-size: 10px; letter-spacing: 0.02em; color: var(--text-dim); }
+  .qp-row .qp-rbar { flex: 0 0 90px; height: 6px; background: rgba(2,10,36,0.85); border: 1px solid rgba(125,192,255,0.4); overflow: hidden; }
+  .qp-row .qp-rbar i { display: block; height: 100%; background: linear-gradient(90deg, #1d5fe0, #8fd0ff); box-shadow: 0 0 6px rgba(110,180,255,0.9); }
+  .qp-row .qp-rval { flex: 0 0 auto; width: 44px; text-align: right; font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #a9dcff; }
+  .cs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .cs-grid .status-line { font-size: 12px; }
   .codex-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .codex-tab {
     background: rgba(18,48,120,0.5); border: 1px solid var(--line);
@@ -1543,6 +1560,11 @@
         </div>
         <button class="inv-btn" id="codexOpenBtn" style="margin-top:12px; width:100%;"><span data-ico="book"></span> VIEW ITEM CODEX</button>
       </div>
+
+      <div class="loot-section">
+        <div class="loot-label" id="qpLabel">QUEST POWER</div>
+        <div id="questPowerArea"></div>
+      </div>
     </div>
 
     <div class="stakes panel">
@@ -1766,6 +1788,30 @@
     powerCost: 25, powerMult: 1.8, critCost: 20, critMult2: 2.2, critMiss: 0.8, critBonus: 0.40, evadeCost: 10,
     chargedHeavy: 2.4
   };
+
+  // ---------- Quest Power (daily reps -> charges) ----------
+  // Charges are stored as "days' worth" per type (0..cap). Entering a gate spends up to
+  // spendPerGate of each type; every full unit spent adds the percentages below.
+  var QP = { cap: 2, spendPerGate: 1, perUnit: { atk: 0.20, def: 0.20, hp: 0.10, mana: 0.25, stamina: 0.25 } };
+  // units: {atk,def,focus,sta}, each 0..1 (what was spent). Returns the bonus object deriveStats expects.
+  function chargeBonus(units) {
+    units = units || {};
+    function u(k) { return clamp(+units[k] || 0, 0, QP.spendPerGate); }
+    return {
+      atk: QP.perUnit.atk * u('atk'),
+      def: QP.perUnit.def * u('def'), hp: QP.perUnit.hp * u('def'),
+      mana: QP.perUnit.mana * u('focus'), stamina: QP.perUnit.stamina * u('sta')
+    };
+  }
+  // What a gate would take from the stored pool: {spent:{...}, left:{...}}
+  function spendCharges(pool) {
+    var spent = {}, left = {};
+    ['atk', 'def', 'focus', 'sta'].forEach(function (k) {
+      var have = clamp(+pool[k] || 0, 0, QP.cap), take = Math.min(have, QP.spendPerGate);
+      spent[k] = Math.round(take * 100) / 100; left[k] = Math.round((have - take) * 100) / 100;
+    });
+    return { spent: spent, left: left };
+  }
 
   // ---------- player ----------
   // stats: {STR,VIT,END,AGI}  bonus (Quest Power charges): {atk,def,hp,mana,stamina} as fractions (0.1 = +10%)
@@ -2335,7 +2381,7 @@
   }
 
   var API = {
-    T: T, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
+    T: T, QP: QP, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
@@ -2713,7 +2759,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-11-combat-s1b';
+  var APP_VERSION = '2026-10-11-combat-s2';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3119,6 +3165,7 @@
       lastLootId: null,
       mods: defaultMods(),
       statsEarnedToday: null,
+      questPowerGained: null,
       leveledUp: null
     };
     // Stat boosts that are still active when a quest begins make that quest easier.
@@ -3159,6 +3206,7 @@
     if (typeof state.mods.tradeInfo === 'undefined') state.mods.tradeInfo = null;
     if (!state.mods.log) state.mods.log = [];
     if (typeof state.statsEarnedToday === 'undefined') state.statsEarnedToday = null;
+    if (typeof state.questPowerGained === 'undefined') state.questPowerGained = null;
     if (state.pendingItem) withCatalog(state.pendingItem);
     return state;
   }
@@ -3380,6 +3428,7 @@
         renderGoldDisplays();
       }
     }
+    undoQuestPower();
     state.statsEarnedToday = null;
     state.leveledUp = null;
     state.goldEarnedToday = 0;
@@ -3501,6 +3550,7 @@
     STAT_KEYS.forEach(function(k) { stats[k] = Math.round((stats[k] + gains[k]) * 100) / 100; });
     saveStats();
     state.statsEarnedToday = gains;
+    grantQuestPower();
 
     // Clearing the daily quest raises your level by one. A waived quest (no work done) doesn't.
     if (!state.mods.waivedAll) {
@@ -3561,6 +3611,10 @@
   }
 
   function renderLootArea() {
+    try { renderQuestPowerArea(); } catch (e) {}
+    renderLootAreaInner();
+  }
+  function renderLootAreaInner() {
     var lootArea = document.getElementById('lootArea');
     if (!allDone()) {
       lootArea.innerHTML = '<div class="loot-box-visual" id="lootLocked"><div class="loot-box-icon">' + ico('lock') + '</div><div class="loot-box-text">Clear today\'s quest to unlock a random item drop.</div></div>';
@@ -4423,6 +4477,7 @@
     var earned = !!(state.lootOpened && state.statsEarnedToday);
     var g = earned ? state.statsEarnedToday : projectedStats(true);
     var line = STAT_KEYS.map(function(k) { return '+' + fmt(g[k]) + ' ' + k; }).join(' &nbsp;&middot;&nbsp; ');
+    html += combatStatsHtml();
     html +=
       '<div class="stats-section-title"><span>TODAY\'S QUEST</span></div>' +
       '<div class="stats-today panel">' +
@@ -4475,6 +4530,134 @@
   document.getElementById('statsCloseBtn').addEventListener('click', function() {
     document.getElementById('statsOverlay').classList.remove('show');
   });
+
+  // ---- Quest Power -----------------------------------------------------------------
+  // Clearing the daily quest turns the reps actually required into combat charges:
+  // push-ups -> attack, squats -> defense & HP, sit-ups -> focus (mana), running -> stamina.
+  // One full day's work is 1.00 of a charge. Charges carry over between days but the store
+  // holds at most two days' worth of each; a gate spends up to one day's worth of each.
+  var POWER_KEY = 'the-system-power';
+  var QP_CAP = (window.SystemCombat && window.SystemCombat.QP.cap) || 2;
+  var QP_CHARGES = [
+    { key: 'atk',   ex: 'ex-pushups', label: 'ATTACK',        short: 'ATTACK',  src: 'Push-ups',  does: '+20% attack' },
+    { key: 'def',   ex: 'ex-squats',  label: 'DEFENSE & HP',  short: 'DEF/HP',  src: 'Squats',    does: '+20% defense, +10% HP' },
+    { key: 'focus', ex: 'ex-situps',  label: 'FOCUS (MANA)',  short: 'FOCUS',   src: 'Sit-ups',   does: '+25% mana' },
+    { key: 'sta',   ex: 'ex-run',     label: 'STAMINA',       short: 'STAMINA', src: 'Running',   does: '+25% stamina' }
+  ];
+  function round2(v) { return Math.round(v * 100) / 100; }
+  function loadPower() {
+    var out = { atk: 0, def: 0, focus: 0, sta: 0 };
+    var raw = null;
+    try { raw = localStorage.getItem(POWER_KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        QP_CHARGES.forEach(function(c) {
+          var v = +p[c.key];
+          if (isFinite(v)) out[c.key] = Math.min(QP_CAP, Math.max(0, round2(v)));
+        });
+      } catch (e) {}
+    }
+    return out;
+  }
+  var power = loadPower();
+  function savePower() {
+    if (restoring) return;
+    var ok = false;
+    try { localStorage.setItem(POWER_KEY, JSON.stringify(power)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+
+  // Units of charge today's quest is worth, from the work actually required (so a shaved
+  // exercise gives less, a doubled one gives more, a waived one gives none).
+  function questPowerToday() {
+    var out = { atk: 0, def: 0, focus: 0, sta: 0 };
+    if (state.mods.waivedAll) return out;
+    QP_CHARGES.forEach(function(c) {
+      var ex = EXS.filter(function(e) { return e.id === c.ex; })[0];
+      var need = effectiveTarget(ex);
+      var done = Math.min(state.values[ex.id] || 0, need);
+      out[c.key] = need > 0 ? round2(Math.min(QP_CAP, done / ex.target)) : 0;
+    });
+    return out;
+  }
+
+  function grantQuestPower() {
+    var gain = questPowerToday(), added = {}, lost = {};
+    QP_CHARGES.forEach(function(c) {
+      var before = power[c.key], after = Math.min(QP_CAP, round2(before + gain[c.key]));
+      added[c.key] = round2(after - before);
+      lost[c.key] = round2(gain[c.key] - added[c.key]);
+      power[c.key] = after;
+    });
+    savePower();
+    state.questPowerGained = { gain: gain, added: added, lost: lost, waived: !!state.mods.waivedAll };
+  }
+  function undoQuestPower() {
+    var g = state.questPowerGained;
+    if (g && g.added) {
+      QP_CHARGES.forEach(function(c) { power[c.key] = Math.max(0, round2(power[c.key] - (g.added[c.key] || 0))); });
+      savePower();
+    }
+    state.questPowerGained = null;
+  }
+
+  function qpChipHtml(c, valText, barFrac, poolText) {
+    return '<div class="qp-chip"><div class="qp-name">' + c.short + '</div><div class="qp-val">' + valText + '</div>' +
+      '<div class="qp-bar"><i style="width:' + Math.round(Math.max(0, Math.min(1, barFrac)) * 100) + '%"></i></div>' +
+      (poolText ? '<div class="qp-pool">' + poolText + '</div>' : '') + '</div>';
+  }
+
+  function renderQuestPowerArea() {
+    var el = document.getElementById('questPowerArea');
+    var lab = document.getElementById('qpLabel');
+    if (!el) return;
+    var g = state.questPowerGained;
+    var html;
+    if (state.lootOpened && g) {
+      if (g.waived) {
+        html = '<div class="qp-note" style="margin-top:0;">Rest day — nothing was done, so no Quest Power was generated. Your stored charges are untouched.</div>';
+        if (lab) lab.textContent = 'QUEST POWER';
+      } else {
+        if (lab) lab.textContent = 'QUEST POWER GENERATED';
+        html = '<div class="qp-headline">Quest Power Generated</div><div class="qp-grid">' +
+          QP_CHARGES.map(function(c) { return qpChipHtml(c, '+' + (g.gain[c.key] || 0).toFixed(2), power[c.key] / QP_CAP, 'STORED ' + power[c.key].toFixed(2) + '/' + QP_CAP); }).join('') + '</div>';
+        var anyLost = QP_CHARGES.some(function(c) { return (g.lost[c.key] || 0) > 0; });
+        html += '<div class="qp-note">Charges power your next gate. They carry over, up to ' + QP_CAP + ' days\' worth each' + (anyLost ? ' &middot; some overflowed past the cap' : '') + '.</div>';
+      }
+    } else {
+      if (lab) lab.textContent = 'QUEST POWER';
+      var proj = questPowerToday();
+      html = '<div class="qp-grid">' +
+        QP_CHARGES.map(function(c) { return qpChipHtml(c, power[c.key].toFixed(2), power[c.key] / QP_CAP, c.src.toUpperCase()); }).join('') + '</div>' +
+        '<div class="qp-note">' + (state.lootOpened ? 'Stored charges. Today\'s quest was cleared before Quest Power existed, so it generated none &mdash; tomorrow\'s will.' : 'Stored charges. Clear today\'s quest to generate more &mdash; each exercise fuels one: push-ups attack, squats defense &amp; HP, sit-ups focus, running stamina.') + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  // Combat readout + charge store for the Stats screen.
+  function combatStatsHtml() {
+    var C = window.SystemCombat;
+    if (!C) return '';
+    var ds = C.deriveStats(stats, hunterLevel, {});
+    var sp = C.spendCharges(power), bonus = C.chargeBonus(sp.spent);
+    var rows = [
+      ['HP', ds.maxHP], ['ATTACK', ds.atk], ['DEFENSE', ds.def], ['STAMINA', ds.maxStamina],
+      ['MANA', ds.maxMana], ['SPEED', ds.speed], ['CRIT', Math.round(ds.crit * 1000) / 10 + '%'], ['EVASION', Math.round(ds.evasion * 1000) / 10 + '%']
+    ];
+    var html = '<div class="stats-section-title"><span>COMBAT POWER</span></div><div class="stats-today panel"><div class="cs-grid">' +
+      rows.map(function(r) { return '<div class="status-line"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
+      '<div class="stats-note">Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets stamina and mana, AGI sets speed, crit and evasion.</div></div>';
+    html += '<div class="stats-section-title"><span>QUEST POWER</span></div><div class="stats-today panel">' +
+      QP_CHARGES.map(function(c) {
+        return '<div class="qp-row"><div class="qp-rname">' + c.label + '<small>' + c.src + ' &middot; ' + c.does + ' per full charge</small></div>' +
+          '<div class="qp-rbar"><i style="width:' + Math.round(power[c.key] / QP_CAP * 100) + '%"></i></div><div class="qp-rval">' + power[c.key].toFixed(2) + '</div></div>';
+      }).join('') +
+      '<div class="stats-note" style="text-align:left;">Each gate spends up to 1.00 of every charge and applies it for that run. The store holds up to ' + QP_CAP + '.00 of each, so a missed day never wastes more than it saves.<br>' +
+      'NEXT GATE: ' + (QP_CHARGES.every(function(c) { return sp.spent[c.key] === 0; }) ? 'no charges stored' :
+        '+' + Math.round(bonus.atk * 100) + '% attack &middot; +' + Math.round(bonus.def * 100) + '% defense &middot; +' + Math.round(bonus.hp * 100) + '% HP &middot; +' + Math.round(bonus.mana * 100) + '% mana &middot; +' + Math.round(bonus.stamina * 100) + '% stamina') + '</div></div>';
+    return html;
+  }
 
   // ---- Hunter profile and evaluation ---------------------------------------------
   var HUNTER_KEY = 'the-system-hunter';
@@ -5977,6 +6160,7 @@
   saveGateEntry();
   saveGrantedMilestones();
   saveHunter();
+  savePower();
 
   render();
   renderLootArea();
