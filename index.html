@@ -4059,7 +4059,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-red-gate-map';
+  var APP_VERSION = '2026-10-12-stats-vitals';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -6006,13 +6006,23 @@
     if (!C) return '';
     var ds = C.deriveStats(combatStats(), hunterLevel, mergeJobBonus({}));
     var sp = C.spendCharges(power), bonus = C.chargeBonus(sp.spent);
+    // Current HP / mana: live values while a gate run is in progress, otherwise full.
+    var liveRun = (gateEntry && gateEntry.run && gateEntry.run.stage !== 'done') ? gateEntry.run : null;
+    var curHP = ds.maxHP, curMana = ds.maxMana, curFat = 0;
+    if (liveRun) {
+      var dsR = C.deriveStats(combatStats(), hunterLevel, mergeJobBonus(liveRun.bonus || {}));
+      curHP = Math.min(dsR.maxHP, Math.max(0, liveRun.hp)); curMana = Math.min(dsR.maxMana, Math.max(0, liveRun.mana));
+      curFat = Math.round(liveRun.fat || 0);
+      ds.maxHP = dsR.maxHP; ds.maxMana = dsR.maxMana;
+    }
     var rows = [
-      ['HP', ds.maxHP], ['ATTACK', ds.atk], ['DEFENSE', ds.def], ['ENDURANCE', ds.maxStamina],
-      ['MANA', ds.maxMana], ['SPEED', ds.speed], ['CRIT', Math.round(ds.crit * 1000) / 10 + '%'], ['EVASION', Math.round(ds.evasion * 1000) / 10 + '%']
+      ['HP', Math.round(curHP) + ' / ' + Math.round(ds.maxHP)], ['MANA', Math.round(curMana) + ' / ' + Math.round(ds.maxMana)],
+      ['FATIGUE', curFat + '%'], ['ATTACK', ds.atk], ['DEFENSE', ds.def], ['ENDURANCE', ds.maxStamina],
+      ['SPEED', ds.speed], ['CRIT', Math.round(ds.crit * 1000) / 10 + '%'], ['EVASION', Math.round(ds.evasion * 1000) / 10 + '%']
     ];
     var html = jobCardHtml() + '<div class="stats-section-title"><span>COMBAT POWER</span></div><div class="stats-today panel"><div class="cs-grid">' +
       rows.map(function(r) { return '<div class="status-line"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
-      '<div class="stats-note">Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets endurance (how slowly attacks tire you) and mana, AGI sets speed, crit and evasion.</div></div>';
+      '<div class="stats-note">' + (liveRun ? 'HP, mana and fatigue are your live values from the gate you are in. ' : 'HP and mana show full outside a gate. ') + 'Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets endurance (how slowly attacks tire you) and mana, AGI sets speed, crit and evasion.</div></div>';
     html += '<div class="stats-section-title"><span>GATE ENERGY</span></div>' + energyCardHtml(false);
     html += '<div class="stats-section-title"><span>QUEST POWER</span></div><div class="stats-today panel">' +
       QP_CHARGES.map(function(c) {
