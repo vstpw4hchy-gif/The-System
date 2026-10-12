@@ -909,6 +909,16 @@
   .qp-row .qp-rbar { flex: 0 0 90px; height: 6px; background: rgba(2,10,36,0.85); border: 1px solid rgba(125,192,255,0.4); overflow: hidden; }
   .qp-row .qp-rbar i { display: block; height: 100%; background: linear-gradient(90deg, #1d5fe0, #8fd0ff); box-shadow: 0 0 6px rgba(110,180,255,0.9); }
   .qp-row .qp-rval { flex: 0 0 auto; width: 44px; text-align: right; font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #a9dcff; }
+  .ge-card { padding: 10px 12px; margin-bottom: 12px; background: linear-gradient(180deg, rgba(20,56,138,0.30), rgba(4,14,46,0.66)); border: 1px solid rgba(125,192,255,0.38); }
+  .ge-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ge-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.2em; color: #eaf6ff; text-shadow: 0 0 8px rgba(110,180,255,0.8); }
+  .ge-val { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; color: #eaf6ff; text-shadow: 0 0 10px rgba(110,180,255,0.9); }
+  .ge-val small { font-family: 'Share Tech Mono', monospace; font-weight: 400; font-size: 10px; color: var(--text-dim); }
+  .ge-bar { height: 7px; margin: 7px 0 6px; background: rgba(2,10,36,0.85); border: 1px solid rgba(125,192,255,0.5); overflow: hidden; }
+  .ge-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6a3fe0, #b28bff); box-shadow: 0 0 8px rgba(178,139,255,0.9); }
+  .ge-costs { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.03em; line-height: 1.5; }
+  .ge-line { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; text-align: center; color: #d8c4ff; text-shadow: 0 0 10px rgba(178,139,255,0.9); margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(125,192,255,0.2); text-transform: uppercase; }
+  .loot-decision-row button:disabled, .use-btn:disabled { opacity: 0.4; }
   .cs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
   .cs-grid .status-line { font-size: 12px; }
   .codex-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -1661,6 +1671,7 @@
       <div class="inv-title">GATE MAP</div>
       <button class="inv-close" id="gateCloseBtn">CLOSE</button>
     </div>
+    <div id="gateEnergyBar"></div>
     <div id="gateStatusBanner"></div>
     <div class="loot-box-text" style="margin-bottom:12px;">Gates open at random across the state. Tap a marker to inspect it and choose whether to enter. Left uncleared a week, a gate breaks and spills its monsters out.</div>
     <div class="gate-legend" id="gateLegend"></div>
@@ -1788,6 +1799,10 @@
     powerCost: 25, powerMult: 1.8, critCost: 20, critMult2: 2.2, critMiss: 0.8, critBonus: 0.40, evadeCost: 10,
     chargedHeavy: 2.4
   };
+
+  // ---------- Gate Energy ----------
+  var GATE_ENERGY = { start: 100, perClear: 100, cap: 1000, cost: { E: 20, D: 40, C: 75, B: 125, A: 200, S: 500 } };
+  function gateCost(rank) { return GATE_ENERGY.cost[rank] || 0; }
 
   // ---------- Quest Power (daily reps -> charges) ----------
   // Charges are stored as "days' worth" per type (0..cap). Entering a gate spends up to
@@ -2381,7 +2396,7 @@
   }
 
   var API = {
-    T: T, QP: QP, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
+    T: T, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
@@ -2689,6 +2704,7 @@
       case 'goldMult': return 'Your next ' + (eff.clears > 1 ? eff.clears + ' cleared quests earn' : 'cleared quest earns') + ' +' + eff.pct + '% gold.';
       case 'luck': return 'Your next ' + (eff.rolls > 1 ? eff.rolls + ' loot rolls are' : 'loot roll is') + ' rolled twice, and the rarer result wins.';
       case 'instantGold': return 'Gain ' + eff.amount + ' gold immediately.';
+      case 'gateEnergy': return 'Restore ' + eff.amount + ' Gate Energy immediately.';
       case 'goldPct': return 'Instantly gain ' + eff.pct + '% of your current gold holdings. The more gold you have banked when you use it, the more it pays.';
       case 'grantLoot': return 'Roll ' + eff.count + ' extra loot drop' + (eff.count > 1 ? 's' : '') + ' immediately and stash ' + (eff.count > 1 ? 'them' : 'it') + ' in your inventory.';
       case 'statGrant': return 'Permanently gain +' + fmt(eff.amount) + ' ' + eff.stat + '.';
@@ -2759,7 +2775,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-11-combat-s2';
+  var APP_VERSION = '2026-10-11-combat-s3b';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3166,6 +3182,7 @@
       mods: defaultMods(),
       statsEarnedToday: null,
       questPowerGained: null,
+      energyGained: null,
       leveledUp: null
     };
     // Stat boosts that are still active when a quest begins make that quest easier.
@@ -3207,6 +3224,7 @@
     if (!state.mods.log) state.mods.log = [];
     if (typeof state.statsEarnedToday === 'undefined') state.statsEarnedToday = null;
     if (typeof state.questPowerGained === 'undefined') state.questPowerGained = null;
+    if (typeof state.energyGained === 'undefined') state.energyGained = null;
     if (state.pendingItem) withCatalog(state.pendingItem);
     return state;
   }
@@ -3429,6 +3447,7 @@
       }
     }
     undoQuestPower();
+    undoGateEnergy();
     state.statsEarnedToday = null;
     state.leveledUp = null;
     state.goldEarnedToday = 0;
@@ -3551,6 +3570,7 @@
     saveStats();
     state.statsEarnedToday = gains;
     grantQuestPower();
+    grantGateEnergy();
 
     // Clearing the daily quest raises your level by one. A waived quest (no work done) doesn't.
     if (!state.mods.waivedAll) {
@@ -3794,6 +3814,7 @@
       case 'goldMult': return '+' + eff.pct + '% gold on your next ' + (eff.clears > 1 ? eff.clears + ' clears' : 'clear');
       case 'luck': return 'lucky loot ×' + eff.rolls;
       case 'instantGold': return '+' + eff.amount + ' gold';
+      case 'gateEnergy': return '+' + eff.amount + ' Gate Energy';
       case 'goldPct': return '+' + eff.pct + '% of current gold';
       case 'grantLoot': return '+' + eff.count + ' loot drop' + (eff.count > 1 ? 's' : '');
       case 'statGrant': return '+' + fmt(eff.amount) + ' ' + eff.stat + ' (permanent)';
@@ -3862,6 +3883,7 @@
       case 'goldMult': buffs.goldMults.push({ pct: eff.pct, remaining: eff.clears }); saveBuffs(); break;
       case 'luck': buffs.luck += eff.rolls; saveBuffs(); break;
       case 'instantGold': goldBalance += eff.amount; saveGold(); renderGoldDisplays(); break;
+      case 'gateEnergy': { var gotE = gainEnergy(eff.amount); text = '+' + gotE + ' Gate Energy (now ' + energy.value + ')'; break; }
       case 'goldPct': {
         var pctGain = Math.round(goldBalance * eff.pct / 100);
         goldBalance += pctGain;
@@ -4623,6 +4645,7 @@
         html = '<div class="qp-headline">Quest Power Generated</div><div class="qp-grid">' +
           QP_CHARGES.map(function(c) { return qpChipHtml(c, '+' + (g.gain[c.key] || 0).toFixed(2), power[c.key] / QP_CAP, 'STORED ' + power[c.key].toFixed(2) + '/' + QP_CAP); }).join('') + '</div>';
         var anyLost = QP_CHARGES.some(function(c) { return (g.lost[c.key] || 0) > 0; });
+        html += '<div class="ge-line">+' + (state.energyGained ? state.energyGained.added : 0) + ' Gate Energy &middot; now ' + energy.value + ' / ' + GE.cap + '</div>';
         html += '<div class="qp-note">Charges power your next gate. They carry over, up to ' + QP_CAP + ' days\' worth each' + (anyLost ? ' &middot; some overflowed past the cap' : '') + '.</div>';
       }
     } else {
@@ -4648,6 +4671,7 @@
     var html = '<div class="stats-section-title"><span>COMBAT POWER</span></div><div class="stats-today panel"><div class="cs-grid">' +
       rows.map(function(r) { return '<div class="status-line"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="stats-note">Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets stamina and mana, AGI sets speed, crit and evasion.</div></div>';
+    html += '<div class="stats-section-title"><span>GATE ENERGY</span></div>' + energyCardHtml(false);
     html += '<div class="stats-section-title"><span>QUEST POWER</span></div><div class="stats-today panel">' +
       QP_CHARGES.map(function(c) {
         return '<div class="qp-row"><div class="qp-rname">' + c.label + '<small>' + c.src + ' &middot; ' + c.does + ' per full charge</small></div>' +
@@ -4657,6 +4681,84 @@
       'NEXT GATE: ' + (QP_CHARGES.every(function(c) { return sp.spent[c.key] === 0; }) ? 'no charges stored' :
         '+' + Math.round(bonus.atk * 100) + '% attack &middot; +' + Math.round(bonus.def * 100) + '% defense &middot; +' + Math.round(bonus.hp * 100) + '% HP &middot; +' + Math.round(bonus.mana * 100) + '% mana &middot; +' + Math.round(bonus.stamina * 100) + '% stamina') + '</div></div>';
     return html;
+  }
+
+  // ---- Gate Energy -------------------------------------------------------------------
+  // Every cleared daily quest pays 100 Gate Energy. Entering a gate costs energy by rank
+  // (E 20 / D 40 / C 75 / B 125 / A 200 / S 500). A pure rest day pays nothing. System-Exclusive
+  // gates are paid for by their key, so they cost no energy.
+  var ENERGY_KEY = 'the-system-energy';
+  var GE = (window.SystemCombat && window.SystemCombat.GATE_ENERGY) || { start: 100, perClear: 100, cap: 1000, cost: { E: 20, D: 40, C: 75, B: 125, A: 200, S: 500 } };
+  function loadEnergy() {
+    var out = { value: GE.start };
+    var raw = null;
+    try { raw = localStorage.getItem(ENERGY_KEY); } catch (e) {}
+    if (raw) {
+      try {
+        var p = JSON.parse(raw);
+        if (typeof p.value === 'number' && isFinite(p.value)) out.value = Math.min(GE.cap, Math.max(0, Math.round(p.value)));
+      } catch (e) {}
+    }
+    return out;
+  }
+  var energy = loadEnergy();
+  function saveEnergy() {
+    if (restoring) return;
+    var ok = false;
+    try { localStorage.setItem(ENERGY_KEY, JSON.stringify(energy)); ok = true; } catch (e) { ok = false; }
+    if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+  }
+  // The one door energy comes in through: quests, refunds, and (later) items all use it.
+  function gainEnergy(n) {
+    n = Math.max(0, Math.round(+n || 0));
+    var before = energy.value;
+    energy.value = Math.min(GE.cap, before + n);
+    saveEnergy();
+    refreshEnergyViews();
+    return energy.value - before;
+  }
+  function spendEnergy(n) {
+    n = Math.max(0, Math.round(+n || 0));
+    if (energy.value < n) return false;
+    energy.value -= n;
+    saveEnergy();
+    refreshEnergyViews();
+    return true;
+  }
+  function gateEnergyCost(g) {
+    if (!g || g.special) return 0;
+    return GE.cost[g.rank] || 0;
+  }
+  function grantGateEnergy() {
+    if (state.mods.waivedAll) { state.energyGained = { added: 0, waived: true }; return; }
+    state.energyGained = { added: gainEnergy(GE.perClear), waived: false };
+  }
+  function undoGateEnergy() {
+    var g = state.energyGained;
+    if (g && g.added) { energy.value = Math.max(0, energy.value - g.added); saveEnergy(); refreshEnergyViews(); }
+    state.energyGained = null;
+  }
+  function energyCardHtml(compact) {
+    var pct = Math.round(energy.value / GE.cap * 100);
+    return '<div class="ge-card"><div class="ge-top"><span class="ge-name">GATE ENERGY</span><span class="ge-val">' + energy.value + ' <small>/ ' + GE.cap + '</small></span></div>' +
+      '<div class="ge-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="ge-costs">' + (compact ? '' : '+' + GE.perClear + ' per cleared daily quest &middot; ') + 'ENTRY COST &nbsp;' +
+      ['E', 'D', 'C', 'B', 'A', 'S'].map(function(r) { return r + ' ' + GE.cost[r]; }).join(' &middot; ') + '</div></div>';
+  }
+  function refreshEnergyViews() {
+    var bar = document.getElementById('gateEnergyBar');
+    if (bar) bar.innerHTML = energyCardHtml(false);
+    try { renderQuestPowerArea(); } catch (e) {}
+    var so = document.getElementById('statsOverlay');
+    if (so && so.classList.contains('show')) renderStatsScreen();
+  }
+  // Pay back a gate's entry cost when nothing was fought (left again, or the gate broke).
+  function refundGateEntry(entry) {
+    if (entry && entry.paid > 0 && !entry.fought) {
+      gainEnergy(entry.paid);
+      return entry.paid;
+    }
+    return 0;
   }
 
   // ---- Hunter profile and evaluation ---------------------------------------------
@@ -5287,7 +5389,7 @@
     if (!drop.length) return false;
     var dropIds = drop.map(function(g) { return g.id; });
     gates = gates.filter(function(g) { return dropIds.indexOf(g.id) < 0; });
-    if (gateEntry && dropIds.indexOf(gateEntry.gateId) >= 0) { gateEntry = null; saveGateEntry(); }
+    if (gateEntry && dropIds.indexOf(gateEntry.gateId) >= 0) { refundGateEntry(gateEntry); gateEntry = null; saveGateEntry(); }
     return true;
   }
 
@@ -5374,7 +5476,10 @@
     var hadBroken = gates.some(gateIsBroken);
     if (hadBroken) {
       if (gateEntry && gates.some(function(g) { return g.id === gateEntry.gateId && gateIsBroken(g); })) {
+        // A dungeon break while you are inside is a failure: the Gate Energy is not refunded.
+        var lostE = gateEntry.paid || 0;
         gateEntry = null;
+        if (lostE) setTimeout(function() { showToast('The gate broke while you were inside. The ' + lostE + ' Gate Energy you spent is lost.'); }, 0);
         saveGateEntry();
       }
       gates = gates.filter(function(g) { return !gateIsBroken(g); });
@@ -5643,6 +5748,8 @@
   function renderGateMap() {
     maintainGates();
     renderGateLegend();
+    var geBar = document.getElementById('gateEnergyBar');
+    if (geBar) geBar.innerHTML = energyCardHtml(false);
     renderGateStatusBanner();
     var wrap = document.getElementById('gateMapWrap');
     if (!wrap) return;
@@ -5815,12 +5922,15 @@
     if (!g) return;
     var body = document.getElementById('gateDetailBody');
     var info = g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank];
+    var cost = gateEnergyCost(g);
+    var canPay = energy.value >= cost;
     var inside = gateEntry && gateEntry.gateId === g.id;
     var someoneElseInside = gateEntry && gateEntry.gateId !== g.id;
 
     var meta = '<div class="gate-detail-meta">' +
       '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
       '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared<br>' +
+      '<b>ENTRY COST:</b> ' + (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')') + '<br>' +
       (g.special ? '<b>ORIGIN:</b> opened by a System Gate Key' : '<b>CLEAR REWARD:</b> roughly ' + info.levels + ' level' + (info.levels === 1 ? '' : 's') + ', scaled by the boss and how many enemies fall') +
       '</div>';
 
@@ -5831,8 +5941,8 @@
       actions = '<div class="gate-special-note">You are already inside another gate. Leave it first.</div>' +
         '<div class="loot-decision-row"><button class="stash-btn" id="gateDetailCloseBottomBtn" style="flex:none; width:100%;">CLOSE</button></div>';
     } else {
-      actions = '<div class="loot-decision-row">' +
-        '<button class="use-btn" id="gateEnterBtn">ENTER GATE</button>' +
+      actions = (canPay ? '' : '<div class="gate-special-note">Not enough Gate Energy. Need ' + cost + ', you have ' + energy.value + '. Every cleared daily quest pays +' + GE.perClear + '.</div>') + '<div class="loot-decision-row">' +
+        '<button class="use-btn" id="gateEnterBtn"' + (canPay ? '' : ' disabled') + '>ENTER GATE' + (cost ? ' &middot; ' + cost : '') + '</button>' +
         '<button class="stash-btn" id="gateDetailCloseBottomBtn">CANCEL</button>' +
       '</div>';
     }
@@ -5860,7 +5970,10 @@
   function enterGate(id) {
     var g = gateById(id);
     if (!g || gateEntry) return;
-    gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed };
+    var cost = gateEnergyCost(g);
+    if (energy.value < cost) { showToast('Not enough Gate Energy. This gate costs ' + cost + ' and you have ' + energy.value + '.'); return; }
+    if (cost && !spendEnergy(cost)) return;
+    gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed, paid: cost };
     saveGateEntry();
     document.getElementById('gateDetailOverlay').classList.remove('show');
     renderGateMap();
@@ -5871,10 +5984,11 @@
 
   function leaveGate() {
     if (!gateEntry || (gateEntry.trapped && COMBAT_READY)) return;
+    var back = refundGateEntry(gateEntry);
     gateEntry = null;
     saveGateEntry();
     renderGateMap();
-    showToast('You step back out. The gate is still open behind you.');
+    showToast('You step back out. The gate is still open behind you.' + (back ? ' ' + back + ' Gate Energy refunded.' : ''));
   }
 
   document.getElementById('gateOpenBtn').addEventListener('click', function() {
@@ -6161,6 +6275,7 @@
   saveGrantedMilestones();
   saveHunter();
   savePower();
+  saveEnergy();
 
   render();
   renderLootArea();
