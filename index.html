@@ -593,6 +593,11 @@
   .inv-tile.rarity-shop { border-color: rgba(255,180,84,0.55); }
   .inv-tile.cursed { box-shadow: inset 0 0 14px rgba(255,59,92,0.2); }
   .inv-tile.locked { opacity: .6; }
+
+  .inv-tabs button { font-size: 11.5px; letter-spacing: .03em; padding: 9px 2px; }
+  @media (max-width: 400px) { .inv-tabs { flex-wrap: wrap; } .inv-tabs button { flex: 1 1 45%; } }
+  .inv-tile .it-count { position: absolute; bottom: 4px; right: 5px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #eaf6ff; }
+  .inv-tile .it-val { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #ffd76a; }
   .inv-tile .it-price { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #ffd76a; margin-top: auto; padding-top: 2px; }
   .inv-tile .it-price::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ffd76a; margin-right: 4px; box-shadow: 0 0 6px #ffd76a; }
   .inv-tile.soldout { opacity: .4; }
@@ -1754,7 +1759,7 @@
       <div class="inv-title">INVENTORY</div>
       <button class="inv-close" id="invCloseBtn">CLOSE</button>
     </div>
-    <div class="shop-tabs inv-tabs" id="invTabs"><button data-itab="items" class="active">ITEMS</button><button data-itab="weapons">WEAPONS</button><button data-itab="equip">EQUIPMENT</button></div>
+    <div class="shop-tabs inv-tabs" id="invTabs"><button data-itab="items" class="active">ITEMS</button><button data-itab="weapons">WEAPONS</button><button data-itab="equip">EQUIPMENT</button><button data-itab="mats">MATERIALS</button></div>
     <div id="invList"></div>
   </div>
 </div>
@@ -3182,6 +3187,62 @@
     return out;
   }
 
+  // ---- Loot from the fallen: scraps, parts, junk and gold ----------------------------
+  // Commons leave scraps and junk, elites leave better parts and sometimes gold, bosses almost always leave gold.
+  // Everything is a pure function of the fight's seed, so a resumed fight pays exactly the same.
+  var MAT_VALUE = { E: 1, D: 2, C: 3, B: 5, A: 9, S: 15 };
+  var LOOT_GOLD_MID = { E: 17, D: 35, C: 70, B: 140, A: 275, S: 550 }, LOOT_GOLD_K = 0.3;
+  var LOOT_CH = { common: 0.5, commonJunk: 0.35, eliteMat: 0.8, eliteJunk: 0.4, eliteGold: 0.25, bossGold: 0.92, bossMat: 0.75, commonCap: 6 };
+  var MAT_PARTS = {
+    gob: ['Ear', 'Tooth', 'Scrap of Hide', 'Bent Blade Shard', 'Dirty Trinket'], ver: ['Tail', 'Whisker', 'Fang', 'Matted Fur', 'Claw'],
+    ooze: ['Slime Glob', 'Gooey Core', 'Jelly Clump', 'Acidic Residue'], dead: ['Bone Shard', 'Rotten Cloth', 'Grave Dust', 'Brittle Rib', 'Skull Fragment'],
+    beast: ['Fang', 'Pelt Scrap', 'Claw', 'Tuft of Fur', 'Sinew'], fung: ['Spore Sac', 'Cap Fragment', 'Mycelium Strand', 'Pale Stalk'],
+    band: ['Torn Cloak', 'Dull Knife', 'Empty Purse', 'Bent Buckle', 'Wanted Poster'], spid: ['Fang', 'Silk Spool', 'Chitin Shard', 'Leg Segment'],
+    cult: ['Candle Stub', 'Ash-Stained Robe', 'Cracked Charm', 'Chalk Rune'], gol: ['Stone Chip', 'Core Fragment', 'Rune Shard', 'Rusted Gear'],
+    wood: ['Bark Strip', 'Thorn', 'Amber Resin', 'Root Tangle'], frost: ['Ice Shard', 'Frozen Claw', 'Rimed Pelt', 'Frostbitten Fang'],
+    swarm: ['Wing', 'Chitin Husk', 'Stinger', 'Compound Eye'], liz: ['Scale', 'Claw', 'Tail Tip', 'Shed Skin'],
+    gar: ['Stone Wing Chip', 'Horn', 'Granite Flake'], hexc: ['Hex Thread', 'Faded Sigil', 'Cursed Bead', 'Wand Tip'],
+    drown: ['Barnacle', 'Waterlogged Rope', 'Pearl Chip', 'Brine-Soaked Scrap'], fiend: ['Horn Tip', 'Brimstone Lump', 'Scorched Claw', 'Charred Scale'],
+    drake: ['Scale', 'Talon', 'Fang', 'Ember Gland'], necro: ['Black Candle', 'Bone Dust', 'Dull Soul Shard', 'Grave Linen'],
+    storm: ['Static Feather', 'Charged Scale', 'Thunder Shard', 'Singed Wing'], shad: ['Wisp of Shadow', 'Dark Cloth', 'Umbral Shard'],
+    giant: ['Chipped Tusk', 'Boulder Chip', 'Toenail', 'Coarse Hide'], arch: ['Gilded Feather', 'Halo Fragment', 'Divine Ash', 'Sigil Stone'],
+    wyrm: ['Scale', 'Horn', 'Venom Gland', 'Talon'], sea: ['Kelp Strand', 'Abyssal Scale', 'Pearl Chip', 'Tooth'],
+    revn: ['Black Feather', 'Talon', 'Ominous Quill'], titan: ['Shard', 'Forged Plate', 'Colossal Bone'], void: ['Crystal Chip', 'Null Dust', 'Mirror Glass'],
+    cal: ['Ash', 'Fragment', 'Cinder'], eclp: ['Shard', 'Dust', 'Fragment'], star: ['Stardust', 'Shard', 'Cinder'], end: ['Thread', 'Fragment', 'Dust'],
+    pant: ['Fragment', 'Relic Chip', 'Dust'], time: ['Hourglass Sand', 'Gear', 'Fragment']
+  };
+  var MAT_JUNK = ['Rusted Coin', 'Bent Spoon', 'Cracked Lantern Glass', 'Frayed Rope', 'Tarnished Button', 'Broken Buckle', 'Dented Tin Cup', 'Snapped Arrow Shaft', 'Cracked Whetstone', 'Torn Map Scrap', 'Chewed Leather Strap', 'Faded Ribbon'];
+  function matMake(rank, tier, name, mult) {
+    return { id: 'm|' + rank + '|' + slug(name), name: name, rank: rank, tier: tier, value: Math.max(1, Math.round(MAT_VALUE[rank] * mult)) };
+  }
+  function rollLootDrops(S, seed) {
+    var mats = [], gold = 0, commons = 0;
+    (S.enemies || []).forEach(function (e) {
+      if (e.alive) return;
+      var d = e.catalogId ? CATALOG.byId[e.catalogId] : null;
+      var rank = (d && d.rank) || e.rank || 'E', role = d ? d.role : (e.arch || 'grunt'), tier = role === 'boss' ? 'boss' : (role === 'elite' ? 'elite' : 'common');
+      if (!MAT_VALUE[rank]) rank = 'E';
+      var fam = d && d.fam ? String(d.fam).split('_')[1] : '', parts = MAT_PARTS[fam] || ['Fragment', 'Scrap', 'Shard'];
+      var nm = d ? d.name : (e.name || 'Creature'), h = function (k) { return hash01(k + '|' + seed + '|' + e.uid); };
+      var junk = function (k) { return MAT_JUNK[Math.floor(h(k) * MAT_JUNK.length)]; };
+      var part = function (k) { return parts[Math.floor(h(k) * parts.length)]; };
+      if (tier === 'common') {
+        if (commons >= LOOT_CH.commonCap || h('lc') >= LOOT_CH.common) return;
+        commons++;
+        if (h('lj') < LOOT_CH.commonJunk) mats.push(matMake(rank, 'junk', junk('lk'), 0.6));
+        else mats.push(matMake(rank, 'part', nm + ' ' + part('lp'), 1));
+      } else if (tier === 'elite') {
+        if (h('lm') < LOOT_CH.eliteMat) mats.push(matMake(rank, 'part', wPoss(wShort(nm)) + ' ' + part('lp'), 3));
+        if (h('lj') < LOOT_CH.eliteJunk) mats.push(matMake(rank, 'junk', junk('lk'), 0.8));
+        if (h('lg') < LOOT_CH.eliteGold) gold += Math.max(1, Math.round(LOOT_GOLD_K * LOOT_GOLD_MID[rank] * (0.7 + 0.7 * h('la'))));
+      } else {
+        if (h('lm') < LOOT_CH.bossMat) mats.push(matMake(rank, 'trophy', wPoss(wShort(nm)) + ' ' + part('lp'), 6));
+        if (h('lg') < LOOT_CH.bossGold) gold += Math.max(2, Math.round(LOOT_GOLD_K * LOOT_GOLD_MID[rank] * (1.8 + 1.2 * h('la'))));
+      }
+    });
+    return { mats: mats, gold: gold };
+  }
+
 
   var API = {
     HORDE: HORDE, COMMON_K: COMMON_K,
@@ -3190,7 +3251,7 @@
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
     policy: policy, simulate: simulate, aliveEnemies: aliveEnemies,
-    TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
+    TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -3567,7 +3628,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-stats-nobars';
+  var APP_VERSION = '2026-10-12-drops';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -4521,6 +4582,7 @@
     document.querySelectorAll('#invTabs button').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-itab') === invTab); });
     if (invTab === 'weapons') { Wpn.renderInvTab(list); return; }
     if (invTab === 'equip') { list.innerHTML = '<div class="inv-empty">No equipment yet.<br>Armor, rings and boots will be found and bought here later.</div>'; return; }
+    if (invTab === 'mats') { Mats.renderInvTab(list); return; }
     if (!visibleInventory().length) {
       list.innerHTML = '<div class="inv-empty">No items yet.<br>Clear a daily quest to earn your first drop.</div>';
       return;
@@ -6876,6 +6938,72 @@
     if (e.target && e.target.id === 'gateContinueBtn') Run.show();
   });
 
+
+  // ---- Materials ----------------------------------------------------------------------
+  // Scraps, parts and junk dropped by the things you defeat. They have no use except to be sold.
+  var Mats = (function() {
+    var KEY = 'the-system-materials';
+    var data = load(), sel = null, arm = null, armAll = false, listEl = null;
+    function $(id) { return document.getElementById(id); }
+    function load() {
+      var out = { stacks: {} }, raw = null;
+      try { raw = localStorage.getItem(KEY); } catch (e) {}
+      if (raw) { try { var p = JSON.parse(raw); if (p && p.stacks && typeof p.stacks === 'object') Object.keys(p.stacks).forEach(function(k) { var m = p.stacks[k]; if (m && m.n > 0 && typeof m.name === 'string' && m.value >= 0) out.stacks[k] = { name: m.name, rank: m.rank, tier: m.tier, value: m.value | 0, n: m.n | 0 }; }); } catch (e) {} }
+      return out;
+    }
+    function save() {
+      if (restoring) return;
+      var ok = false;
+      try { localStorage.setItem(KEY, JSON.stringify(data)); ok = true; } catch (e) {}
+      if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+    }
+    function add(list) {
+      (list || []).forEach(function(m) {
+        var st = data.stacks[m.id]; if (st) st.n += 1; else data.stacks[m.id] = { name: m.name, rank: m.rank, tier: m.tier, value: m.value, n: 1 };
+      });
+      if (list && list.length) save();
+    }
+    function ids() { return Object.keys(data.stacks); }
+    function total() { return ids().reduce(function(a, k) { return a + data.stacks[k].n * data.stacks[k].value; }, 0); }
+    function count() { return ids().reduce(function(a, k) { return a + data.stacks[k].n; }, 0); }
+    var TIER_LABEL = { part: 'PART', junk: 'JUNK', trophy: 'TROPHY' };
+    function col(rank) { return (GATE_INFO[rank] || {}).color || '#c7cdd6'; }
+    function renderInvTab(list) {
+      listEl = list;
+      var arr = ids().map(function(k) { return { id: k, m: data.stacks[k] }; }).sort(function(a, b) { return 'EDCBAS'.indexOf(b.m.rank) - 'EDCBAS'.indexOf(a.m.rank) || b.m.value - a.m.value || a.m.name.localeCompare(b.m.name); });
+      if (!arr.length) { list.innerHTML = '<div class="inv-empty inv-mat">No materials yet.<br>Scraps, parts and junk dropped by defeated creatures collect here. Sell them for gold.</div>'; return; }
+      if (sel && !data.stacks[sel]) sel = null;
+      var html = '<div class="inv-mat"><div class="stats-note" style="margin-top:0;">' + count() + ' PIECES &middot; WORTH ' + total() + ' GOLD. Elites leave better parts and bosses leave trophies.</div>' +
+        '<div class="loot-decision-row" style="margin:0 0 8px;"><button class="stash-btn" data-msellall="1">' + (armAll ? 'SURE? SELL EVERYTHING' : 'SELL ALL &middot; ' + total() + ' GOLD') + '</button></div>';
+      if (sel) {
+        var m = data.stacks[sel];
+        html += '<div class="ab-card" style="--rc:' + col(m.rank) + '"><div class="ab-top"><div class="ab-name">' + escapeHtml(m.name) + '</div><div class="ab-rank">' + m.rank + '-RANK</div></div><div class="ab-from">' + TIER_LABEL[m.tier] + ' &middot; ×' + m.n + '</div><div class="ab-desc">' + (m.tier === 'junk' ? 'Worthless to anyone but a trader.' : 'A piece of something you defeated. Traders pay for these.') + '</div>' +
+          '<div class="loot-decision-row" style="margin-top:0;"><button class="use-btn" data-msell1="' + sel + '">SELL 1 &middot; ' + m.value + '</button>' + (m.n > 1 ? '<button class="stash-btn" data-msellN="' + sel + '">SELL ALL ' + m.n + ' &middot; ' + (m.n * m.value) + '</button>' : '') + '</div></div>';
+      }
+      html += '<div class="inv-grid">' + arr.map(function(o) {
+        return '<button class="inv-tile' + (o.id === sel ? ' sel' : '') + '" style="border-color:' + col(o.m.rank) + '66" data-mu="' + o.id + '"><span class="it-ico" style="color:' + col(o.m.rank) + '">' + (o.m.tier === 'junk' ? '⚙' : (o.m.tier === 'trophy' ? '◆' : '✦')) + '</span><span class="it-name">' + escapeHtml(o.m.name) + '</span><span class="it-val">' + o.m.value + ' g</span>' + (o.m.n > 1 ? '<span class="it-count">×' + o.m.n + '</span>' : '') + '</button>';
+      }).join('') + '</div></div>';
+      list.innerHTML = html;
+    }
+    function sell(id, n) {
+      var m = data.stacks[id]; if (!m) return;
+      n = Math.min(n, m.n); var g = n * m.value; m.n -= n; if (m.n <= 0) delete data.stacks[id];
+      goldBalance += g; saveGold(); save(); renderGoldDisplays(); showToast('Sold ' + n + ' for ' + g + ' gold.');
+    }
+    $('invList').addEventListener('click', function(e) {
+      var t = e.target.closest && e.target.closest('.inv-tile[data-mu]');
+      if (t) { var u = t.getAttribute('data-mu'); sel = sel === u ? null : u; armAll = false; renderInvTab(this); return; }
+      var b = e.target.closest && e.target.closest('.inv-mat button'); if (!b) return;
+      if (b.hasAttribute('data-msell1')) { sell(b.getAttribute('data-msell1'), 1); renderInvTab($('invList')); }
+      else if (b.hasAttribute('data-msellN')) { var id = b.getAttribute('data-msellN'); sell(id, data.stacks[id] ? data.stacks[id].n : 0); renderInvTab($('invList')); }
+      else if (b.hasAttribute('data-msellall')) {
+        if (!armAll) { armAll = true; b.textContent = 'SURE? SELL EVERYTHING'; setTimeout(function() { if (armAll) { armAll = false; if ($('invOverlay').classList.contains('show') && listEl && listEl.querySelector('.inv-mat')) renderInvTab(listEl); } }, 3000); return; }
+        armAll = false; var g = total(), n = count(); data.stacks = {}; sel = null; goldBalance += g; saveGold(); save(); renderGoldDisplays(); showToast('Sold ' + n + ' pieces for ' + g + ' gold.'); renderInvTab($('invList'));
+      }
+    });
+    return { add: add, count: count, total: total, renderInvTab: renderInvTab };
+  })();
+
   // ---- Weapons -----------------------------------------------------------------------
   // Weapons are bought in the shop (Weapons tab) or found on strong enemies. Up to three are carried into a gate;
   // in battle you pick the weapon first and then how to strike with it. A weapon needs a minimum hunter level.
@@ -7507,7 +7635,7 @@
         var r = run.result || {}, head = r.kind === 'victory' ? ['VICTORY', 'win'] : (r.kind === 'defeat' ? ['DEFEATED', 'lose'] : ['RETREATED', 'out']);
         title = 'GATE RESULT';
         html = '<div class="run-card run-res"><h2 class="' + head[1] + '">' + head[0] + '</h2><div class="run-sub">' + escapeHtml(r.name || '') + ' &middot; ' + r.cleared + ' / ' + r.floors + ' FLOORS</div><div class="run-lines">' +
-          'LEVELS <b>+' + r.levels + '</b> &middot; GOLD <b>+' + r.gold + '</b><br>' + ((r.foundW && r.foundW.length) ? 'WEAPON FOUND: <b>' + r.foundW.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') + ((r.found && r.found.length) ? 'NEW ABILITY: <b>' + r.found.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') +
+          'LEVELS <b>+' + r.levels + '</b> &middot; GOLD <b>+' + r.gold + '</b><br>' + ((r.dropGold || r.dropN) ? 'DROPS: <b>' + (r.dropGold ? '+' + r.dropGold + ' gold' : '') + (r.dropGold && r.dropN ? ', ' : '') + (r.dropN ? r.dropN + ' material' + (r.dropN > 1 ? 's' : '') : '') + '</b><br>' : '') + ((r.foundW && r.foundW.length) ? 'WEAPON FOUND: <b>' + r.foundW.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') + ((r.found && r.found.length) ? 'NEW ABILITY: <b>' + r.found.map(function(n) { return escapeHtml(n); }).join(', ') + '</b><br>' : '') +
           (r.kind === 'victory' ? 'The gate collapses behind you.<br>Cleared for good.' : (r.kind === 'defeat' ? 'You are carried out, wounded.<br>RECOVERING: <b>' + fmtMs(r.cooldown || 0) + '</b> before the next gate.' : 'You withdraw. The gate stays open.')) +
           '</div></div><div class="loot-decision-row"><button class="use-btn" id="runDoneBtn">CONTINUE</button></div>';
       } else if (!run) {
@@ -7575,7 +7703,7 @@
       for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); }
       if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
       if (won) { gates = gates.filter(function(x) { return x.id !== g.id; }); saveGates(); }
-      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateLabel(g) + ' GATE', found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
+      run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateLabel(g) + ' GATE', dropGold: run.lootGold || 0, dropN: run.lootN || 0, found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
       persist(); retreatArm = 0;
       try { render(); } catch (x) {}
       show();
@@ -7597,10 +7725,17 @@
         var newAb = [], newWp = [];
         try { C().rollWeaponDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Wpn.grant(id)) { newWp.push(id); (run.foundW = run.foundW || []).push(id); } }); } catch (x) {}
         try { C().rollAbilityDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att).forEach(function(id) { if (Abil.grant(id)) { newAb.push(id); (run.found = run.found || []).push(id); } }); } catch (x) {}
+        var dropTxt = '';
+        try {
+          var lr = C().rollLootDrops(r.S, gateSeed(g) + '|' + run.floor + '|' + run.att);
+          if (lr.gold) { goldBalance += lr.gold; saveGold(); renderGoldDisplays(); run.lootGold = (run.lootGold || 0) + lr.gold; }
+          if (lr.mats.length) { Mats.add(lr.mats); run.lootN = (run.lootN || 0) + lr.mats.length; }
+          dropTxt = (lr.gold ? '+' + lr.gold + ' GOLD DROPPED. ' : '') + (lr.mats.length ? lr.mats.length + ' MATERIAL' + (lr.mats.length > 1 ? 'S' : '') + ' COLLECTED. ' : '');
+        } catch (x) {}
         if (run.floor + 1 >= plan.floorCount) { end('victory'); return; }
         var rec = C().recoverBetween(P, plan.floors[run.floor].type === 'elite' ? 'rest' : 'wave');
         run.hp = rec.hp; run.fat = rec.fatigue; run.mana = rec.mana;
-        run.msg = (newWp.length ? 'WEAPON FOUND: ' + newWp.map(Wpn.nameOf).join(', ') + '. ' : '') + (newAb.length ? 'NEW ABILITY LEARNED: ' + newAb.map(Abil.nameOf).join(', ') + '. ' : '') + 'FLOOR ' + run.cleared + ' CLEARED. ' + (plan.floors[run.floor].type === 'elite' ? 'You catch your breath in the quiet.' : 'A brief pause. You recover some strength.');
+        run.msg = dropTxt + (newWp.length ? 'WEAPON FOUND: ' + newWp.map(Wpn.nameOf).join(', ') + '. ' : '') + (newAb.length ? 'NEW ABILITY LEARNED: ' + newAb.map(Abil.nameOf).join(', ') + '. ' : '') + 'FLOOR ' + run.cleared + ' CLEARED. ' + (plan.floors[run.floor].type === 'elite' ? 'You catch your breath in the quiet.' : 'A brief pause. You recover some strength.');
         run.floor += 1; run.att = 0; run.stage = 'ready'; persist(); show(); return;
       }
       if (e.trapped) {
