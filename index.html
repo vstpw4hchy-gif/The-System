@@ -1731,6 +1731,622 @@
   </div>
 </div>
 
+<!--ENGINE-START-->
+<script>
+/* THE SYSTEM — combat engine (no UI). Pure, deterministic, JSON-serialisable state.
+ * Everything random flows through a seeded generator whose state lives inside the
+ * fight state, so a fight can be saved mid-way and resumed exactly. */
+(function (root) {
+  'use strict';
+
+  // ---------- seeded randomness ----------
+  function hashSeed(str) {
+    var h = 2166136261 >>> 0, s = String(str);
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function rnd(S) {                       // mulberry32, state kept in S.rs
+    S.rs = (S.rs + 0x6D2B79F5) >>> 0;
+    var t = S.rs;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function rr(S, a, b) { return a + (b - a) * rnd(S); }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function r1(v) { return Math.round(v); }
+
+  // ---------- tuning ----------
+  var T = {
+    maxEnemiesAlive: 4,
+    roundEnrageStart: 40, roundEnrageStep: 0.05, roundHardCap: 150,
+    critMult: 1.75, weakMult: 1.4, resistMult: 0.6,
+    defendTaken: 0.4, evadeSingle: 0.45, evadeHeavy: 0.65, evadeMulti: 0.30, evadeMax: 0.92,
+    basicStaminaGain: 5, defendStaminaGain: 10, staminaRegen: 10, manaRegen: 3,
+    powerCost: 25, powerMult: 1.8, critCost: 20, critMult2: 2.2, critMiss: 0.8, critBonus: 0.40, evadeCost: 10,
+    chargedHeavy: 2.4
+  };
+
+  // ---------- player ----------
+  // stats: {STR,VIT,END,AGI}  bonus (Quest Power charges): {atk,def,hp,mana,stamina} as fractions (0.1 = +10%)
+  function deriveStats(stats, level, bonus) {
+    stats = stats || {}; bonus = bonus || {}; level = Math.max(1, level | 0);
+    var STR = +stats.STR || 0, VIT = +stats.VIT || 0, END = +stats.END || 0, AGI = +stats.AGI || 0;
+    var o = {
+      level: level,
+      maxHP: (80 + 5 * VIT) * (1 + (bonus.hp || 0)),
+      atk: (6 + 0.9 * STR) * (1 + (bonus.atk || 0)),
+      def: (2 + 0.5 * VIT) * (1 + (bonus.def || 0)),
+      maxStamina: (60 + 0.6 * END) * (1 + (bonus.stamina || 0)),
+      maxMana: (30 + 0.4 * END + 0.3 * level) * (1 + (bonus.mana || 0)),
+      speed: 10 + AGI,
+      crit: clamp(0.05 + AGI * 0.0015, 0, 0.40),
+      evasion: clamp(0.03 + AGI * 0.002, 0, 0.40)
+    };
+    ['maxHP', 'atk', 'def', 'maxStamina', 'maxMana'].forEach(function (k) { o[k] = Math.max(1, r1(o[k])); });
+    return o;
+  }
+  function makePlayer(ds, opts) {
+    opts = opts || {};
+    return {
+      uid: 'P', isPlayer: true, name: opts.name || 'PLAYER', level: ds.level,
+      maxHP: ds.maxHP, hp: opts.hp != null ? clamp(opts.hp, 1, ds.maxHP) : ds.maxHP,
+      atk: ds.atk, def: ds.def, speed: ds.speed, crit: ds.crit, evasion: ds.evasion,
+      maxStamina: ds.maxStamina, stamina: opts.stamina != null ? clamp(opts.stamina, 0, ds.maxStamina) : ds.maxStamina,
+      maxMana: ds.maxMana, mana: opts.mana != null ? clamp(opts.mana, 0, ds.maxMana) : ds.maxMana,
+      st: {}, alive: true,
+      abilities: (opts.abilities || []).slice(0, 4)
+    };
+  }
+
+  // ---------- enemies ----------
+  // def: {id,name,rank,level,hp,atk,def,speed,weak:[],resist:[],moves:[],boss:bool,phases:[]}
+  var uidCounter = 0;
+  function normEnemy(d, S) {
+    var n = S ? (S.nextUid = (S.nextUid || 0) + 1) : (++uidCounter);
+    var e = JSON.parse(JSON.stringify(d));
+    e.uid = 'e' + n; e.isEnemy = true; e.alive = true;
+    e.maxHP = Math.max(1, r1(e.hp)); e.hp = e.maxHP;
+    e.atk = Math.max(1, +e.atk || 1); e.def = Math.max(0, +e.def || 0);
+    e.speed = +e.speed || 10; e.level = Math.max(1, e.level | 0 || 1);
+    e.weak = e.weak || []; e.resist = e.resist || [];
+    e.st = {}; e.mcd = {}; e.phasesDone = []; e.chargeMove = null; e.guard = false;
+    e.moves = (e.moves && e.moves.length) ? e.moves : [{ id: 'strike', name: 'Strike', type: 'attack', mult: 1, weight: 1 }];
+    e.phases = e.phases || [];
+    return e;
+  }
+
+  // ---------- abilities registry (full library arrives in a later segment) ----------
+  var ABILITIES = {};
+  function registerAbilities(map) { for (var k in map) ABILITIES[k] = map[k]; }
+
+  // ---------- state ----------
+  function start(opts) {
+    var S = {
+      v: 1, rs: hashSeed(opts.seed == null ? 'seed' : opts.seed) || 1, nextUid: 0,
+      round: 0, over: null, log: [], cd: {},
+      stats: { dealt: 0, taken: 0, kills: 0, crits: 0, dodges: 0, abilityUses: 0 },
+      player: null, enemies: [], intents: {}, rewardsFlags: {}
+    };
+    S.player = opts.player;
+    (opts.enemies || []).forEach(function (d) { S.enemies.push(normEnemy(d, S)); });
+    pickIntents(S);
+    return S;
+  }
+  function aliveEnemies(S) { return S.enemies.filter(function (e) { return e.alive; }); }
+  function targetOf(S, idx) {
+    var al = aliveEnemies(S);
+    if (!al.length) return null;
+    if (idx != null && S.enemies[idx] && S.enemies[idx].alive) return S.enemies[idx];
+    return al[0];
+  }
+
+  // ---------- statuses ----------
+  var STATUS_NAMES = { bleed: 'Bleed', burn: 'Burn', poison: 'Poison', stun: 'Stun', weaken: 'Weaken', guardbreak: 'Guard Break',
+    slow: 'Slow', regen: 'Regen', shield: 'Shield', berserk: 'Berserk', atkup: 'Empowered', defup: 'Fortified', haste: 'Haste', focus: 'Focus' };
+  function addStatus(u, id, dur, v) {
+    var cur = u.st[id];
+    if (cur) { cur.dur = Math.max(cur.dur, dur); cur.v = Math.max(cur.v || 0, v || 0); }
+    else u.st[id] = { dur: dur, v: v || 0 };
+  }
+  function hasSt(u, id) { return !!u.st[id]; }
+  function effAtk(S, u) {
+    var a = u.atk;
+    if (hasSt(u, 'weaken')) a *= 0.75;
+    if (hasSt(u, 'berserk')) a *= 1.5;
+    if (hasSt(u, 'atkup')) a *= 1.25;
+    if (u.isEnemy && S.round > T.roundEnrageStart) a *= 1 + T.roundEnrageStep * (S.round - T.roundEnrageStart);
+    return a;
+  }
+  function effDef(u) {
+    var d = u.def;
+    if (hasSt(u, 'guardbreak')) d *= 0.6;
+    if (hasSt(u, 'berserk')) d *= 0.8;
+    if (hasSt(u, 'defup')) d *= 1.25;
+    return d;
+  }
+  function effSpeed(u) {
+    var s = u.speed;
+    if (hasSt(u, 'slow')) s *= 0.6;
+    if (hasSt(u, 'haste')) s *= 1.4;
+    return s;
+  }
+
+  // ---------- damage ----------
+  function reduction(def, defenderLevel) {
+    var K = 10 + 4.2 * defenderLevel;
+    return K / (K + def);
+  }
+  function tagMult(target, tags) {
+    var weak = false, res = false;
+    (tags || []).forEach(function (t) {
+      if (target.weak && target.weak.indexOf(t) >= 0) weak = true;
+      if (target.resist && target.resist.indexOf(t) >= 0) res = true;
+    });
+    return weak ? T.weakMult : (res ? T.resistMult : 1);
+  }
+  function dealDamage(S, ev, src, dst, amount, meta) {
+    // shield absorbs first
+    meta = meta || {};
+    var dealt = Math.max(1, r1(amount));
+    var sh = dst.st.shield;
+    var absorbed = 0;
+    if (sh && sh.v > 0) {
+      absorbed = Math.min(sh.v, dealt); sh.v -= absorbed; dealt -= absorbed;
+      if (sh.v <= 0) delete dst.st.shield;
+    }
+    dealt = Math.max(0, dealt);
+    dst.hp = Math.max(0, dst.hp - dealt);
+    if (src && src.isPlayer) S.stats.dealt += dealt;
+    if (dst.isPlayer) S.stats.taken += dealt;
+    ev.push({ t: 'dmg', src: src ? src.uid : null, dst: dst.uid, amt: dealt, absorbed: absorbed, crit: !!meta.crit, weak: !!meta.weak, resist: !!meta.resist, how: meta.how || '' });
+    if (dst.hp <= 0 && dst.alive) {
+      dst.alive = false; dst.hp = 0;
+      if (dst.isEnemy) S.stats.kills++;
+      ev.push({ t: 'down', uid: dst.uid });
+    }
+    return dealt;
+  }
+  function healUnit(ev, u, amt) {
+    var before = u.hp;
+    u.hp = Math.min(u.maxHP, u.hp + Math.max(0, r1(amt)));
+    if (u.hp > before) ev.push({ t: 'heal', uid: u.uid, amt: u.hp - before });
+  }
+
+  // player basic-type hit
+  function playerHit(S, ev, tgt, mult, tags, o) {
+    o = o || {};
+    var P = S.player;
+    var critChance = clamp(P.crit + (o.critBonus || 0), 0, 0.95);
+    var crit = rnd(S) < critChance;
+    var m = o.critOnlyScaling ? (crit ? T.critMult2 : T.critMiss) : mult * (crit ? T.critMult : 1);
+    var tm = tagMult(tgt, tags);
+    var raw = effAtk(S, P) * m * rr(S, 0.92, 1.08) * tm;
+    if (tgt.guard) raw *= 0.5;
+    var dmg = raw * reduction(effDef(tgt), tgt.level);
+    if (crit) S.stats.crits++;
+    return dealDamage(S, ev, P, tgt, dmg, { crit: crit, weak: tm > 1, resist: tm < 1, how: o.how });
+  }
+
+  // ---------- phases ----------
+  function checkPhases(S, ev) {
+    S.enemies.forEach(function (e) {
+      if (!e.alive || !e.phases.length) return;
+      e.phases.forEach(function (ph, i) {
+        if (e.phasesDone.indexOf(i) >= 0) return;
+        if (e.hp / e.maxHP > ph.at) return;
+        e.phasesDone.push(i);
+        ev.push({ t: 'phase', uid: e.uid, kind: ph.kind, msg: ph.msg || '' });
+        if (ph.kind === 'berserk') addStatus(e, 'berserk', 999, 0);
+        else if (ph.kind === 'shield') addStatus(e, 'shield', 999, r1(e.maxHP * (ph.pct || 0.15)));
+        else if (ph.kind === 'heal') healUnit(ev, e, e.maxHP * (ph.pct || 0.1));
+        else if (ph.kind === 'summon') {
+          (ph.spawn || []).forEach(function (d) {
+            if (aliveEnemies(S).length >= T.maxEnemiesAlive) return;
+            var n = normEnemy(d, S); S.enemies.push(n);
+            ev.push({ t: 'summon', uid: n.uid, name: n.name });
+          });
+        }
+      });
+    });
+  }
+
+  // ---------- enemy intents ----------
+  function moveAvailable(e, m) {
+    if (m.cd && e.mcd[m.id] > 0) return false;
+    var f = e.hp / e.maxHP;
+    if (m.hpBelow != null && f > m.hpBelow) return false;
+    if (m.hpAbove != null && f <= m.hpAbove) return false;
+    if (m.requiresPhase != null && e.phasesDone.indexOf(m.requiresPhase) < 0) return false;
+    if (m.type === 'summon' && false) return false;
+    return true;
+  }
+  function pickIntents(S) {
+    S.intents = {};
+    S.enemies.forEach(function (e) {
+      if (!e.alive) return;
+      var mv = null;
+      if (e.chargeMove) mv = e.chargeMove;
+      else {
+        var pool = e.moves.filter(function (m) { return moveAvailable(e, m); });
+        if (!pool.length) pool = [e.moves[0]];
+        var tot = pool.reduce(function (a, m) { return a + (m.weight || 1); }, 0);
+        var x = rnd(S) * tot;
+        for (var i = 0; i < pool.length; i++) { x -= (pool[i].weight || 1); if (x <= 0) { mv = pool[i]; break; } }
+        if (!mv) mv = pool[pool.length - 1];
+      }
+      S.intents[e.uid] = mv;
+    });
+  }
+
+  // ---------- legal actions ----------
+  function legalActions(S) {
+    var P = S.player, out = [];
+    function add(type, label, cost, ok, why, extra) { out.push(Object.assign({ type: type, label: label, cost: cost, ok: ok, why: why || '' }, extra || {})); }
+    add('basic', 'Basic Attack', 0, true);
+    add('defend', 'Defend', 0, true);
+    add('evade', 'Evasion', T.evadeCost, P.stamina >= T.evadeCost, 'stamina');
+    add('power', 'Power Strike', T.powerCost, P.stamina >= T.powerCost, 'stamina');
+    add('crit', 'Critical Strike', T.critCost, P.stamina >= T.critCost, 'stamina');
+    P.abilities.forEach(function (id) {
+      var ab = ABILITIES[id]; if (!ab) return;
+      var cd = S.cd[id] || 0;
+      var ok = P.mana >= ab.mana && cd <= 0;
+      add('ability', ab.name, ab.mana, ok, cd > 0 ? 'cooldown' : (P.mana < ab.mana ? 'mana' : ''), { id: id, cd: cd });
+    });
+    return out;
+  }
+
+  // ---------- effects from abilities / items ----------
+  function applyEffects(S, ev, effects, tgt, tags) {
+    var P = S.player;
+    (effects || []).forEach(function (f) {
+      switch (f.k) {
+        case 'damage': {
+          var t = tgt || targetOf(S, null); if (!t || !t.alive) break;
+          playerHit(S, ev, t, f.mult || 1, tags, { how: 'ability' });
+          if (f.status && t.alive && rnd(S) < (f.status.chance == null ? 1 : f.status.chance)) {
+            addStatus(t, f.status.id, f.status.dur || 3, f.status.v != null ? f.status.v : dotValue(f.status.id, P, t));
+            ev.push({ t: 'status', uid: t.uid, id: f.status.id });
+          }
+          break;
+        }
+        case 'aoe': {
+          aliveEnemies(S).slice().forEach(function (t) { if (t.alive) playerHit(S, ev, t, f.mult || 1, tags, { how: 'ability' }); });
+          break;
+        }
+        case 'heal': healUnit(ev, P, P.maxHP * (f.pct || 0.2)); break;
+        case 'stamina': P.stamina = Math.min(P.maxStamina, P.stamina + (f.v || 20)); ev.push({ t: 'stamina', amt: f.v || 20 }); break;
+        case 'mana': P.mana = Math.min(P.maxMana, P.mana + (f.v || 20)); ev.push({ t: 'mana', amt: f.v || 20 }); break;
+        case 'shield': addStatus(P, 'shield', f.dur || 3, r1(P.maxHP * (f.pct || 0.15))); ev.push({ t: 'status', uid: 'P', id: 'shield' }); break;
+        case 'selfStatus': addStatus(P, f.id, f.dur || 3, f.v || 0); ev.push({ t: 'status', uid: 'P', id: f.id }); break;
+        case 'enemyStatus': {
+          var list = f.all ? aliveEnemies(S) : [tgt || targetOf(S, null)];
+          list.forEach(function (t) {
+            if (!t || !t.alive) return;
+            if (rnd(S) < (f.chance == null ? 1 : f.chance)) {
+              addStatus(t, f.id, f.dur || 2, f.v != null ? f.v : dotValue(f.id, P, t));
+              ev.push({ t: 'status', uid: t.uid, id: f.id });
+            }
+          });
+          break;
+        }
+        case 'cleanse': ['bleed', 'burn', 'poison', 'stun', 'weaken', 'guardbreak', 'slow'].forEach(function (s) { delete P.st[s]; }); ev.push({ t: 'cleanse' }); break;
+      }
+    });
+  }
+  function dotValue(id, src, dst) {
+    if (id === 'burn') return Math.max(1, r1(src.atk * 0.30));
+    if (id === 'bleed') return Math.max(1, r1(src.atk * 0.25));
+    if (id === 'poison') return Math.max(1, r1(dst.maxHP * 0.03));
+    if (id === 'regen') return Math.max(1, r1(src.maxHP * 0.04));
+    return 0;
+  }
+
+  // ---------- one enemy move ----------
+  function enemyAct(S, ev, e, stance) {
+    var P = S.player;
+    var mv = S.intents[e.uid]; if (!mv || !e.alive || !P.alive) return;
+    if (hasSt(e, 'stun')) { ev.push({ t: 'stunned', uid: e.uid }); e.chargeMove = null; return; }
+    if (mv.cd) e.mcd[mv.id] = mv.cd + 1;
+    ev.push({ t: 'move', uid: e.uid, move: mv.id, name: mv.name, type: mv.type });
+    var type = mv.type;
+
+    if (type === 'charge') {
+      e.chargeMove = { id: mv.id + '_release', name: mv.releaseName || (mv.name + ' (released)'), type: 'heavy', mult: mv.releaseMult || T.chargedHeavy, weight: 1, status: mv.status, tele: 'RELEASES NEXT' };
+      ev.push({ t: 'charging', uid: e.uid });
+      return;
+    }
+    if (type === 'guard') { e.guard = true; ev.push({ t: 'guarding', uid: e.uid }); return; }
+    if (type === 'buff') { addStatus(e, mv.status || 'atkup', mv.dur || 3, 0); ev.push({ t: 'status', uid: e.uid, id: mv.status || 'atkup' }); return; }
+    if (type === 'heal') { healUnit(ev, e, e.maxHP * (mv.pct || 0.15)); return; }
+    if (type === 'summon') {
+      (mv.spawn || []).forEach(function (d) {
+        if (aliveEnemies(S).length >= T.maxEnemiesAlive) return;
+        var n = normEnemy(d, S); S.enemies.push(n); ev.push({ t: 'summon', uid: n.uid, name: n.name });
+      });
+      return;
+    }
+    if (type === 'debuff') {
+      var landed = !(stance === 'defend' && rnd(S) < 0.5);
+      if (landed) { addStatus(P, mv.status || 'weaken', mv.dur || 3, 0); ev.push({ t: 'status', uid: 'P', id: mv.status || 'weaken' }); }
+      else ev.push({ t: 'resisted', uid: 'P' });
+      return;
+    }
+
+    // attacking moves: attack / heavy / multi / drain
+    var hits = type === 'multi' ? (mv.hits || 3) : 1;
+    var wasCharged = !!e.chargeMove; e.chargeMove = null;
+    for (var h = 0; h < hits; h++) {
+      if (!P.alive) break;
+      var dodge = P.evasion;
+      if (stance === 'evade') dodge = type === 'heavy' ? T.evadeHeavy + P.evasion : (type === 'multi' ? T.evadeMulti + P.evasion : T.evadeSingle + P.evasion);
+      if (hasSt(P, 'stun')) dodge = 0;
+      dodge = clamp(dodge, 0, T.evadeMax);
+      if (rnd(S) < dodge) { S.stats.dodges++; ev.push({ t: 'dodge', src: e.uid }); continue; }
+      var raw = effAtk(S, e) * (mv.mult || 1) * rr(S, 0.92, 1.08) * (type === 'multi' && !mv.mult ? 0.5 : 1);
+      var dmg = raw * reduction(effDef(P), P.level);
+      if (stance === 'defend') dmg *= T.defendTaken;
+      var dealt = dealDamage(S, ev, e, P, dmg, { how: mv.id });
+      if (type === 'drain' && dealt > 0) healUnit(ev, e, dealt * 0.5);
+      if (mv.status && P.alive && rnd(S) < (mv.status.chance == null ? 0.5 : mv.status.chance) && !(stance === 'defend' && rnd(S) < 0.5)) {
+        addStatus(P, mv.status.id, mv.status.dur || 3, mv.status.v != null ? mv.status.v : dotValue(mv.status.id, e, P));
+        ev.push({ t: 'status', uid: 'P', id: mv.status.id });
+      }
+    }
+  }
+
+  // ---------- one player action ----------
+  function playerAct(S, ev, a, stance) {
+    var P = S.player; if (!P.alive) return;
+    if (hasSt(P, 'stun')) { ev.push({ t: 'stunned', uid: 'P' }); return; }
+    var tgt = targetOf(S, a.target);
+    if (!tgt && a.type !== 'defend' && a.type !== 'evade') return;
+    var wasCharging = tgt && !!tgt.chargeMove;
+    switch (a.type) {
+      case 'basic':
+        ev.push({ t: 'act', who: 'P', type: 'basic' });
+        playerHit(S, ev, tgt, 1, ['basic', 'phys'], { how: 'basic' });
+        break;
+      case 'power':
+        ev.push({ t: 'act', who: 'P', type: 'power' });
+        playerHit(S, ev, tgt, T.powerMult, ['power', 'phys'], { how: 'power' });
+        if (wasCharging && tgt.alive) { tgt.chargeMove = null; addStatus(tgt, 'stun', 1, 0); ev.push({ t: 'interrupt', uid: tgt.uid }); }
+        break;
+      case 'crit':
+        ev.push({ t: 'act', who: 'P', type: 'crit' });
+        playerHit(S, ev, tgt, 1, ['crit', 'phys'], { how: 'crit', critBonus: T.critBonus, critOnlyScaling: true });
+        break;
+      case 'defend': ev.push({ t: 'act', who: 'P', type: 'defend' }); break;
+      case 'evade': ev.push({ t: 'act', who: 'P', type: 'evade' }); break;
+      case 'ability': {
+        var ab = ABILITIES[a.id];
+        ev.push({ t: 'act', who: 'P', type: 'ability', id: a.id, name: ab ? ab.name : a.id });
+        if (ab) {
+          S.stats.abilityUses++;
+          applyEffects(S, ev, ab.effects, tgt, ab.tags);
+          if (ab.effects.some(function (f) { return f.k === 'damage' || f.k === 'aoe'; }) && wasCharging && tgt && tgt.alive && ab.interrupt) {
+            tgt.chargeMove = null; addStatus(tgt, 'stun', 1, 0); ev.push({ t: 'interrupt', uid: tgt.uid });
+          }
+        }
+        break;
+      }
+      case 'item':
+        ev.push({ t: 'act', who: 'P', type: 'item', name: a.name || 'Item' });
+        applyEffects(S, ev, a.effects, tgt, []);
+        break;
+    }
+  }
+
+  // ---------- the round ----------
+  function sanitise(S, a) {
+    a = a || { type: 'basic' };
+    var P = S.player, legal = legalActions(S), found = null;
+    if (a.type === 'item') return a;
+    legal.forEach(function (l) { if (l.type === a.type && (a.type !== 'ability' || l.id === a.id)) found = l; });
+    if (!found || !found.ok) return { type: 'basic', target: a.target, downgraded: true };
+    return a;
+  }
+  function act(S, action) {
+    if (S.over) return [];
+    var ev = [], P = S.player;
+    var a = sanitise(S, action);
+    if (a.downgraded) ev.push({ t: 'illegal', msg: 'Not enough resource — Basic Attack used.' });
+
+    S.round++;
+    // pay costs
+    if (a.type === 'evade') P.stamina -= T.evadeCost;
+    if (a.type === 'power') P.stamina -= T.powerCost;
+    if (a.type === 'crit') P.stamina -= T.critCost;
+    if (a.type === 'ability') {
+      var ab = ABILITIES[a.id];
+      if (ab) { P.mana -= ab.mana; S.cd[a.id] = (ab.cd || 0) + 1; }
+    }
+    var stance = a.type === 'defend' ? 'defend' : (a.type === 'evade' ? 'evade' : null);
+
+    // actors by speed (player wins ties)
+    var actors = [{ u: P, s: effSpeed(P) + 0.01 }];
+    S.enemies.forEach(function (e) { if (e.alive) actors.push({ u: e, s: effSpeed(e) }); });
+    actors.sort(function (x, y) { return y.s - x.s; });
+    var playerActed = false;
+    actors.forEach(function (x) {
+      if (S.over) return;
+      if (!x.u.alive) return;
+      if (x.u.isPlayer) { playerAct(S, ev, a, stance); playerActed = true; }
+      else if (P.alive) enemyAct(S, ev, x.u, stance);
+      checkPhases(S, ev);
+      if (!P.alive) { S.over = 'defeat'; }
+      else if (!aliveEnemies(S).length) { S.over = 'victory'; }
+    });
+
+    if (!S.over) endRound(S, ev, a);
+    if (S.over) ev.push({ t: 'over', result: S.over });
+    S.log = ev;
+    return ev;
+  }
+
+  function tickUnit(S, ev, u) {
+    if (!u.alive) return;
+    ['bleed', 'burn', 'poison'].forEach(function (id) {
+      if (u.st[id] && u.alive) {
+        dealDamage(S, ev, null, u, u.st[id].v, { how: id });
+      }
+    });
+    if (u.st.regen && u.alive) healUnit(ev, u, u.st.regen.v);
+    Object.keys(u.st).forEach(function (id) {
+      if (u.st[id].dur >= 999) return;
+      u.st[id].dur--;
+      if (u.st[id].dur <= 0) delete u.st[id];
+    });
+  }
+  function endRound(S, ev, a) {
+    var P = S.player;
+    // enemy guard lasts only one round; move cooldowns tick
+    S.enemies.forEach(function (e) {
+      e.guard = false;
+      Object.keys(e.mcd).forEach(function (k) { if (e.mcd[k] > 0) e.mcd[k]--; });
+    });
+    Object.keys(S.cd).forEach(function (k) { if (S.cd[k] > 0) S.cd[k]--; });
+    // damage over time / regen / expiry
+    tickUnit(S, ev, P);
+    S.enemies.slice().forEach(function (e) { tickUnit(S, ev, e); });
+    checkPhases(S, ev);
+    if (!P.alive || P.hp <= 0) { P.alive = false; S.over = 'defeat'; return; }
+    if (!aliveEnemies(S).length) { S.over = 'victory'; return; }
+    // resource regeneration
+    var stGain = T.staminaRegen + (a.type === 'defend' ? T.defendStaminaGain : 0) + (a.type === 'basic' ? T.basicStaminaGain : 0);
+    P.stamina = Math.min(P.maxStamina, P.stamina + stGain);
+    P.mana = Math.min(P.maxMana, P.mana + T.manaRegen);
+    if (S.round >= T.roundHardCap) { S.over = 'defeat'; S.timeout = true; return; }
+    pickIntents(S);
+  }
+
+  // ---------- enemy templates scaled to a rank ----------
+  var RANK_ANCHOR = { E: 10, D: 15, C: 35, B: 109, A: 217, S: 430 };
+  var HUNTER_REF = { E: 10, D: 22, C: 55, B: 115, A: 235, S: 475 };   // the level a typical hunter of that rank is at
+  var S_SOFT_EXP = 0.8;
+  var TUNE = { eliteGap: { D: 0.53, C: 0.33, B: 0.53, A: 0.54, S: 0.57 }, elite: { E: 1.85, D: 2.8, C: 4.4, B: 2.7, A: 2.7, S: 2.7 }, boss: { E: 0.57, D: 1.08, C: 5.2, B: 1.15, A: 1.23, S: 1.23 } };
+  var BOSS_HP = { E: 0.5, D: 0.65, C: 0.95, B: 1, A: 1.05, S: 1.1 };
+  var RANK_HIT = { E: 0.8, D: 0.95, C: 1, B: 1, A: 1.05, S: 1.1 };   // early ranks are gentler, top ranks bite harder
+  function refPlayer(level) {
+    var s = 3 + 3.5 * level;
+    return deriveStats({ STR: s, VIT: s, END: s, AGI: s }, level, {});
+  }
+  // Archetypes are expressed relative to a reference hunter of the rank.
+  //   hits: how many of the reference hunter's basic hits it takes to kill it
+  //   hit : fraction of the reference hunter's max HP one plain hit does (before reduction)
+  var ARCH = {
+    grunt:     { hits: 3.5, hit: 0.065, def: 0.6, speed: 0.9, moves: [{ id: 'strike', name: 'Strike', type: 'attack', mult: 1, weight: 4 }, { id: 'lunge', name: 'Lunge', type: 'heavy', mult: 1.7, weight: 1 }] },
+    skirmisher:{ hits: 3,   hit: 0.05,  def: 0.4, speed: 1.25, moves: [{ id: 'flurry', name: 'Flurry', type: 'multi', hits: 3, mult: 0.55, weight: 3 }, { id: 'jab', name: 'Jab', type: 'attack', mult: 1, weight: 2 }] },
+    brute:     { hits: 6,   hit: 0.095,  def: 1.0, speed: 0.7, moves: [{ id: 'smash', name: 'Smash', type: 'attack', mult: 1, weight: 3 }, { id: 'windup', name: 'Wind-up', type: 'charge', releaseMult: 2.2, weight: 2, cd: 2 }] },
+    caster:    { hits: 2.5, hit: 0.07, def: 0.4, speed: 1.0, moves: [{ id: 'bolt', name: 'Bolt', type: 'attack', mult: 1, weight: 3, status: { id: 'burn', chance: 0.3, dur: 3 } }, { id: 'weaken', name: 'Hex', type: 'debuff', status: 'weaken', dur: 3, weight: 1, cd: 3 }] },
+    guardian:  { hits: 5,   hit: 0.06,  def: 1.5, speed: 0.8, moves: [{ id: 'bash', name: 'Bash', type: 'attack', mult: 1, weight: 3 }, { id: 'brace', name: 'Brace', type: 'guard', weight: 2, cd: 2 }] },
+    elite:     { hits: 10,  hit: 0.08,  def: 1.1, speed: 1.1, moves: [{ id: 'cleave', name: 'Cleave', type: 'attack', mult: 1, weight: 3 }, { id: 'rend', name: 'Rend', type: 'multi', hits: 3, mult: 0.6, weight: 2, status: { id: 'bleed', chance: 0.4, dur: 3 } }, { id: 'gather', name: 'Gather Power', type: 'charge', releaseMult: 2.3, weight: 2, cd: 3 }] },
+    boss:      { hits: 20,  hit: 0.075,  def: 1.2, speed: 1.1, moves: [{ id: 'crush', name: 'Crush', type: 'attack', mult: 1, weight: 3 }, { id: 'tempest', name: 'Tempest', type: 'multi', hits: 4, mult: 0.6, weight: 2 }, { id: 'dread', name: 'Dread Strike', type: 'charge', releaseMult: 2.5, weight: 2, cd: 3 }, { id: 'drainlife', name: 'Siphon', type: 'drain', mult: 0.9, weight: 1, cd: 3 }] }
+  };
+  // An elite exactly one rank above the hunter is brutal but not hopeless: a gap factor
+  // (opts.vsRank = the hunter's rank) trims it so a strong, well-played run has a slim chance.
+  function gapMult(arch, rank, opts) {
+    if (arch !== 'elite' || !opts || !opts.vsRank) return 1;
+    var gap = RANK_ORDER.indexOf(rank) - RANK_ORDER.indexOf(opts.vsRank);
+    return gap === 1 ? (TUNE.eliteGap[rank] || 1) : 1;
+  }
+  var RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S'];
+  function makeEnemy(arch, rank, opts) {
+    opts = opts || {};
+    var A = ARCH[arch] || ARCH.grunt, lvl = RANK_ANCHOR[rank] || 6;
+    // S is the top rank, but levels keep climbing past it. S-gate enemies keep growing, at about
+    // the square root of the hunter's growth, so S stays a real fight while every level still helps.
+    if (rank === 'S' && opts.hunterLevel > HUNTER_REF.S) lvl = lvl * Math.pow(opts.hunterLevel / HUNTER_REF.S, S_SOFT_EXP);
+    var ref = refPlayer(lvl);
+    var def = ref.def * A.def;
+    var basicDmg = ref.atk * reduction(def, lvl);
+    var e = {
+      id: opts.id || (arch + '_' + rank), name: opts.name || (arch.charAt(0).toUpperCase() + arch.slice(1)), rank: rank, level: lvl,
+      hp: basicDmg * A.hits * (opts.hpMult || 1) *  (arch === 'elite' ? TUNE.elite[rank] * gapMult(arch, rank, opts) : 1) * (arch === 'boss' ? TUNE.boss[rank] : 1),
+      atk: ref.maxHP * A.hit * (RANK_HIT[rank] || 1) * (opts.atkMult || 1) * (arch === 'elite' ? Math.pow(TUNE.elite[rank] * gapMult(arch, rank, opts), 0.64) : 1) / 0.72,   // /0.72: undo ~28% armour so "hit" is felt damage
+      def: def, speed: ref.speed * A.speed,
+      weak: opts.weak || [], resist: opts.resist || [], moves: JSON.parse(JSON.stringify(A.moves)),
+      boss: arch === 'boss', phases: opts.phases || []
+    };
+    if (arch === 'boss' && !opts.phases) {
+      e.phases = [
+        { at: 0.70, kind: 'summon', msg: 'The boss calls for aid!', spawn: [makeEnemy('grunt', rank, { name: 'Minion' }), makeEnemy('skirmisher', rank, { name: 'Minion' })] },
+        { at: 0.30, kind: 'berserk', msg: 'The boss enters a BERSERK rage!' }
+      ];
+    }
+    return e;
+  }
+
+  // ---------- player policies + simulator ----------
+  function policy(name) {
+    return function (S, rng) {
+      var P = S.player;
+      var al = aliveEnemies(S), t = al[0] || null;
+      var legal = legalActions(S);
+      function ok(type, id) { return legal.some(function (l) { return l.type === type && l.ok && (id == null || l.id === id); }); }
+      if (name === 'basic') return { type: 'basic' };
+      if (name === 'random') {
+        var okL = legal.filter(function (l) { return l.ok; });
+        var pick = okL[Math.floor(rng() * okL.length)];
+        return { type: pick.type, id: pick.id };
+      }
+      // smart: read the telegraph
+      var intent = t ? S.intents[t.uid] : null;
+      var incoming = 0, heavy = false, multi = false, charging = false;
+      al.forEach(function (e) {
+        var m = S.intents[e.uid]; if (!m) return;
+        if (m.type === 'heavy') heavy = true;
+        if (m.type === 'multi') multi = true;
+        if (m.type === 'charge') charging = true;
+      });
+      var chargingNow = al.some(function (e) { return !!e.chargeMove; });
+      // heal-ish when low
+      if (P.hp / P.maxHP < 0.3) {
+        for (var i = 0; i < P.abilities.length; i++) {
+          var ab = ABILITIES[P.abilities[i]];
+          if (ab && ab.effects.some(function (f) { return f.k === 'heal'; }) && ok('ability', P.abilities[i])) return { type: 'ability', id: P.abilities[i] };
+        }
+      }
+      if (P.hp / P.maxHP < 0.35 && !heavy) return { type: 'defend' };
+      if (heavy && P.stamina >= T.evadeCost) return { type: 'evade' };
+      if (chargingNow && ok('power')) return { type: 'power' };
+      // best damaging ability
+      for (var j = 0; j < P.abilities.length; j++) {
+        var a2 = ABILITIES[P.abilities[j]];
+        if (a2 && a2.effects.some(function (f) { return f.k === 'damage' || f.k === 'aoe'; }) && ok('ability', P.abilities[j])) return { type: 'ability', id: P.abilities[j] };
+      }
+      // weakness match
+      if (t && t.weak.indexOf('power') >= 0 && ok('power')) return { type: 'power' };
+      if (t && t.weak.indexOf('crit') >= 0 && ok('crit')) return { type: 'crit' };
+      if (multi && P.hp / P.maxHP < 0.6) return { type: 'defend' };
+      if (P.stamina >= P.maxStamina * 0.6 && ok('power')) return { type: 'power' };
+      return { type: 'basic' };
+    };
+  }
+  function simulate(opts) {
+    var S = start({ seed: opts.seed, player: JSON.parse(JSON.stringify(opts.player)), enemies: opts.enemies });
+    var pol = typeof opts.policy === 'function' ? opts.policy : policy(opts.policy || 'smart');
+    var prng = { s: hashSeed('pol' + opts.seed) || 1 };
+    var rng = function () { prng.s = (prng.s + 0x6D2B79F5) >>> 0; var t = prng.s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    var guard = 0;
+    while (!S.over && guard++ < 400) act(S, pol(S, rng));
+    return S;
+  }
+
+  var API = {
+    T: T, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
+    hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
+    makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
+    registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
+    policy: policy, simulate: simulate, aliveEnemies: aliveEnemies
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else root.SystemCombat = API;
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<!--ENGINE-END-->
 <script>
 (function() {
   var EXS = [
@@ -2097,7 +2713,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-06-paint-hardening';
+  var APP_VERSION = '2026-10-11-combat-s0';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3767,7 +4383,7 @@
         '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + barPct + '%"></div></div>' +
         '<div class="status-ids">' +
           '<div class="status-line"><b>NAME</b><input class="name-input" id="playerNameInput" type="text" maxlength="' + HUNTER_NAME_MAX + '" placeholder="' + HUNTER_DEFAULT_NAME + '" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Your name"></div>' +
-          '<div class="status-line"><b>JOB</b><span>HUNTER</span></div>' +
+          '<div class="status-line"><b>JOB</b><span>' + escapeHtml(jobDisplayName()) + '</span></div>' +
           '<div class="status-line"><b>TITLE</b><span>' + (buffs.title ? escapeHtml(buffs.title) : 'NONE') + '</span></div>' +
           '<div class="status-line"><b>EVALUATED</b><span>' + escapeHtml(evaluated) + '</span></div>' +
         '</div>' +
@@ -3898,7 +4514,7 @@
   }
 
   function loadHunter() {
-    var out = { name: '', rank: null, assessedAt: null, assessedLevel: null, assessedPoints: null };
+    var out = { name: '', rank: null, assessedAt: null, assessedLevel: null, assessedPoints: null, job: null };
     var raw = null;
     try { raw = localStorage.getItem(HUNTER_KEY); } catch (e) {}
     if (raw) {
@@ -3909,6 +4525,7 @@
         if (typeof p.assessedAt === 'number' && isFinite(p.assessedAt)) out.assessedAt = p.assessedAt;
         if (typeof p.assessedLevel === 'number') out.assessedLevel = p.assessedLevel;
         if (typeof p.assessedPoints === 'number') out.assessedPoints = p.assessedPoints;
+        if (typeof p.job === 'string' && /^[a-z0-9_-]{1,40}$/.test(p.job)) out.job = p.job;   // set once by the Job Change Quest, never changed
       } catch (e) {}
     }
     return out;
@@ -3922,6 +4539,11 @@
   }
 
   var hunterProfile = loadHunter();
+
+  // The JOB line reads NONE until the System assigns one (Job Change Quest).
+  function jobDisplayName() {
+    return hunterProfile.job ? String(hunterProfile.job).replace(/[-_]/g, ' ').toUpperCase() : 'NONE';
+  }
 
   function hunterDisplayName() {
     return hunterProfile.name || HUNTER_DEFAULT_NAME;
@@ -5361,13 +5983,13 @@
   updateSaveStatus(checkStorageAvailable());
   tick();
   setInterval(tick, 1000);
+})();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('sw.js').catch(function() {});
     });
   }
-})();
 </script>
 </body>
 </html>
