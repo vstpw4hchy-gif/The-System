@@ -906,7 +906,7 @@
   .stats-level-card.leveled .stats-level-status { color: var(--green); }
   .stats-level-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 0.05em; margin: 6px 0 12px; }
   .stat-row { padding: 12px 14px; margin-bottom: 8px; background: rgba(5,16,52,0.66); border: 1px solid var(--line); }
-  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .stat-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0; }
   .stat-row-name { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700; color: #eaf6ff; letter-spacing: 0.03em; }
   .stat-row-name span { font-family: 'Share Tech Mono', monospace; font-size: 10.5px; font-weight: 400; color: var(--text-dim); margin-left: 8px; letter-spacing: 0.05em; }
   .stat-row-val { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; color: var(--cyan); text-shadow: 0 0 10px rgba(110,180,255,0.5); }
@@ -3567,7 +3567,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-shop-grid';
+  var APP_VERSION = '2026-10-12-stats-nobars';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5294,7 +5294,6 @@
             '<div class="stat-row-name">' + k + '<span>' + STAT_INFO[k].name + '</span></div>' +
             '<div class="stat-row-val">' + fmt(stats[k] + boost) + (boost ? '<span class="stat-boost">+' + fmt(boost) + ' boost</span>' : '') + '</div>' +
           '</div>' +
-          '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + Math.min(100, ((stats[k] + boost) / maxStat) * 100) + '%"></div></div>' +
           '<div class="stat-row-desc">' + STAT_INFO[k].desc + '</div>' +
         '</div>';
     });
