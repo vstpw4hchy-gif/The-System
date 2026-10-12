@@ -1432,6 +1432,17 @@
   @keyframes redShift { 0% { fill: var(--from); transform: scale(.66); } 55% { fill: #ff5a6e; transform: scale(1.18); } 100% { fill: #ff1030; transform: scale(1); } }
   @keyframes redFlicker { 0%, 100% { filter: brightness(1) drop-shadow(0 0 7px #ff1030); } 9% { filter: brightness(1.8) drop-shadow(0 0 14px #ff6a80); } 14% { filter: brightness(.9) drop-shadow(0 0 6px #ff1030); } 52% { filter: brightness(1.35) drop-shadow(0 0 12px #ff3a58); } 57% { filter: brightness(1.9) drop-shadow(0 0 16px #ffc0cc); } 63% { filter: brightness(1) drop-shadow(0 0 7px #ff1030); } }
   @keyframes auraPulse { 0% { transform: scale(.75); opacity: .7; } 100% { transform: scale(1.5); opacity: 0; } }
+  /* Level-up window: shown over everything, wherever you are in the app. */
+  #lvlUpPop { position: fixed; left: 50%; top: 16%; z-index: 9999; transform: translateX(-50%); pointer-events: none; opacity: 0; }
+  #lvlUpPop.show { animation: lvlPopWrap 1.5s ease-out forwards; }
+  #lvlUpPop .lu-box { position: relative; min-width: 200px; max-width: 86vw; padding: 9px 18px 8px; text-align: center; background: rgba(4,14,34,.58); border: 1px solid rgba(124,196,255,.7); box-shadow: 0 0 16px rgba(80,160,255,.4), inset 0 0 14px rgba(60,130,255,.15); }
+  #lvlUpPop .lu-box::before, #lvlUpPop .lu-box::after { content: ''; position: absolute; width: 9px; height: 9px; border: 2px solid rgba(255,255,255,.85); }
+  #lvlUpPop .lu-box::before { left: -3px; top: -3px; border-right: 0; border-bottom: 0; }
+  #lvlUpPop .lu-box::after { right: -3px; bottom: -3px; border-left: 0; border-top: 0; }
+  #lvlUpPop .lu-sys { font-size: 9px; letter-spacing: .3em; color: var(--cyan); }
+  #lvlUpPop .lu-msg { white-space: nowrap; margin-top: 4px; font-size: 13px; letter-spacing: .08em; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(120,190,255,.9); }
+  #lvlUpPop .lu-lv { margin-top: 4px; font-size: 11px; letter-spacing: .14em; color: #bfe0ff; } #lvlUpPop .lu-lv b { color: #ffe58a; font-size: 13px; text-shadow: 0 0 8px rgba(255,210,90,.8); }
+  @keyframes lvlPopWrap { 0% { opacity: 0; transform: translateX(-50%) scale(.85); } 14% { opacity: 1; transform: translateX(-50%) scale(1.04); } 24% { transform: translateX(-50%) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1.02); } }
   @keyframes ringSpinBack { to { transform: rotate(-360deg); } }
   @keyframes arcFlash { 0% { opacity: .95; } 35% { opacity: .2; } 55% { opacity: 1; } 80% { opacity: .35; } }
   @keyframes ringSpin { to { transform: rotate(360deg); } }
@@ -1568,8 +1579,12 @@
   .bt-chip.bad { color: #ff7a8e; border-color: rgba(255,59,92,0.5); } .bt-chip.good { color: var(--green); border-color: rgba(61,255,176,0.5); }
   .bt-float { position: absolute; right: 12px; left: auto; top: 30px; transform: none; font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 0 8px var(--red), 0 0 2px #000; pointer-events: none; animation: btFloat .9s forwards; z-index: 3; }
   .bt-float.crit { color: #ffd76a; font-size: 22px; } .bt-float.weak { color: var(--green); } .bt-float.heal { color: var(--green); }
-  .bt-log { flex: 0 0 auto; height: 76px; overflow-y: auto; margin: 4px 10px 0; padding: 5px 8px; border: 1px solid rgba(125,192,255,0.3); background: rgba(0,0,0,0.45); font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.35; color: #b9d4f2; }
+  .bt-log { flex: 0 0 auto; height: 118px; overflow-y: auto; margin: 4px 10px 0; padding: 6px 9px; border: 1px solid rgba(125,192,255,0.3); background: rgba(0,0,0,0.45); font-family: 'Share Tech Mono', monospace; font-size: 13px; line-height: 1.4; color: #b9d4f2; }
   .bt-log div.you { color: #ffffff; } .bt-log div.foe { color: #ff9aa8; } .bt-log div.sys { color: var(--cyan); } .bt-log div.good { color: var(--green); }
+  .bt-log div.tap { cursor: pointer; text-decoration: underline dotted rgba(125,192,255,.5); text-underline-offset: 3px; -webkit-tap-highlight-color: transparent; }
+  .bt-log div.tap.open { background: rgba(125,192,255,.12); }
+  .bt-fxbox { margin: 2px 0 5px 10px; padding: 6px 8px; border-left: 2px solid var(--cyan); background: rgba(20,50,90,.55); color: #dcebff; font-size: 12.5px; }
+  .bt-fxbox .fx-d { color: #9fc4ee; margin-bottom: 4px; } .bt-fxbox b { color: #fff; }
   .bt-me { flex: 0 0 auto; padding: 8px 12px 2px; }
   .bt-me-row { display: grid; grid-template-columns: 40px 1fr 70px; align-items: center; gap: 6px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 3px; }
   .bt-me-row .bt-bar { margin: 0; height: 10px; } .bt-me-row span:last-child { text-align: right; color: var(--text); }
@@ -1602,7 +1617,7 @@
   @media (max-height: 520px) and (orientation: landscape) {
     #battleOverlay .bt-body { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
     .bt-field { grid-column: 1; grid-row: 1; padding: 6px 8px 2px; }
-    .bt-log { grid-column: 1; grid-row: 2; height: 50px; margin: 2px 8px 6px; }
+    .bt-log { grid-column: 1; grid-row: 2; height: 70px; margin: 2px 8px 6px; }
     .bt-side { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; }
     .bt-acts { padding: 4px 8px 6px; gap: 4px; } .bt-act { min-height: 40px; font-size: 12px; } .bt-act small { display: none; }
     .bt-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .bt-me { padding: 4px 10px 0; }
@@ -2639,7 +2654,8 @@
       }
       case 'item':
         ev.push({ t: 'act', who: 'P', type: 'item', name: a.name || 'Item' });
-        applyEffects(S, ev, a.effects, tgt, []);
+        // A gate or quest can forbid healing items (S.rules.noHealItems): the heal is lost, the rest still works.
+        applyEffects(S, ev, (S.rules && S.rules.noHealItems) ? (a.effects || []).filter(function (f) { return f.k !== 'heal'; }) : a.effects, tgt, []);
         break;
     }
   }
@@ -3606,10 +3622,21 @@
     'Starfall Scroll': { scope: 'all', effects: [{ k: 'aoe', mult: 2.4, status: { id: 'burn', dur: 3 } }] },
     'Dragon Breath Elixir': { scope: 'all', effects: [{ k: 'aoe', mult: 1.8, status: { id: 'burn', dur: 5 } }] },
     "Sovereign's Command": { scope: 'all', effects: [{ k: 'enemyStatus', all: true, id: 'stun', dur: 2 }, { k: 'enemyStatus', all: true, id: 'weaken', dur: 3 }] },
+    // Rations and field food: small top-ups only. Big heals belong to potions, recovery effects and spells.
+    'Stale Ration Ball': { scope: 'self', effects: [{ k: 'heal', pct: 0.06 }] },
+    'Hardtack Biscuit': { scope: 'self', effects: [{ k: 'heal', pct: 0.08 }] },
+    'Dried Jerky Strip': { scope: 'self', effects: [{ k: 'heal', pct: 0.10 }] },
+    'Trail Mix Pouch': { scope: 'self', effects: [{ k: 'heal', pct: 0.06 }, { k: 'mana', v: 6 }] },
+    'Honeyed Oat Bar': { scope: 'self', effects: [{ k: 'heal', pct: 0.08 }, { k: 'fatigue', v: 8 }] },
+    'Salted Ration Pack': { scope: 'self', effects: [{ k: 'heal', pct: 0.12 }] },
+    "Hunter's Stew Tin": { scope: 'self', effects: [{ k: 'heal', pct: 0.15 }, { k: 'fatigue', v: 10 }] },
     "Titan's Draught": { scope: 'self', effects: [{ k: 'heal', pct: 1.0 }, { k: 'fatigue', v: 100 }, { k: 'shield', pct: 0.25, dur: 3 }] }
   };
   // Old items keep their quest effect; each also gets a use in battle where one makes sense.
-  function combatFromEffect(e) {
+  var HEAL_CAP_FOOD = 0.15;   // anything that is not a potion or a recovery effect tops out here
+  function isPotion(name) { return /Tonic|Draught|Elixir|Salve|Potion|Vial|Philter|Brew|Phoenix/i.test(name || ''); }
+  function combatFromEffect(e, name) {
+    var hc = isPotion(name) ? 0.5 : HEAL_CAP_FOOD;
     if (!e) return null;
     var ef = [], sc = 'self', n;
     switch (e.type) {
@@ -3618,7 +3645,7 @@
         if (e.stat === 'STR') ef = [{ k: 'selfStatus', id: 'atkup', dur: 2 + n }];
         else if (e.stat === 'AGI') ef = [{ k: 'selfStatus', id: 'blur', dur: 2 + n }, { k: 'selfStatus', id: 'keen', dur: 1 + n }];
         else if (e.stat === 'END') ef = [{ k: 'fatigue', v: Math.min(100, 14 * n) }, { k: 'mana', v: Math.min(100, 8 * n) }];
-        else ef = [{ k: 'heal', pct: Math.min(0.5, 0.08 + 0.08 * n) }];
+        else ef = [{ k: 'heal', pct: Math.min(hc, 0.08 + 0.08 * n) }];
         break;
       case 'extendDeadline': ef = [{ k: 'enemyStatus', all: true, id: 'weaken', dur: 1 + e.hours }, { k: 'fatigue', v: 5 * e.hours }]; sc = 'all'; break;
       case 'shavePct': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.pct * 1.2)) }]; break;
@@ -3626,16 +3653,16 @@
       case 'shaveReps': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.reps * 0.9)) }, { k: 'enemyStatus', id: 'bleed', dur: 3 }]; sc = 'one'; break;
       case 'shaveRun': ef = [{ k: 'fatigue', v: Math.min(100, Math.round(e.km * 20)) }]; break;
       case 'skipOne': ef = [{ k: 'enemyStatus', id: 'stun', dur: 2 }, { k: 'enemyStatus', id: 'weaken', dur: 3 }]; sc = 'one'; break;
-      case 'waiveAll': ef = e.rewards ? [{ k: 'enemyStatus', all: true, id: 'stun', dur: 2 }, { k: 'heal', pct: 0.3 }] : [{ k: 'enemyStatus', all: true, id: 'stun', dur: 1 }, { k: 'shield', pct: 0.12, dur: 3 }]; sc = 'all'; break;
+      case 'waiveAll': ef = e.rewards ? [{ k: 'enemyStatus', all: true, id: 'stun', dur: 2 }, { k: 'heal', pct: Math.min(hc, 0.3) }] : [{ k: 'enemyStatus', all: true, id: 'stun', dur: 1 }, { k: 'shield', pct: 0.12, dur: 3 }]; sc = 'all'; break;
       case 'skipRun': ef = [{ k: 'enemyStatus', all: true, id: 'guardbreak', dur: 3 }]; sc = 'all'; break;
       case 'halveAll': ef = [{ k: 'enemyStatus', all: true, id: 'weaken', dur: 4 }, { k: 'enemyStatus', all: true, id: 'guardbreak', dur: 3 }]; sc = 'all'; break;
       case 'gainMult': ef = [{ k: 'selfStatus', id: 'keen', dur: 2 + e.clears }]; break;
       case 'luck': ef = [{ k: 'selfStatus', id: 'keen', dur: 2 + 2 * e.rolls }]; break;
       case 'penaltyShield': ef = [{ k: 'shield', pct: 0.12 * e.charges, dur: 4 }, { k: 'selfStatus', id: 'defup', dur: 3 }]; break;
-      case 'clearOwed': ef = [{ k: 'cleanse' }, { k: 'heal', pct: e.count === 'all' ? 0.5 : 0.15 }]; break;
+      case 'clearOwed': ef = [{ k: 'cleanse' }, { k: 'heal', pct: Math.min(hc, e.count === 'all' ? 0.5 : 0.15) }]; break;
       case 'penaltyReroll': ef = [{ k: 'cleanse' }]; break;
       case 'combo': {
-        var parts = (e.effects || []).map(combatFromEffect).filter(Boolean);
+        var parts = (e.effects || []).map(function (x) { return combatFromEffect(x, name); }).filter(Boolean);
         if (!parts.length) return null;
         parts.forEach(function (p) { ef = ef.concat(p.effects); if (p.scope === 'one') sc = 'one'; else if (p.scope === 'all' && sc !== 'one') sc = 'all'; });
         break;
@@ -3647,7 +3674,7 @@
   // What an item does when it is used in battle (null = it cannot be used there).
   function combatUse(name, effect) {
     if (ITEM_COMBAT[name]) return ITEM_COMBAT[name];
-    return combatFromEffect(effect);
+    return combatFromEffect(effect, name);
   }
   var ST_TXT = { atkup: 'EMPOWERED', defup: 'FORTIFIED', haste: 'HASTE', berserk: 'BERSERK', keen: 'KEEN', blur: 'BLUR', weaken: 'WEAKEN', guardbreak: 'GUARD BREAK', slow: 'SLOW', stun: 'STUN', burn: 'BURN', poison: 'POISON', bleed: 'BLEED' };
   function stTxt(f) { return f.status ? ' and inflicting ' + ST_TXT[f.status.id] + ' (' + (f.status.dur || 3) + ' rounds' + (f.status.chance != null && f.status.chance < 1 ? ', ' + Math.round(f.status.chance * 100) + '% chance' : '') + ')' : ''; }
@@ -3799,6 +3826,11 @@
       ['🧨', 'Firecracker String', 'Loud, bright and not remotely subtle. It burns a little Gate Energy into your reserves as it goes.', FX.energy(30)],
       ['🔔', "Pacer's Bell", 'Its dull chime makes the last kilometer feel a bit shorter.', FX.km(0.5)],
       ['🪵', 'Splintered Training Staff', 'Rough enough to remind you that hard work leaves marks.', FX.onePct(20)],
+      ['🍞', 'Hardtack Biscuit', 'Rock-hard and bland, and exactly what a long gate calls for. It stays down and it keeps you going.', FX.gain(8, 1)],
+      ['🥓', 'Dried Jerky Strip', 'Chewy, salty and patient. It takes a long time to eat, and it is worth every minute.', FX.reps(8)],
+      ['🥜', 'Trail Mix Pouch', 'Nuts, seeds, and one lonely raisin. A little of everything a long climb needs.', FX.temp('END', 1, 12)],
+      ['🍯', 'Honeyed Oat Bar', 'Sticky, sweet, and gone in four bites. Your legs feel it right away.', FX.extend(1)],
+      ['🧂', 'Salted Ration Pack', 'A foil pouch of something filling. The salt does half the work.', FX.pct(10)],
       ['🍙', 'Stale Ration Ball', 'Not tasty, but it gets the job done.', FX.gain(10, 1)],
       ['🌿', 'Bitter Herb Bundle', 'Chew slowly. The taste is a reminder that patience pays.', FX.goldMult(20, 1)],
       ['🐇', "Dull Rabbit's Foot", 'Worn smooth by too many wishes.', FX.luck(1)],
@@ -3819,6 +3851,7 @@
     ],
     rare: [
       ['🪪', 'Fractured Gate Sigil', 'Half a credential. Something on the other end still remembers your name.', FX.gateKey()],
+      ['🍲', "Hunter's Stew Tin", 'A hot meal in a can. Whoever packed it knew exactly how long the road would be.', FX.combo(FX.gain(10, 1), FX.temp('VIT', 1, 12))],
       ['🧪', 'Vial of Swift Recovery', 'The liquid inside never stops swirling, even when the vial is still.', FX.km(1)],
       ['🫗', 'Flask of Acid', 'It eats through the cork. Handle with something you do not need.', FX.energy(45)],
       ['⚡', 'Thunder Charm', 'A coin of crackling blue. It remembers the storm it was struck from.', FX.combo(FX.gold(40), FX.energy(30))],
@@ -4059,7 +4092,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-stats-vitals';
+  var APP_VERSION = '2026-10-12-levelup-popup';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -4230,6 +4263,61 @@
     try { if (typeof Abil !== 'undefined' && Abil && Abil.syncJob) Abil.syncJob(true); if (typeof JobQuest !== 'undefined' && JobQuest) JobQuest.refresh(); } catch (e) {}
   }
   var hunterLevel = loadLevel();
+
+  // Level points: every enemy you defeat adds points to the bar on the Stats screen. A full bar is a
+  // level (and a full heal). Each level, from any source, raises the bar's size a little.
+  var LP_KEY = 'the-system-levelpts', LP_START = 100, LP_GROWTH = 0.04;
+  var LP_RANK = { E: 4, D: 8, C: 14, B: 24, A: 40, S: 70 };
+  var LP_ROLE = { grunt: 1, skirmisher: 1.1, caster: 1.2, guardian: 1.3, brute: 1.5, elite: 3, boss: 6 };
+  var levelPts = (function() {
+    try { var o = JSON.parse(localStorage.getItem(LP_KEY)); if (o && isFinite(o.pts) && isFinite(o.need) && o.need >= 1) return { pts: Math.max(0, o.pts), need: o.need }; } catch (e) {}
+    return { pts: 0, need: LP_START };
+  })();
+  var levelHealPending = false, lvPopTimer = null;
+  // The "you have leveled up" window: about 1.5 seconds, anywhere in the app.
+  var lvQueue = [], lvBusy = false;
+  function showLevelUp(from, to) {   // one window per level gained, shown one after another
+    for (var l = from + 1; l <= to; l++) lvQueue.push(l);
+    if (!lvBusy) nextLevelUp();
+  }
+  function nextLevelUp() {
+    if (!lvQueue.length) { lvBusy = false; return; }
+    lvBusy = true;
+    var lv = lvQueue.shift(), dur = lvQueue.length ? 500 : 1500;   // quick flashes in a multi-level run, a full 1.5s on the last
+    try {
+      var el = document.getElementById('lvlUpPop');
+      if (!el) { el = document.createElement('div'); el.id = 'lvlUpPop'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+      el.innerHTML = '<div class="lu-box"><div class="lu-sys">[ SYSTEM ]</div><div class="lu-msg">YOU HAVE LEVELED UP</div><div class="lu-lv">LEVEL <b>' + lv + '</b></div></div>';
+      el.classList.remove('show'); el.style.animationDuration = dur + 'ms'; void el.offsetWidth; el.classList.add('show');
+      if (navigator.vibrate) { try { navigator.vibrate([40, 40, 80]); } catch (e) {} }
+    } catch (e) {}
+    clearTimeout(lvPopTimer); lvPopTimer = setTimeout(function() { try { document.getElementById('lvlUpPop').classList.remove('show'); } catch (e) {} setTimeout(nextLevelUp, 150); }, dur + 50);
+  }
+
+  function saveLevelPts() { try { localStorage.setItem(LP_KEY, JSON.stringify(levelPts)); } catch (e) {} }
+  function bumpLevelNeed() { levelPts.need = levelPts.need + Math.max(2, Math.round(levelPts.need * LP_GROWTH)); saveLevelPts(); }
+  function pointsForFoe(f) { return Math.max(1, Math.round((LP_RANK[f.rank] || 4) * (LP_ROLE[f.role] || 1))); }
+  // A level-up (any source) fully restores HP when you are partway through a gate.
+  function healOnLevelUp() {
+    try {
+      var run = gateEntry && gateEntry.run;
+      if (run && run.stage !== 'done') { levelHealPending = true; run.hp = C_maxHpFor(run); saveGateEntry(); }
+    } catch (e) {}
+  }
+  function C_maxHpFor(run) { return window.SystemCombat.deriveStats(combatStats(), hunterLevel, mergeJobBonus(run.bonus || {})).maxHP; }
+  function awardLevelPoints(foes) {
+    var gained = 0, levels = 0, lvFrom = hunterLevel;
+    foes.forEach(function(f) { gained += pointsForFoe(f); });
+    levelPts.pts += gained;
+    while (levelPts.pts >= levelPts.need) {
+      levelPts.pts -= levelPts.need;
+      hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); bumpLevelNeed(); levels++;
+    }
+    saveLevelPts();
+    if (levels) { healOnLevelUp(); showLevelUp(lvFrom, hunterLevel); }
+    try { if (document.getElementById('statsOverlay').classList.contains('show')) renderStatsScreen(); } catch (e) {}
+    return { gained: gained, levels: levels };
+  }
 
   // Penalties that were enforced and still need to be completed.
   var OWED_KEY = 'the-system-penalties-owed';
@@ -4895,9 +4983,9 @@
     if (!state.mods.waivedAll) {
       var fromLevel = hunterLevel;
       hunterLevel += 1;
-      saveLevel();
+      saveLevel(); bumpLevelNeed(); healOnLevelUp();
       state.leveledUp = { from: fromLevel, to: hunterLevel };
-      showToast('LEVEL UP! You are now level ' + hunterLevel + '.');
+      showLevelUp(fromLevel, hunterLevel);
       grantMilestoneKey(hunterLevel);
     }
 
@@ -5776,6 +5864,7 @@
       levelStatus = 'CLEAR TODAY\'S QUEST TO REACH LEVEL ' + (hunterLevel + 1);
       barPct = Math.round(questProgress() * 100);
     }
+    var lpPct = Math.min(100, Math.round(levelPts.pts / levelPts.need * 1000) / 10);
 
     var rankInfo = hunterProfile.rank ? HUNTER_RANK_INFO[hunterProfile.rank] : null;
     var digits = String(hunterLevel).length;
@@ -5796,7 +5885,9 @@
         '</div>' +
         '<div class="rank-note">' + (rankInfo ? rankInfo.title : 'UNRANKED · TAKE THE HUNTER EVALUATION') + '</div>' +
         '<div class="stats-level-status">' + levelStatus + '</div>' +
-        '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill" style="width:' + barPct + '%"></div></div>' +
+        '<div class="stats-level-status" style="margin-top:12px;">LEVEL POINTS &middot; ' + Math.floor(levelPts.pts) + ' / ' + levelPts.need + '</div>' +
+        '<div class="bar-track" style="margin-bottom:0;"><div class="bar-fill lp-fill" style="width:' + lpPct + '%"></div></div>' +
+        '<div class="stats-note" style="margin:6px 0 2px;">Defeat enemies in gates to fill the bar. A full bar is a level and fully restores your HP. Every level makes the next one a little bigger.</div>' +
         '<div class="status-ids">' +
           '<div class="status-line"><b>NAME</b><input class="name-input" id="playerNameInput" type="text" maxlength="' + HUNTER_NAME_MAX + '" placeholder="' + HUNTER_DEFAULT_NAME + '" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Your name"></div>' +
           '<div class="status-line"><b>JOB</b><span>' + escapeHtml(jobDisplayName()) + '</span></div>' +
@@ -8014,8 +8105,9 @@
 
     // Turn engine events into System-style log lines.
     function describe(evs) {
-      var out = [], SN = C().STATUS_NAMES;
+      var out = [], SN = C().STATUS_NAMES, grp = null;
       evs.forEach(function(ev) {
+        var n0 = out.length;
         switch (ev.t) {
           case 'illegal': out.push(['sys', ev.msg]); break;
           case 'act':
@@ -8054,13 +8146,62 @@
           case 'mana': out.push(['good', 'You recover ' + ev.amt + ' mana.']); break;
           case 'cleanse': out.push(['good', 'Your ailments are cleansed.']); break;
         }
+        if ((ev.t === 'act' || ev.t === 'move') && out.length > n0) {
+          grp = { who: ev.t === 'act' ? 'P' : ev.uid, kind: ev.t === 'act' ? (ev.type || 'item') : (ev.type || 'attack'), id: ev.id || ev.move || null, name: ev.name || null, lines: [] };
+          out[n0][2] = grp;
+        } else if (grp) { for (var k = n0; k < out.length; k++) grp.lines.push(out[k]); }
       });
       return out;
     }
+    var fxStore = [];
+    var KIND_TXT = { basic: 'A plain strike with your equipped weapon.', power: 'A heavy blow. It costs more fatigue and can interrupt a charging enemy.', crit: 'An aimed strike with a much higher chance to crit.', defend: 'Braces you so incoming damage is reduced this round.', evade: 'Raises your chance to dodge incoming attacks this round.', heavy: 'A slow, hard-hitting attack. Evade it or brace.', multi: 'A flurry of several quick hits.', drain: 'Hits and heals the attacker for part of the damage.', charge: 'Gathering power for a big attack next turn.', guard: 'Raises its guard to cut damage.', buff: 'Powers itself up.', debuff: 'A curse that weakens you.', summon: 'Calls more enemies to the fight.', heal: 'Recovers some of its own HP.', attack: 'A standard attack.' };
+    function fxSummary(g) {
+      var dealt = 0, taken = 0, healed = 0, mana = 0, tags = [], hits = 0, crits = 0, lines = g.lines || [];
+      lines.forEach(function(l) {
+        var t = l[1], m;
+        if ((m = /^You take (\d+) damage/.exec(t))) { taken += +m[1]; hits++; }
+        else if ((m = / takes (\d+) damage/.exec(t))) { dealt += +m[1]; hits++; if (/CRITICAL/.test(t)) crits++; }
+        else if ((m = /(\d+) HP\./.exec(t)) && /recover/.test(t)) healed += +m[1];
+        else if ((m = /recover (\d+) mana/.exec(t))) mana += +m[1];
+        else if (/afflicted|gains:/.test(t)) tags.push(t.replace(/^.*?(afflicted: |gains: )/, '').replace(/\.$/, ''));
+        else if (/dodge/.test(t)) tags.push('Dodged');
+        else if (/INTERRUPTED/.test(t)) tags.push('Interrupted');
+        else if (/stunned/.test(t)) tags.push('Stun');
+        else if (/cleansed/.test(t)) tags.push('Cleansed');
+        else if (/shake off (\d+)% fatigue/.test(t)) tags.push('Fatigue eased');
+      });
+      var d = '';
+      try { if (g.who === 'P' && g.id && Abil.defOf) { var df = Abil.defOf(g.id); if (df && df.desc) d = df.desc; } } catch (e) {}
+      if (!d) d = KIND_TXT[g.kind] || '';
+      var rows = [];
+      if (d) rows.push('<div class="fx-d">' + esc(d) + '</div>');
+      var bits = [];
+      if (dealt) bits.push('<b>' + dealt + '</b> damage dealt' + (hits > 1 ? ' over ' + hits + ' hits' : '') + (crits ? ' (' + crits + ' crit)' : ''));
+      if (taken) bits.push('<b>' + taken + '</b> damage taken');
+      if (healed) bits.push('<b>' + healed + '</b> HP restored');
+      if (mana) bits.push('<b>' + mana + '</b> mana restored');
+      if (tags.length) bits.push('Effects: <b>' + tags.map(esc).join(', ') + '</b>');
+      if (!bits.length) bits.push('No direct damage or status.');
+      rows.push('<div class="fx-r">' + bits.join('<br>') + '</div>');
+      return rows.join('');
+    }
+    document.addEventListener('click', function(e) {
+      var t = e.target && e.target.closest ? e.target.closest('#btLog .tap') : null;
+      if (!t) return;
+      var nx = t.nextElementSibling;
+      if (nx && nx.classList.contains('bt-fxbox')) { nx.remove(); t.classList.remove('open'); return; }
+      var g = fxStore[+t.getAttribute('data-fx')]; if (!g) return;
+      t.classList.add('open');
+      t.insertAdjacentHTML('afterend', '<div class="bt-fxbox">' + fxSummary(g) + '</div>');
+      var box = $('btLog'); if (box) { var b = t.nextElementSibling; if (b.offsetTop + b.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = b.offsetTop + b.offsetHeight - box.clientHeight + 4; }
+    });
     function pushLog(lines) {
       var box = $('btLog');
-      lines.forEach(function(l) { box.insertAdjacentHTML('beforeend', '<div class="' + l[0] + '">' + esc(l[1]) + '</div>'); });
-      while (box.children.length > 60) box.removeChild(box.firstChild);
+      lines.forEach(function(l) {
+        if (l[2]) { fxStore.push(l[2]); box.insertAdjacentHTML('beforeend', '<div class="' + l[0] + ' tap" data-fx="' + (fxStore.length - 1) + '">&#9656; ' + esc(l[1]) + '</div>'); }
+        else box.insertAdjacentHTML('beforeend', '<div class="' + l[0] + '">' + esc(l[1]) + '</div>');
+      });
+      while (box.children.length > 80) box.removeChild(box.firstChild);
       box.scrollTop = box.scrollHeight;
     }
 
@@ -8148,6 +8289,11 @@
         if (it.mystery) return;
         var use = null; try { use = C().combatUse(it.name, getEffect(it)); } catch (e) {}
         if (!use) return;
+        if (cur && cur.S && cur.S.rules && cur.S.rules.noHealItems) {
+          var nh = use.effects.filter(function(f) { return f.k !== 'heal'; });
+          if (!nh.length) return;                     // a pure healing item has no use here
+          use = { scope: use.scope, effects: nh };    // the rest of it still works
+        }
         if (seen[it.name]) { seen[it.name].n++; return; }
         seen[it.name] = { name: it.name, icon: it.icon, use: use, n: 1 }; out.push(seen[it.name]);
       });
@@ -8215,8 +8361,24 @@
         '<button id="btDone">' + (cur.doneLabel || 'CONTINUE') + '</button></div>';
       $('btResult').classList.add('show');
     }
+    // Every enemy you defeat pays level points once. A level-up in the middle of a fight fully restores HP.
+    function payKills() {
+      if (!cur || cur.kind === 'practice') return;
+      cur.paid = cur.paid || {};
+      var dead = cur.S.enemies.filter(function(e) { return !e.alive && !cur.paid[e.uid]; });
+      if (!dead.length) return;
+      dead.forEach(function(e) { cur.paid[e.uid] = 1; });
+      var before = hunterLevel, r = awardLevelPoints(dead);
+      var lines = [['good', '+' + r.gained + ' LEVEL POINTS']];
+      if (r.levels && cur.S.over !== 'defeat') {
+        cur.S.player.hp = cur.S.player.maxHP; levelHealPending = true;
+        lines.push(['good', 'LEVEL UP! You are now level ' + hunterLevel + '. HP fully restored.']);
+      }
+      pushLog(lines); save();
+    }
     function finish(extra) {
       if (!cur) return;
+      payKills();
       var done = cur, h = handlers[done.kind];
       cur = null; save();
       $('btResult').classList.remove('show');
@@ -8332,6 +8494,7 @@
       } catch (e) {}
       V = null; busy = false; actingUid = null; banner(null);
       if (cur) {
+        payKills();
         renderAll();
         if (cur.S.over) { setTimeout(function() { if (cur) showResult(); locked = false; }, 500); }
         else locked = false;
@@ -8355,6 +8518,7 @@
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
       var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [] });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
+      if (o.rules) S.rules = o.rules;   // e.g. { noHealItems: true } for a gate or quest that forbids healing items
       prevPct = {}; prevMe = {};
       cur = { v: 1, wsel: (o.weapons && o.weapons.length) ? o.weapons[0].id : null, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, fleeConfirm: o.fleeConfirm, doneLabel: o.doneLabel, note: o.note || '' };
       save(); show(true);
@@ -8524,7 +8688,8 @@
       try { gold = Math.round(gold * (1 + Eqp.totals().gold)); } catch (e) {}
       var cool = kind === 'defeat' ? (COOL_H[rank] || 1) * 3600000 : 0;
       if (cool) setRecovery(Date.now() + cool);
-      for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); }
+      for (var i = 0; i < lv; i++) { hunterLevel += 1; saveLevel(); grantMilestoneKey(hunterLevel); bumpLevelNeed(); }
+      if (lv) { healOnLevelUp(); showLevelUp(hunterLevel - lv, hunterLevel); }
       if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
       if (won) { gates = gates.filter(function(x) { return x.id !== g.id; }); saveGates(); }
       run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateFull(g), dropGold: run.lootGold || 0, dropN: run.lootN || 0, found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
@@ -8560,6 +8725,7 @@
         if (run.floor + 1 >= plan.floorCount) { end('victory'); return; }
         var rec = C().recoverBetween(P, plan.floors[run.floor].type === 'elite' ? 'rest' : 'wave');
         run.hp = rec.hp; run.fat = rec.fatigue; run.mana = rec.mana;
+        if (levelHealPending) { levelHealPending = false; try { run.hp = C_maxHpFor(run); } catch (x) {} }
         run.msg = dropTxt + (newWp.length ? 'WEAPON FOUND: ' + newWp.map(Wpn.nameOf).join(', ') + '. ' : '') + (newAb.length ? 'NEW ABILITY LEARNED: ' + newAb.map(Abil.nameOf).join(', ') + '. ' : '') + 'FLOOR ' + run.cleared + ' CLEARED. ' + (plan.floors[run.floor].type === 'elite' ? 'You catch your breath in the quiet.' : 'A brief pause. You recover some strength.');
         run.floor += 1; run.att = 0; run.stage = 'ready'; persist(); show(); return;
       }
@@ -8903,7 +9069,7 @@
     if (state.lootOpened && allDone() && !state.mods.waivedAll) {
       var wasLevel = hunterLevel;
       hunterLevel += 1;
-      saveLevel();
+      saveLevel(); bumpLevelNeed();
       state.leveledUp = { from: wasLevel, to: hunterLevel };
     }
     saveState();
