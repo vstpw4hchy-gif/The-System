@@ -1470,6 +1470,79 @@
   }
   .header-btn-row { -webkit-transform: translateZ(0); transform: translateZ(0); }
   .header-btn-row .ico svg { filter: none; }
+  /* ---------- BATTLE SCREEN ---------- */
+  #battleOverlay {
+    display: none; position: fixed; inset: 0; z-index: 90; flex-direction: column;
+    background: radial-gradient(ellipse at 50% 0%, rgba(22,62,150,0.35), transparent 60%), #000309;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    font-family: 'Rajdhani', sans-serif; color: var(--text); user-select: none; -webkit-user-select: none;
+  }
+  #battleOverlay.show { display: flex; }
+  .bt-top { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: rgba(6,20,62,0.6); }
+  .bt-title { flex: 1; min-width: 0; font-weight: 700; letter-spacing: .06em; font-size: 15px; color: #eaf6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bt-title small { font-family: 'Share Tech Mono', monospace; font-weight: 400; font-size: 11px; color: var(--text-dim); margin-left: 6px; }
+  .bt-flee { flex: 0 0 auto; background: none; border: 1px solid var(--line); color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 6px 10px; clip-path: polygon(6px 0,100% 0,100% 100%,0 100%,0 6px); }
+  .bt-flee.arm { color: var(--red); border-color: var(--red); }
+  .bt-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .bt-field { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 10px 4px; }
+  .bt-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .bt-grid.one { grid-template-columns: minmax(0,1fr); max-width: 330px; margin: 0 auto; }
+  .bt-more { text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); padding: 6px 0 2px; letter-spacing: .08em; }
+  .bt-card { position: relative; border: 1px solid var(--rc, var(--line)); background: linear-gradient(180deg, rgba(10,30,80,0.72), rgba(3,10,34,0.85)); padding: 8px 9px 9px; clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); cursor: pointer; }
+  .bt-card.sel { box-shadow: inset 0 0 0 1px var(--rc, var(--cyan)), 0 0 14px -4px var(--rc, var(--cyan)); background: linear-gradient(180deg, rgba(22,62,150,0.6), rgba(3,10,34,0.9)); }
+  .bt-card.hit { animation: btShake .28s; }
+  .bt-card.boss { border-width: 2px; }
+  .bt-chead { display: flex; align-items: center; gap: 7px; }
+  .bt-ico { flex: 0 0 26px; width: 26px; height: 26px; color: var(--rc, var(--cyan)); }
+  .bt-name { font-weight: 700; font-size: 14px; line-height: 1.05; letter-spacing: .02em; min-width: 0; }
+  .bt-sub { font-family: 'Share Tech Mono', monospace; font-size: 9.5px; color: var(--rc, var(--text-dim)); letter-spacing: .08em; }
+  .bt-bar { position: relative; height: 9px; margin-top: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(125,192,255,0.25); overflow: hidden; }
+  .bt-bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #c8264a, #ff5a78); transition: width .35s; }
+  .bt-bar.sta > i { background: linear-gradient(90deg, #c9a52a, #ffe27a); }
+  .bt-bar.mana > i { background: linear-gradient(90deg, #2b5fd0, #7cc4ff); }
+  .bt-bar.hpgood > i { background: linear-gradient(90deg, #17a36c, #3dffb0); }
+  .bt-num { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); display: flex; justify-content: space-between; margin-top: 2px; }
+  .bt-intent { margin-top: 6px; padding: 4px 6px; border-left: 3px solid var(--cyan-dim); background: rgba(0,0,0,0.35); font-size: 12px; line-height: 1.15; }
+  .bt-intent b { display: block; font-family: 'Share Tech Mono', monospace; font-size: 9.5px; font-weight: 400; letter-spacing: .1em; color: var(--text-dim); }
+  .bt-intent.heavy { border-color: #ff9a3d; } .bt-intent.multi { border-color: #b28bff; } .bt-intent.charge, .bt-intent.release { border-color: var(--red); background: rgba(74,20,32,0.55); }
+  .bt-intent.release { animation: btPulse .9s infinite; } .bt-intent.guard { border-color: #7f93b3; }
+  .bt-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+  .bt-chip { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border: 1px solid rgba(125,192,255,0.35); color: var(--cyan); }
+  .bt-chip.bad { color: #ff7a8e; border-color: rgba(255,59,92,0.5); } .bt-chip.good { color: var(--green); border-color: rgba(61,255,176,0.5); }
+  .bt-float { position: absolute; right: 12px; left: auto; top: 30px; transform: none; font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 0 8px var(--red), 0 0 2px #000; pointer-events: none; animation: btFloat .9s forwards; z-index: 3; }
+  .bt-float.crit { color: #ffd76a; font-size: 22px; } .bt-float.weak { color: var(--green); } .bt-float.heal { color: var(--green); }
+  .bt-log { flex: 0 0 auto; height: 76px; overflow-y: auto; margin: 4px 10px 0; padding: 5px 8px; border: 1px solid rgba(125,192,255,0.3); background: rgba(0,0,0,0.45); font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.35; color: #b9d4f2; }
+  .bt-log div.you { color: #ffffff; } .bt-log div.foe { color: #ff9aa8; } .bt-log div.sys { color: var(--cyan); } .bt-log div.good { color: var(--green); }
+  .bt-me { flex: 0 0 auto; padding: 8px 12px 2px; }
+  .bt-me-row { display: grid; grid-template-columns: 40px 1fr 70px; align-items: center; gap: 6px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .bt-me-row .bt-bar { margin: 0; height: 10px; } .bt-me-row span:last-child { text-align: right; color: var(--text); }
+  .bt-acts { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; padding: 8px 10px 10px; }
+  .bt-act { position: relative; min-height: 52px; padding: 5px 4px; background: linear-gradient(180deg, rgba(22,62,150,0.45), rgba(6,20,62,0.85)); border: 1px solid var(--line); color: #eaf6ff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .03em; line-height: 1.05; clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; touch-action: manipulation; }
+  .bt-act small { font-family: 'Share Tech Mono', monospace; font-weight: 400; font-size: 9.5px; color: var(--text-dim); letter-spacing: .04em; }
+  .bt-act:active:not(:disabled) { border-color: var(--line-bright); background: linear-gradient(180deg, rgba(60,120,255,0.55), rgba(6,20,62,0.9)); }
+  .bt-act:disabled { opacity: .38; }
+  .bt-act.rec { box-shadow: inset 0 0 0 1px var(--green); }
+  .bt-act.power { border-color: rgba(255,154,61,0.7); } .bt-act.crit { border-color: rgba(255,215,106,0.7); } .bt-act.defend { border-color: rgba(61,255,176,0.55); } .bt-act.evade { border-color: rgba(178,139,255,0.7); }
+  .bt-sub-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
+  .bt-result { position: absolute; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; background: rgba(0,3,9,0.86); padding: 18px; }
+  .bt-result.show { display: flex; }
+  .bt-rbox { width: 100%; max-width: 360px; border: 1px solid var(--line-bright); background: linear-gradient(180deg, rgba(10,30,80,0.95), rgba(3,10,34,0.98)); padding: 22px 18px 18px; text-align: center; }
+  .bt-rbox h2 { margin: 0 0 4px; font-size: 28px; letter-spacing: .12em; } .bt-rbox h2.win { color: var(--green); text-shadow: 0 0 14px rgba(61,255,176,.6); } .bt-rbox h2.lose { color: var(--red); text-shadow: 0 0 14px rgba(255,59,92,.6); }
+  .bt-rstats { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); line-height: 1.7; margin: 10px 0 14px; }
+  .bt-rstats b { color: var(--text); font-weight: 400; }
+  .bt-rbox button { width: 100%; padding: 12px; background: linear-gradient(180deg, rgba(22,62,150,0.6), rgba(6,20,62,0.9)); border: 1px solid var(--line-bright); color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .1em; }
+  @keyframes btShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  @keyframes btPulse { 0%,100% { box-shadow: 0 0 0 rgba(255,59,92,0); } 50% { box-shadow: 0 0 10px rgba(255,59,92,.7); } }
+  @keyframes btFloat { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
+  @media (max-height: 520px) and (orientation: landscape) {
+    #battleOverlay .bt-body { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+    .bt-field { grid-column: 1; grid-row: 1; padding: 6px 8px 2px; }
+    .bt-log { grid-column: 1; grid-row: 2; height: 50px; margin: 2px 8px 6px; }
+    .bt-side { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; }
+    .bt-acts { padding: 4px 8px 6px; gap: 4px; } .bt-act { min-height: 40px; font-size: 12px; } .bt-act small { display: none; }
+    .bt-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .bt-me { padding: 4px 10px 0; }
+  }
+  @media (max-width: 340px) { .bt-name { font-size: 12.5px; } .bt-act { font-size: 12.5px; min-height: 48px; } .bt-grid { gap: 5px; } .bt-intent { font-size: 11px; } }
 </style>
 </head>
 <body>
@@ -1698,6 +1771,16 @@
     </div>
     <div id="gateDetailBody"></div>
   </div>
+</div>
+
+<div id="battleOverlay">
+  <div class="bt-top"><div class="bt-title" id="btTitle">BATTLE</div><button class="bt-flee" id="btFlee">FLEE</button></div>
+  <div class="bt-body">
+    <div class="bt-field" id="btField"></div>
+    <div class="bt-log" id="btLog"></div>
+    <div class="bt-side"><div class="bt-me" id="btMe"></div><div class="bt-acts" id="btActs"></div></div>
+  </div>
+  <div class="bt-result" id="btResult"></div>
 </div>
 
 <div class="inv-overlay" id="assessOverlay">
@@ -2446,7 +2529,7 @@
     var def = ref.def * A.def * (opts.defMult || 1);
     var basicDmg = ref.atk * reduction(def, lvl);
     var e = {
-      id: opts.id || (arch + '_' + rank), name: opts.name || (arch.charAt(0).toUpperCase() + arch.slice(1)), rank: rank, level: lvl,
+      role: arch, id: opts.id || (arch + '_' + rank), name: opts.name || (arch.charAt(0).toUpperCase() + arch.slice(1)), rank: rank, level: lvl,
       hp: basicDmg * A.hits * (opts.hpMult || 1) *  (arch === 'elite' ? TUNE.elite[rank] * gapMult(arch, rank, opts) : 1) * (arch === 'boss' ? TUNE.boss[rank] : 1),
       atk: ref.maxHP * A.hit * (RANK_HIT[rank] || 1) * (opts.atkMult || 1) * (arch === 'elite' ? Math.pow(TUNE.elite[rank] * gapMult(arch, rank, opts), 0.64) : 1) / 0.72,   // /0.72: undo ~28% armour so "hit" is felt damage
       def: def, speed: ref.speed * A.speed * (opts.spdMult || 1),
@@ -3079,7 +3162,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-combat-s5d';
+  var APP_VERSION = '2026-10-12-combat-s6b';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3454,6 +3537,23 @@
     } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
   }
+
+  // Used items serve no further purpose, so they leave the inventory. Two things are kept: a redeemed Gate Key
+  // (it still accounts for the System gate it opened, and stays hidden), and today's drop (so the quest screen can
+  // keep showing what it was until tomorrow).
+  function purgeUsedItems() {
+    var keepId = (typeof state !== 'undefined' && state) ? state.lastLootId : null;
+    var before = inventory.length;
+    inventory = inventory.filter(function(it) {
+      if (!it.used) return true;
+      if (it.id === keepId) return true;
+      var e = null; try { e = getEffect(it); } catch (err) {}
+      return !!(e && e.type === 'gateKey');
+    });
+    if (inventory.length !== before) saveInventory();
+    return before - inventory.length;
+  }
+  function visibleInventory() { return inventory.filter(function(it) { return !it.used; }); }
 
   var inventory = loadInventory();
 
@@ -3989,7 +4089,7 @@
           '<div class="loot-resolved-tag">' + tag + ' &middot; tap Inventory above to view it anytime</div>';
         return;
       }
-      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">💰</div><div class="loot-box-text">Today\'s drop is no longer in your inventory (sold).</div></div>';
+      lootArea.innerHTML = '<div class="loot-box-visual"><div class="loot-box-icon">💰</div><div class="loot-box-text">Today\'s drop has been used or sold.</div></div>';
       return;
     }
 
@@ -3998,7 +4098,8 @@
 
   function renderInventoryBadge() {
     var badge = document.getElementById('invBadge');
-    if (badge) badge.textContent = String(inventory.length);
+    purgeUsedItems();
+    if (badge) badge.textContent = String(visibleInventory().length);
   }
 
   function renderGoldDisplays() {
@@ -4010,12 +4111,13 @@
 
   function renderInventoryList() {
     var list = document.getElementById('invList');
-    if (!inventory.length) {
+    purgeUsedItems();
+    if (!visibleInventory().length) {
       list.innerHTML = '<div class="inv-empty">No items yet.<br>Clear a daily quest to earn your first drop.</div>';
       return;
     }
     var rankOrder = { legendary: 0, shop: 0, heroic: 1, rare: 2, common: 3 };
-    var sorted = inventory.slice().sort(function(a, b) {
+    var sorted = visibleInventory().sort(function(a, b) {
       return rankOrder[a.rank] - rankOrder[b.rank];
     });
     list.innerHTML = sorted.map(function(item) {
@@ -4242,6 +4344,7 @@
     saveInventory();
     document.getElementById('detailOverlay').classList.remove('show');
     renderInventoryList();
+    renderInventoryBadge();
     renderLootArea();
     showToast(msg);
   }
@@ -6283,7 +6386,9 @@
       actions = (canPay ? '' : '<div class="gate-special-note">Not enough Gate Energy. Need ' + cost + ', you have ' + energy.value + '. Every cleared daily quest pays +' + GE.perClear + '.</div>') + '<div class="loot-decision-row">' +
         '<button class="use-btn" id="gateEnterBtn"' + (canPay ? '' : ' disabled') + '>ENTER GATE' + (cost ? ' &middot; ' + cost : '') + '</button>' +
         '<button class="stash-btn" id="gateDetailCloseBottomBtn">CANCEL</button>' +
-      '</div>';
+      '</div>' +
+      '<div class="stats-note" style="margin-top:14px;">TEMPORARY BATTLE TEST &mdash; free, no rewards, nothing is lost</div>' +
+      '<div class="loot-decision-row"><button class="stash-btn" id="gateTestWaveBtn">TEST: WAVE</button><button class="stash-btn" id="gateTestBossBtn">TEST: BOSS</button></div>';
     }
 
     body.innerHTML =
@@ -6296,6 +6401,9 @@
 
     var enterBtn = document.getElementById('gateEnterBtn');
     if (enterBtn) enterBtn.addEventListener('click', function() { enterGate(g.id); });
+    var tw = document.getElementById('gateTestWaveBtn'), tb = document.getElementById('gateTestBossBtn');
+    if (tw) tw.addEventListener('click', function() { startTestBattle(g, false); });
+    if (tb) tb.addEventListener('click', function() { startTestBattle(g, true); });
     var closeBtn = document.getElementById('gateDetailCloseBottomBtn');
     if (closeBtn) closeBtn.addEventListener('click', function() { document.getElementById('gateDetailOverlay').classList.remove('show'); });
 
@@ -6353,6 +6461,286 @@
   document.getElementById('gateStatusBanner').addEventListener('click', function(e) {
     if (e.target && e.target.id === 'gateLeaveBtn') leaveGate();
   });
+
+  // ---- Battle screen -----------------------------------------------------------------
+  // One fight at a time, drawn from the pure combat engine. Every action is saved, so closing the
+  // app mid-fight resumes the same fight. Other systems start fights through Battle.open() and get
+  // the result through a handler registered with Battle.on(kind, fn).
+  var Battle = (function() {
+    var KEY = 'the-system-battle';
+    var cur = null, handlers = {}, fleeArm = 0, subOpen = false, locked = false;
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function rankColor(r) { return (GATE_INFO[r] || {}).color || '#c7cdd6'; }
+    var ROLE_ICON = {
+      grunt:      '<path d="M5 19L17 7M13 5l6 0 0 6M9 15l-3 3M4 20l2-2"/>',
+      skirmisher: '<path d="M4 20L19 5M15 5h4v4M7 13l4 4M5 15l4 4"/>',
+      brute:      '<path d="M7 5h10v6H7zM12 11v9M9 20h6"/>',
+      caster:     '<circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/>',
+      guardian:   '<path d="M12 3l7 3v6c0 5-3 8-7 9-4-1-7-4-7-9V6z"/>',
+      elite:      '<path d="M12 3l2.5 6.5L21 10l-5 4.5L17.5 21 12 17.5 6.5 21 8 14.5 3 10l6.5-.5z"/>',
+      boss:       '<path d="M4 18l2-10 4 4 2-7 2 7 4-4 2 10zM5 21h14"/>'
+    };
+    function icon(role) { return '<svg class="bt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (ROLE_ICON[role] || ROLE_ICON.grunt) + '</svg>'; }
+    var C = function() { return window.SystemCombat; };
+    var BAD = { bleed: 1, burn: 1, poison: 1, stun: 1, weaken: 1, guardbreak: 1, slow: 1 };
+
+    function save() {
+      if (!cur) { try { localStorage.removeItem(KEY); } catch (e) {} return; }
+      try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) {}
+    }
+    function load() {
+      try {
+        var raw = localStorage.getItem(KEY); if (!raw) return null;
+        var o = JSON.parse(raw);
+        if (!o || !o.S || !o.S.player || typeof o.S.player.maxHP !== 'number' || !Array.isArray(o.S.enemies) || !o.S.enemies.length || !o.S.intents || typeof o.S.round !== 'number') return null;
+        return o;
+      } catch (e) { return null; }
+    }
+    function nameOf(uid) {
+      if (uid === 'P') return 'You';
+      var e = cur.S.enemies.filter(function(x) { return x.uid === uid; })[0];
+      return e ? e.name : 'Something';
+    }
+
+    // Turn engine events into System-style log lines.
+    function describe(evs) {
+      var out = [], SN = C().STATUS_NAMES;
+      evs.forEach(function(ev) {
+        switch (ev.t) {
+          case 'illegal': out.push(['sys', ev.msg]); break;
+          case 'act':
+            if (ev.type === 'basic') out.push(['you', 'You strike.']);
+            else if (ev.type === 'power') out.push(['you', 'You unleash a POWER STRIKE!']);
+            else if (ev.type === 'crit') out.push(['you', 'You aim a CRITICAL STRIKE!']);
+            else if (ev.type === 'defend') out.push(['you', 'You brace for impact.']);
+            else if (ev.type === 'evade') out.push(['you', 'You ready an evasive step.']);
+            else if (ev.type === 'ability') out.push(['you', 'You use ' + ev.name + '!']);
+            else out.push(['you', 'You use ' + (ev.name || 'an item') + '.']);
+            break;
+          case 'move': out.push(['foe', nameOf(ev.uid) + ' uses ' + ev.name + '.']); break;
+          case 'dmg': {
+            var tag = (ev.crit ? ' CRITICAL!' : '') + (ev.weak ? ' WEAKNESS!' : '') + (ev.resist ? ' (resisted)' : '');
+            if (ev.dst === 'P') out.push(['foe', 'You take ' + ev.amt + ' damage.' + (ev.absorbed ? ' (' + ev.absorbed + ' absorbed)' : '')]);
+            else if (ev.src == null) out.push(['sys', nameOf(ev.dst) + ' suffers ' + ev.amt + ' from ' + (ev.how || 'wounds') + '.']);
+            else out.push(['you', nameOf(ev.dst) + ' takes ' + ev.amt + ' damage.' + tag]);
+            break;
+          }
+          case 'dodge': out.push(['good', 'You dodge the blow!']); break;
+          case 'charging': out.push(['foe', nameOf(ev.uid) + ' is gathering power...']); break;
+          case 'guarding': out.push(['sys', nameOf(ev.uid) + ' raises its guard.']); break;
+          case 'status': out.push([ev.uid === 'P' ? 'foe' : 'sys', (ev.uid === 'P' ? 'You are afflicted: ' : nameOf(ev.uid) + ' gains: ') + (SN[ev.id] || ev.id) + '.']); break;
+          case 'resisted': out.push(['good', 'You shake off the curse.']); break;
+          case 'stunned': out.push(['sys', (ev.uid === 'P' ? 'You are' : nameOf(ev.uid) + ' is') + ' stunned!']); break;
+          case 'interrupt': out.push(['good', 'INTERRUPTED! ' + nameOf(ev.uid) + ' is stunned.']); break;
+          case 'down': out.push(['good', (ev.uid === 'P' ? 'You fall...' : nameOf(ev.uid) + ' is defeated.')]); break;
+          case 'summon': out.push(['foe', ev.name + ' joins the fight!']); break;
+          case 'arrive': out.push(['foe', ev.name + ' rushes in!' + (ev.left ? ' (' + ev.left + ' more waiting)' : '')]); break;
+          case 'phase': out.push(['foe', ev.msg || 'Something changes...']); break;
+          case 'heal': out.push([ev.uid === 'P' ? 'good' : 'sys', (ev.uid === 'P' ? 'You recover ' : nameOf(ev.uid) + ' recovers ') + ev.amt + ' HP.']); break;
+          case 'stamina': out.push(['good', 'You recover ' + ev.amt + ' stamina.']); break;
+          case 'mana': out.push(['good', 'You recover ' + ev.amt + ' mana.']); break;
+          case 'cleanse': out.push(['good', 'Your ailments are cleansed.']); break;
+        }
+      });
+      return out;
+    }
+    function pushLog(lines) {
+      var box = $('btLog');
+      lines.forEach(function(l) { box.insertAdjacentHTML('beforeend', '<div class="' + l[0] + '">' + esc(l[1]) + '</div>'); });
+      while (box.children.length > 60) box.removeChild(box.firstChild);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function intentHtml(S, e) {
+      var mv = S.intents[e.uid];
+      if (!mv) return '';
+      if (e.st && e.st.stun) return '<div class="bt-intent"><b>INTENT</b>STUNNED</div>';
+      var t = mv.type, cls = t, label = '', head = 'INTENT';
+      if (e.chargeMove) { cls = 'release'; head = 'WARNING'; label = esc(mv.name) + ' &mdash; interrupt with POWER STRIKE!'; }
+      else if (t === 'attack') label = 'Attack &middot; ' + esc(mv.name);
+      else if (t === 'heavy') label = 'HEAVY &middot; ' + esc(mv.name) + ' <span style="color:#ff9a3d">(evade!)</span>';
+      else if (t === 'multi') label = (mv.hits || 3) + '-hit flurry &middot; ' + esc(mv.name);
+      else if (t === 'drain') label = 'Life drain &middot; ' + esc(mv.name);
+      else if (t === 'charge') label = 'Gathering power &middot; ' + esc(mv.name);
+      else if (t === 'guard') label = 'Guarding &middot; ' + esc(mv.name);
+      else if (t === 'buff') label = 'Powering up &middot; ' + esc(mv.name);
+      else if (t === 'debuff') label = 'Curse &middot; ' + esc(mv.name);
+      else if (t === 'summon') label = 'Calling allies &middot; ' + esc(mv.name);
+      else if (t === 'heal') label = 'Recovering &middot; ' + esc(mv.name);
+      else label = esc(mv.name);
+      if (mv.status && typeof mv.status === 'object' && !e.chargeMove) label += ' <span style="opacity:.75">+' + (C().STATUS_NAMES[mv.status.id] || mv.status.id) + '</span>';
+      return '<div class="bt-intent ' + cls + '"><b>' + head + '</b>' + label + '</div>';
+    }
+    function chipsHtml(S, e) {
+      var chips = [], SN = C().STATUS_NAMES, kn = (cur.known && cur.known[e.id || e.name]) || {};
+      Object.keys(e.st || {}).forEach(function(id) { chips.push('<span class="bt-chip ' + (BAD[id] ? 'good' : 'bad') + '">' + (SN[id] || id).toUpperCase() + '</span>'); });
+      if (e.guard) chips.push('<span class="bt-chip">GUARDED</span>');
+      Object.keys(kn).forEach(function(k) { chips.push('<span class="bt-chip ' + (kn[k] === 'weak' ? 'good' : 'bad') + '">' + (kn[k] === 'weak' ? 'WEAK: ' : 'RESISTS: ') + k.toUpperCase() + '</span>'); });
+      return chips.length ? '<div class="bt-chips">' + chips.join('') + '</div>' : '';
+    }
+    function renderField() {
+      var S = cur.S, alive = [];
+      S.enemies.forEach(function(e, i) { if (e.alive) alive.push([e, i]); });
+      if (cur.sel == null || !S.enemies[cur.sel] || !S.enemies[cur.sel].alive) cur.sel = alive.length ? alive[0][1] : null;
+      var html = '<div class="bt-grid' + (alive.length === 1 ? ' one' : '') + '">' + alive.map(function(p) {
+        var e = p[0], i = p[1], pct = Math.max(0, Math.round(e.hp / e.maxHP * 100));
+        var role = e.boss ? 'boss' : (e.role || 'grunt');
+        return '<div class="bt-card' + (i === cur.sel ? ' sel' : '') + (e.boss ? ' boss' : '') + '" data-i="' + i + '" data-uid="' + e.uid + '" style="--rc:' + rankColor(e.rank) + '">' +
+          '<div class="bt-chead">' + icon(role) + '<div style="min-width:0"><div class="bt-name">' + esc(e.name) + '</div><div class="bt-sub">' + (e.boss ? 'BOSS' : (e.role === 'elite' ? 'ELITE' : 'LV ' + e.level)) + ' &middot; ' + e.rank + '-RANK</div></div></div>' +
+          '<div class="bt-bar"><i style="width:' + pct + '%"></i></div><div class="bt-num"><span>HP</span><span>' + Math.ceil(e.hp) + ' / ' + e.maxHP + '</span></div>' +
+          intentHtml(S, e) + chipsHtml(S, e) + '</div>';
+      }).join('') + '</div>';
+      var wait = (S.reserve || []).length;
+      if (wait) html += '<div class="bt-more">+ ' + wait + ' MORE APPROACHING</div>';
+      $('btField').innerHTML = html;
+    }
+    function barRow(label, cls, v, max) {
+      return '<div class="bt-me-row"><span>' + label + '</span><div class="bt-bar ' + cls + '"><i style="width:' + Math.max(0, Math.min(100, v / max * 100)) + '%"></i></div><span>' + Math.ceil(v) + '/' + Math.round(max) + '</span></div>';
+    }
+    function renderMe() {
+      var P = cur.S.player, SN = C().STATUS_NAMES;
+      var st = Object.keys(P.st || {}).map(function(id) { return '<span class="bt-chip ' + (BAD[id] ? 'bad' : 'good') + '">' + (SN[id] || id).toUpperCase() + '</span>'; }).join('');
+      $('btMe').innerHTML = barRow('HP', 'hpgood', P.hp, P.maxHP) + barRow('STA', 'sta', P.stamina, P.maxStamina) + barRow('MANA', 'mana', P.mana, P.maxMana) + (st ? '<div class="bt-chips">' + st + '</div>' : '');
+    }
+    function actBtn(id, cls, label, sub, ok) {
+      return '<button class="bt-act ' + cls + '" data-act="' + id + '"' + (ok ? '' : ' disabled') + '>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
+    }
+    function renderActs() {
+      var S = cur.S, over = !!S.over, legal = C().legalActions(S), L = {};
+      legal.forEach(function(l) { if (l.type !== 'ability') L[l.type] = l; });
+      var abil = legal.filter(function(l) { return l.type === 'ability'; });
+      var T = C().T, ch = S.enemies.some(function(e) { return e.alive && e.chargeMove; });
+      var html = '';
+      if (subOpen) {
+        html += '<div class="bt-sub-panel">' + abil.map(function(a) {
+          return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? a.cost + ' MANA' : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA'), a.ok && !over);
+        }).join('') + '</div>' + actBtn('back', '', 'BACK', '', true);
+      } else {
+        html += actBtn('basic', '', 'ATTACK', '+' + T.basicStaminaGain + ' STA', !over);
+        html += actBtn('power', 'power' + (ch ? ' rec' : ''), 'POWER STRIKE', '-' + T.powerCost + ' STA &middot; x' + T.powerMult, !over && L.power && L.power.ok);
+        html += actBtn('crit', 'crit', 'CRIT STRIKE', '-' + T.critCost + ' STA', !over && L.crit && L.crit.ok);
+        html += actBtn('defend', 'defend', 'DEFEND', '+' + T.defendStaminaGain + ' STA &middot; -60% dmg', !over);
+        html += actBtn('evade', 'evade', 'EVADE', '-' + T.evadeCost + ' STA', !over && L.evade && L.evade.ok);
+        html += actBtn('abilities', '', 'ABILITIES', abil.length ? abil.length + ' READY' : 'NONE YET', !over && abil.length > 0);
+      }
+      $('btActs').innerHTML = html;
+    }
+    function renderTop() {
+      $('btTitle').innerHTML = esc(cur.title || 'BATTLE') + '<small>ROUND ' + (cur.S.round + 1) + '</small>';
+      var f = $('btFlee'); f.textContent = fleeArm ? 'SURE?' : (cur.fleeLabel || 'FLEE'); f.classList.toggle('arm', !!fleeArm); f.style.visibility = cur.noFlee ? 'hidden' : 'visible';
+    }
+    function renderAll() { renderTop(); renderField(); renderMe(); renderActs(); }
+
+    function showResult() {
+      var S = cur.S, win = S.over === 'victory', st = S.stats;
+      $('btResult').innerHTML = '<div class="bt-rbox"><h2 class="' + (win ? 'win' : 'lose') + '">' + (win ? 'VICTORY' : (S.timeout ? 'EXHAUSTED' : 'DEFEATED')) + '</h2>' +
+        '<div class="bt-rstats">ROUNDS <b>' + S.round + '</b> &middot; KILLS <b>' + st.kills + '</b><br>DAMAGE DEALT <b>' + st.dealt + '</b> &middot; TAKEN <b>' + st.taken + '</b><br>CRITS <b>' + st.crits + '</b> &middot; DODGES <b>' + st.dodges + '</b><br>HP LEFT <b>' + Math.ceil(S.player.hp) + ' / ' + S.player.maxHP + '</b></div>' +
+        (cur.note ? '<div class="bt-rstats" style="margin-top:-6px;">' + esc(cur.note) + '</div>' : '') +
+        '<button id="btDone">' + (cur.doneLabel || 'CONTINUE') + '</button></div>';
+      $('btResult').classList.add('show');
+    }
+    function finish(extra) {
+      if (!cur) return;
+      var done = cur, h = handlers[done.kind];
+      cur = null; save();
+      $('btResult').classList.remove('show');
+      $('battleOverlay').classList.remove('show');
+      document.body.style.overflow = '';
+      if (h) { try { h(Object.assign({ result: done.S.over || 'fled', S: done.S, meta: done.meta }, extra || {})); } catch (e) {} }
+    }
+    function learn(evs, action) {
+      var S = cur.S; if (!action || ['basic', 'power', 'crit'].indexOf(action.type) < 0) return;
+      evs.forEach(function(ev) {
+        if (ev.t !== 'dmg' || ev.src !== 'P' || ev.dst === 'P' || !(ev.weak || ev.resist)) return;
+        var e = S.enemies.filter(function(x) { return x.uid === ev.dst; })[0]; if (!e) return;
+        var key = e.id || e.name; cur.known = cur.known || {}; cur.known[key] = cur.known[key] || {};
+        cur.known[key][action.type] = ev.weak ? 'weak' : 'resist';
+      });
+    }
+    function floatText(uid, txt, cls) {
+      var card = document.querySelector('#btField .bt-card[data-uid="' + uid + '"]'); if (!card) return;
+      var f = document.createElement('div'); f.className = 'bt-float ' + (cls || ''); f.textContent = txt; card.appendChild(f);
+      setTimeout(function() { if (f.parentNode) f.parentNode.removeChild(f); }, 950);
+    }
+    function perform(action) {
+      if (!cur || cur.S.over || locked) return;
+      locked = true;
+      action.target = cur.sel;
+      var evs = C().act(cur.S, action);
+      learn(evs, action);
+      subOpen = false; fleeArm = 0;
+      save();
+      pushLog([['sys', '— round ' + cur.S.round + ' —']].concat(describe(evs)));
+      var hits = evs.filter(function(ev) { return ev.t === 'dmg' && ev.dst !== 'P'; });
+      var meHit = evs.some(function(ev) { return ev.t === 'dmg' && ev.dst === 'P'; });
+      renderAll();
+      hits.forEach(function(ev) {
+        var card = document.querySelector('#btField .bt-card[data-uid="' + ev.dst + '"]');
+        if (card) { card.classList.add('hit'); floatText(ev.dst, '-' + ev.amt, ev.crit ? 'crit' : (ev.weak ? 'weak' : '')); }
+      });
+      if (meHit && navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+      if (cur.S.over) { setTimeout(function() { if (cur) showResult(); locked = false; }, 650); }
+      else setTimeout(function() { locked = false; }, 140);
+    }
+
+    function open(o) {
+      var Cm = C();
+      var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
+      var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, abilities: o.abilities || [] });
+      var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
+      cur = { v: 1, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, doneLabel: o.doneLabel, note: o.note || '' };
+      save(); show(true);
+    }
+    function show(fresh) {
+      subOpen = false; fleeArm = 0; locked = false;
+      $('btLog').innerHTML = ''; $('btResult').classList.remove('show');
+      $('battleOverlay').classList.add('show'); document.body.style.overflow = 'hidden';
+      pushLog([['sys', fresh ? 'The System: BATTLE START.' : 'The System: battle resumed.']]);
+      renderAll();
+      if (cur.S.over) showResult();
+    }
+    function resume() {
+      var o = load(); if (!o) return false;
+      try { cur = o; show(false); return true; }
+      catch (e) { cur = null; save(); $('battleOverlay').classList.remove('show'); document.body.style.overflow = ''; return false; }
+    }
+
+    $('btField').addEventListener('click', function(e) {
+      var card = e.target.closest && e.target.closest('.bt-card'); if (!card || !cur) return;
+      cur.sel = +card.getAttribute('data-i'); save(); renderField();
+    });
+    $('btActs').addEventListener('click', function(e) {
+      var b = e.target.closest && e.target.closest('button[data-act]'); if (!b || b.disabled || !cur) return;
+      var a = b.getAttribute('data-act');
+      if (a === 'abilities') { subOpen = true; renderActs(); return; }
+      if (a === 'back') { subOpen = false; renderActs(); return; }
+      if (a.indexOf('ab:') === 0) { perform({ type: 'ability', id: a.slice(3) }); return; }
+      perform({ type: a });
+    });
+    $('btFlee').addEventListener('click', function() {
+      if (!cur || cur.noFlee) return;
+      if (!fleeArm) { fleeArm = 1; renderTop(); setTimeout(function() { fleeArm = 0; if (cur) renderTop(); }, 3000); return; }
+      finish({ fled: true, result: 'fled' });
+    });
+    $('btResult').addEventListener('click', function(e) { if (e.target && e.target.id === 'btDone') finish(); });
+
+    return { open: open, resume: resume, on: function(kind, fn) { handlers[kind] = fn; }, active: function() { return !!cur; } };
+  })();
+  Battle.on('practice', function(r) {
+    showToast(r.result === 'victory' ? 'Test battle won. (No rewards: this was a test.)' : (r.result === 'fled' ? 'You fled the test battle.' : 'Test battle lost. (Nothing was lost: this was a test.)'));
+  });
+  function startTestBattle(g, boss) {
+    var C = window.SystemCombat, plan = gatePlanFor(g), hr = hunterGateRank();
+    var fl = plan.floors.filter(function(f) { return boss ? f.type === 'boss' : f.type === 'wave'; });
+    var f = fl[0]; if (!f) return;
+    var enemies = f.enemies.map(function(sp) { return C.buildEnemy(sp, { vsRank: hr, hunterLevel: hunterLevel }); });
+    var sp = C.spendCharges(power), bonus = C.chargeBonus(sp.spent);
+    document.getElementById('gateDetailOverlay').classList.remove('show');
+    document.getElementById('gateOverlay').classList.remove('show');
+    Battle.open({ kind: 'practice', title: 'TEST BATTLE', stats: stats, level: hunterLevel, power: bonus, enemies: enemies, seed: gateSeed(g) + (boss ? 'b' : 'w') + Date.now(), name: hunterDisplayName ? hunterDisplayName() : 'YOU' });
+  }
+  Battle.resume();
 
   function startNewQuestDay() {
     state = freshDayState();
