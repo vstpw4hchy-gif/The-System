@@ -3079,7 +3079,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-combat-s5c';
+  var APP_VERSION = '2026-10-12-combat-s5d';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -6265,7 +6265,6 @@
     var meta = '<div class="gate-detail-meta">' +
       '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
       '<b>THREAT:</b> <span style="color:' + THREAT_COLORS[thr.key] + ';">' + thr.label + '</span> <span style="opacity:.7;">for ' + ('EAS'.indexOf(hunterGateRank()) >= 0 ? 'an ' : 'a ') + hunterGateRank() + '-rank hunter</span><br>' +
-      '<b>LAYOUT:</b> ' + planSummary(plan) + planPipsHtml(plan) +
       '<b>ESTIMATED TIME:</b> ' + plan.estMinutes[0] + '&ndash;' + plan.estMinutes[1] + ' min<br>' +
       '<b>ENTRY COST:</b> ' + (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')') + '<br>' +
       '<b>REWARD:</b> up to ' + plan.levels + ' level' + (plan.levels === 1 ? '' : 's') + ' &middot; ' + plan.gold[0] + '&ndash;' + plan.gold[1] + ' gold<br>' +
