@@ -1525,7 +1525,16 @@
   .bt-more { text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); padding: 6px 0 2px; letter-spacing: .08em; }
   .bt-card { position: relative; border: 1px solid var(--rc, var(--line)); background: linear-gradient(180deg, rgba(10,30,80,0.72), rgba(3,10,34,0.85)); padding: 8px 9px 9px; clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); cursor: pointer; }
   .bt-card.sel { box-shadow: inset 0 0 0 1px var(--rc, var(--cyan)), 0 0 14px -4px var(--rc, var(--cyan)); background: linear-gradient(180deg, rgba(22,62,150,0.6), rgba(3,10,34,0.9)); }
+  .bt-card.sel { animation: btTarget 1.1s ease-in-out infinite; }
+  .bt-card.sel::after { content: '\25B6 TARGET'; position: absolute; top: 3px; right: 14px; font-family: 'Share Tech Mono', monospace; font-size: 8.5px; letter-spacing: .1em; color: var(--rc, var(--cyan)); animation: btTag 1.1s ease-in-out infinite; pointer-events: none; }
+  .bt-card.acting::after { content: none; }
   .bt-card.hit { animation: btShake .28s; }
+  .bt-card.sel.hit { animation: btShake .28s; }
+  .bt-ebar { height: 14px; margin-top: 7px; border-color: rgba(255,120,140,0.45); }
+  .bt-ebar > i { z-index: 2; transition: width .55s ease-out; }
+  .bt-ebar > u { position: absolute; left: 0; top: 0; bottom: 0; background: #ffe9a8; opacity: .9; z-index: 1; transition: width 1.1s ease-out .35s; }
+  .bt-enum { font-size: 12px; color: #eaf6ff; }
+  .bt-enum span:first-child { color: var(--text-dim); }
   .bt-card.boss { border-width: 2px; }
   .bt-chead { display: flex; align-items: center; gap: 7px; }
   .bt-ico { flex: 0 0 26px; width: 26px; height: 26px; color: var(--rc, var(--cyan)); }
@@ -1566,6 +1575,8 @@
   .bt-rstats { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); line-height: 1.7; margin: 10px 0 14px; }
   .bt-rstats b { color: var(--text); font-weight: 400; }
   .bt-rbox button { width: 100%; padding: 12px; background: linear-gradient(180deg, rgba(22,62,150,0.6), rgba(6,20,62,0.9)); border: 1px solid var(--line-bright); color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .1em; }
+  @keyframes btTarget { 0%,100% { box-shadow: inset 0 0 0 1px var(--rc, var(--cyan)), inset 0 0 6px 0 rgba(125,220,255,.15), 0 0 8px -4px var(--rc, var(--cyan)); filter: brightness(1); } 50% { box-shadow: inset 0 0 0 2px var(--rc, var(--cyan)), inset 0 0 22px 2px rgba(125,220,255,.45), 0 0 18px -2px var(--rc, var(--cyan)); filter: brightness(1.35); } }
+  @keyframes btTag { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
   @keyframes btShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
   @keyframes btPulse { 0%,100% { box-shadow: 0 0 0 rgba(255,59,92,0); } 50% { box-shadow: 0 0 10px rgba(255,59,92,.7); } }
   @keyframes btFloat { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
@@ -1645,6 +1656,7 @@
       <button class="inv-btn" id="invOpenBtn"><span data-ico="cube"></span> INVENTORY <span class="inv-badge" id="invBadge">0</span></button>
       <button class="inv-btn" id="shopOpenBtn"><span data-ico="coin"></span> SHOP <span class="inv-badge gold-badge" id="goldBadge">0</span></button>
       <button class="inv-btn" id="statsOpenBtn"><span data-ico="bars"></span> STATS</button>
+      <button class="inv-btn" id="jobQuestOpenBtn" style="display:none;"><span data-ico="portal"></span> JOB CHANGE QUEST</button>
       <button class="inv-btn gate-open-btn" id="gateOpenBtn"><span data-ico="portal"></span> GATES <span class="inv-badge" id="gateActiveBadge" style="display:none;">1</span></button>
       <button class="inv-btn penalty-open-btn" id="penaltyOpenBtn" style="display:none;"><span data-ico="warning"></span><span id="penaltyBtnLabel">PENALTY</span></button>
     </div>
@@ -2161,7 +2173,7 @@
   function buildEnemy(spec, ctx) {
     ctx = ctx || {};
     if (spec.id && CATALOG.byId[spec.id]) {
-      var en = makeCat(spec.id, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, hpMult: (spec.horde ? HORDE.hp * (HORDE.k[spec.rank] || 1) : 1) * (spec.anom ? 1.4 : 1) * (spec.red && !(spec.arch === 'elite' || spec.arch === 'boss') ? RED.hp : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.eh : RED.over.hp) : 1), atkMult: (spec.horde ? HORDE.atk * Math.pow(HORDE.k[spec.rank] || 1, 0.7) : (spec.arch === 'elite' || spec.arch === 'boss' ? 1 : (COMMON_K[spec.rank] || 1))) * (spec.anom ? 1.1 : 1) * (spec.red && spec.arch !== 'elite' && spec.arch !== 'boss' ? RED.cm : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.ea : RED.over.atk) : 1) });
+      var en = makeCat(spec.id, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, hpMult: (spec.horde ? HORDE.hp * (HORDE.k[spec.rank] || 1) : 1) * (spec.anom ? 1.4 : 1) * (spec.red && !(spec.arch === 'elite' || spec.arch === 'boss') ? RED.hp : 1) * (spec.trial ? ((spec.trialBoss ? TRIAL.boss : TRIAL.sp)[spec.rank] || 1) : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.eh : RED.over.hp) : 1), atkMult: (spec.horde ? HORDE.atk * Math.pow(HORDE.k[spec.rank] || 1, 0.7) : (spec.arch === 'elite' || spec.arch === 'boss' ? 1 : (COMMON_K[spec.rank] || 1))) * (spec.anom ? 1.1 : 1) * (spec.trial ? ((spec.trialBoss ? TRIAL.boss : TRIAL.sp)[spec.rank] || 1) : 1) * (spec.red && spec.arch !== 'elite' && spec.arch !== 'boss' ? RED.cm : 1) * (spec.over ? ((spec.arch === 'elite' || spec.arch === 'boss') ? RED.over.ea : RED.over.atk) : 1) });
       if (spec.anom) { en.anom = true; en.abilityId = abilityOf(spec.id); en.grantChance = en.abilityId ? ABILITY_DROP.anom : 0; }
       return en;
     }
@@ -2424,7 +2436,7 @@
   // END is above the norm for their level gets more actions out of the same costs, and one who neglects it runs dry.
   function staScale(L) { return (61.8 + 2.1 * L) / 82.8; }
   function manaScale(L) { return (31.2 + 1.7 * L) / 48.2; }
-  function manaCost(P, ab) { return Math.max(1, Math.round(ab.mana * manaScale(P.level))); }
+  function manaCost(P, ab) { return ab.mana === 0 ? 0 : Math.max(1, Math.round(ab.mana * manaScale(P.level))); }
   // cost = fatigue points the action adds (Defend: points it removes, as a negative number)
   function legalActions(S, wid) {
     var P = S.player, out = [];
@@ -2440,7 +2452,7 @@
       var ab = ABILITIES[id]; if (!ab) return;
       var cd = S.cd[id] || 0;
       var mc = manaCost(P, ab), ok = P.mana >= mc && cd <= 0;
-      add('ability', ab.name, mc, ok, cd > 0 ? 'cooldown' : (P.mana < mc ? 'mana' : ''), { id: id, cd: cd });
+      add('ability', ab.name, mc, ok, cd > 0 ? 'cooldown' : (P.mana < mc ? 'mana' : ''), { id: id, cd: cd, fat: ab.fat ? Math.max(1, Math.round(ab.fat * fatMult(P))) : 0 });
     });
     return out;
   }
@@ -2596,7 +2608,13 @@
     if (!found || !found.ok) return { type: 'basic', target: a.target, downgraded: true, weapon: a.weapon };
     return a;
   }
+  // Wraps one round and keeps the running record of how the hunter fought (used to read a fighting style).
   function act(S, action) {
+    var evs = actRound(S, action), P = S.player;
+    if (S.stats) S.stats.minHP = Math.min(S.stats.minHP == null ? 1 : S.stats.minHP, Math.max(0, P.hp) / Math.max(1, P.maxHP));
+    return evs;
+  }
+  function actRound(S, action) {
     if (S.over) return [];
     var ev = [], P = S.player;
     var a = sanitise(S, action);
@@ -2605,6 +2623,9 @@
     S.round++;
     // a collapsed hunter cannot act this round
     if (P.collapsed) a = { type: 'collapse' };
+    var nn = S.stats.n = S.stats.n || { basic: 0, power: 0, crit: 0, defend: 0, evade: 0, ability: 0, collapse: 0 };
+    nn[a.type] = (nn[a.type] || 0) + 1;
+    if (a.type === 'basic' || a.type === 'power' || a.type === 'crit') { var wk = wpnOf(P, a.weapon), wcl = S.stats.wc = S.stats.wc || {}, kk = wk ? (wk.cls || 'weapon') : 'fist'; wcl[kk] = (wcl[kk] || 0) + 1; }
     // fatigue from the chosen action
     if (a.type === 'basic' || a.type === 'power' || a.type === 'crit' || a.type === 'evade') P.fatigue = Math.min(100, P.fatigue + fatGain(P, a.type, a.weapon));
     if (a.type === 'defend') P.fatigue = Math.max(0, P.fatigue - T.fat.defendRelief);
@@ -3267,6 +3288,140 @@
   }
 
 
+  // ---- Jobs ---------------------------------------------------------------------------
+  // The Job Change Quest (hunter level 40) is a gauntlet of trial spirits and a Warden. How the hunter fights it
+  // decides the one job the System assigns. Twelve ordinary jobs are read by comparing the fighting style with each
+  // job's ideal style; three hidden jobs answer to unusual feats. A job brings a passive bonus and three
+  // signature abilities that arrive at hunter levels 50, 70 and 100. Fatigue jobs spend no mana at all.
+  var JOB_LEVELS = [50, 70, 100], JOB_QUEST_LEVEL = 40;
+  var JOB_RES = { fat: 'Fatigue and cooldowns', mana: 'Mana and cooldowns', hybrid: 'Mana, fatigue and cooldowns' };
+  // ideal: action shares (basic, power, crit, defend, evade, ability), hurt (HP lost per fight), and weapon-style shares (fist, blade, pierce, blunt, status)
+  var JOB_DIMS = ['basic', 'power', 'crit', 'defend', 'evade', 'ability', 'hurt', 'fist', 'blade', 'pierce', 'blunt', 'status'];
+  function jv(a) { var o = {}; JOB_DIMS.forEach(function (k, i) { o[k] = a[i]; }); return o; }
+  var JOBS = {};
+  var JOB_ORDER = [];
+  function mkJob(id, name, res, tag, desc, bonus, ideal, hidden, hiddenHint) {
+    JOBS[id] = { id: id, name: name, res: res, tag: tag, desc: desc, bonus: bonus, ideal: ideal ? jv(ideal) : null, hidden: !!hidden, hint: hiddenHint || '', abilities: [] }; JOB_ORDER.push(id);
+  }
+  //                                                         basic power crit  def  eva  abil hurt fist  blade pier blunt stat
+  mkJob('fighter', 'Fighter', 'fat', 'BALANCED', 'A steady, adaptable warrior. No flourish, no weakness, and endurance to outlast the trial.', { atk: 0.06, hp: 0.06 }, [0.40, 0.25, 0.10, 0.15, 0.10, 0.00, 0.50, 0.10, 0.60, 0.10, 0.10, 0.10]);
+  mkJob('berserker', 'Berserker', 'fat', 'ALL-OUT ATTACK', 'Lives for the biggest hit. Hits harder than anyone and shrugs off the cost.', { atk: 0.12 }, [0.15, 0.35, 0.35, 0.05, 0.05, 0.05, 0.80, 0.05, 0.50, 0.05, 0.30, 0.10]);
+  mkJob('knight', 'Knight', 'fat', 'DEFENSE', 'A wall of discipline. Takes the blow, gives it back harder.', { def: 0.12, hp: 0.08 }, [0.25, 0.20, 0.05, 0.40, 0.05, 0.05, 0.25, 0.00, 0.50, 0.10, 0.30, 0.10]);
+  mkJob('assassin', 'Assassin', 'fat', 'CRITICAL STRIKES', 'Strikes where it hurts and is gone. Lives and dies on the critical blow.', { atk: 0.08, stamina: 0.10 }, [0.15, 0.10, 0.45, 0.05, 0.25, 0.00, 0.30, 0.00, 0.10, 0.70, 0.00, 0.20]);
+  mkJob('duelist', 'Duelist', 'fat', 'EVASION AND BLADES', 'Dances around the blow and answers with steel. Precision over power.', { atk: 0.06, stamina: 0.10 }, [0.25, 0.25, 0.20, 0.00, 0.30, 0.00, 0.25, 0.00, 0.85, 0.10, 0.00, 0.05]);
+  mkJob('monk', 'Monk', 'fat', 'BARE HANDS', 'Needs no weapon. Fists, breath and a body that does not tire.', { stamina: 0.15, hp: 0.05 }, [0.30, 0.30, 0.15, 0.10, 0.15, 0.00, 0.40, 0.90, 0.05, 0.00, 0.05, 0.00]);
+  mkJob('ranger', 'Ranger', 'hybrid', 'PIERCING AND MOVEMENT', 'Keeps moving, keeps striking from the gaps. A little magic, a lot of patience.', { atk: 0.05, stamina: 0.10, mana: 0.10 }, [0.35, 0.15, 0.15, 0.05, 0.30, 0.00, 0.30, 0.05, 0.10, 0.75, 0.00, 0.10]);
+  mkJob('mage', 'Mage', 'mana', 'ABILITIES', 'Every fight is a spell. A deep well of mana and the will to spend it.', { mana: 0.25 }, [0.15, 0.05, 0.05, 0.10, 0.05, 0.60, 0.30, 0.45, 0.05, 0.05, 0.05, 0.40]);
+  mkJob('cleric', 'Cleric', 'mana', 'RECOVERY', 'Turns pain into endurance. Mends, shields and outlasts.', { mana: 0.20, hp: 0.06 }, [0.20, 0.05, 0.00, 0.35, 0.05, 0.35, 0.20, 0.30, 0.10, 0.05, 0.50, 0.05]);
+  mkJob('warlock', 'Warlock', 'mana', 'AFFLICTIONS', 'Rot, hexes and slow ruin. Patience as a weapon.', { mana: 0.20, atk: 0.04 }, [0.20, 0.10, 0.05, 0.05, 0.10, 0.50, 0.45, 0.05, 0.05, 0.05, 0.00, 0.85]);
+  mkJob('spellblade', 'Spellblade', 'hybrid', 'BLADE AND SPELL', 'A sword in one hand and a spell in the other. Never one without the other.', { atk: 0.06, mana: 0.12 }, [0.20, 0.20, 0.15, 0.05, 0.05, 0.35, 0.45, 0.05, 0.70, 0.05, 0.05, 0.15]);
+  mkJob('paladin', 'Paladin', 'hybrid', 'HAMMER AND LIGHT', 'Holds the line with hammer and prayer alike.', { def: 0.08, hp: 0.06, mana: 0.10 }, [0.20, 0.20, 0.00, 0.30, 0.00, 0.30, 0.30, 0.05, 0.20, 0.00, 0.70, 0.05]);
+  // hidden jobs: found only by an unusual feat in the trial
+  mkJob('wraithblade', 'Wraithblade', 'hybrid', 'HIDDEN', 'You were never touched. The System noticed something that is not quite a person.', { atk: 0.08, def: 0.04, stamina: 0.08 }, null, true, 'Pass the trial without ever being badly hurt.');
+  mkJob('ascetic', 'Ascetic', 'fat', 'HIDDEN', 'No blade, no spell, no trick: only the body and the will to stand.', { stamina: 0.20, hp: 0.08 }, null, true, 'Pass the trial using only Attack and Defend, bare-handed.');
+  mkJob('bloodbound', 'Bloodbound', 'hybrid', 'HIDDEN', 'You gave everything and then gave more. The System found the price in your blood.', { atk: 0.10, hp: 0.06 }, null, true, 'Pass the trial after collapsing from exhaustion again and again.');
+
+  // ---- signature abilities: [job, level, name, resource, spec] ----
+  function mkJobAbility(job, lv, name, o) {
+    var res = JOBS[job].res, fx = [], bits = [], tags = (o.tags || ['phys']).slice(), total = 0;
+    if (o.dmg) { var e = { k: 'damage', mult: o.dmg }; if (o.hits) e.hits = o.hits; if (o.st) e.status = { id: o.st[0], chance: o.st[1], dur: o.st[2] || 3 }; fx.push(e); total += o.dmg * (o.hits || 1); }
+    if (o.aoe) { fx.push({ k: 'aoe', mult: o.aoe }); total += o.aoe * 1.6; if (o.allSt) fx.push({ k: 'enemyStatus', id: o.allSt[0], dur: o.allSt[1], all: true, chance: 0.9 }); }
+    if (o.enemy) fx.push({ k: 'enemyStatus', id: o.enemy[0], dur: o.enemy[1], chance: 0.9 });
+    if (o.heal) fx.push({ k: 'heal', pct: o.heal });
+    if (o.shield) fx.push({ k: 'shield', pct: o.shield, dur: 3 });
+    if (o.self) fx.push({ k: 'selfStatus', id: o.self[0], dur: o.self[1] });
+    if (o.rest) fx.push({ k: 'fatigue', v: o.rest });
+    if (o.cleanse) fx.push({ k: 'cleanse' });
+    var STN = { atkup: 'Empowered', defup: 'Fortified', haste: 'Haste', regen: 'Regen', weaken: 'Weaken', guardbreak: 'Guard Break', slow: 'Slow', stun: 'Stun', bleed: 'Bleed', burn: 'Burn', poison: 'Poison' };
+    fx.forEach(function (f) {
+      if (f.k === 'damage') bits.push((f.hits ? f.hits + ' strikes of x' + f.mult : 'a blow of x' + f.mult) + ' damage' + (f.status ? ', ' + Math.round(f.status.chance * 100) + '% to inflict ' + (STN[f.status.id] || f.status.id) : ''));
+      else if (f.k === 'aoe') bits.push('hits every enemy for x' + f.mult);
+      else if (f.k === 'enemyStatus') bits.push((f.all ? 'inflicts ' : 'inflicts ') + (STN[f.id] || f.id) + (f.all ? ' on all' : ''));
+      else if (f.k === 'heal') bits.push('heals ' + Math.round(f.pct * 100) + '% HP');
+      else if (f.k === 'shield') bits.push('raises a ' + Math.round(f.pct * 100) + '% HP shield');
+      else if (f.k === 'selfStatus') bits.push('grants ' + (STN[f.id] || f.id) + ' for ' + f.dur + ' turns');
+      else if (f.k === 'fatigue') bits.push('removes ' + f.v + '% fatigue');
+      else if (f.k === 'cleanse') bits.push('cleanses your ailments');
+    });
+    var desc = bits.join('; '); desc = desc.charAt(0).toUpperCase() + desc.slice(1) + '.';
+    var mana = 0, fat = 0, base = Math.round(12 + 11 * Math.max(total, 1.4));
+    if (res === 'mana') { mana = base; fat = o.fat != null ? o.fat : 0; }
+    else if (res === 'hybrid') { mana = Math.round(base * 0.55); fat = o.fat != null ? o.fat : 12; }
+    else { mana = 0; fat = o.fat != null ? o.fat : (total ? 14 + Math.round(total * 3) : 0); }
+    var id = 'j_' + job + '_' + lv;
+    ABILITIES[id] = { id: id, name: name, mana: mana, cd: o.cd || 4, fat: fat, tags: tags, effects: fx, from: JOBS[job].name + ' (level ' + lv + ')', src: job, rank: 'S', role: 'job', desc: desc, job: job, lvReq: lv };
+    JOBS[job].abilities.push(id);
+  }
+  function JA(job, a, b, c) { [a, b, c].forEach(function (o, i) { mkJobAbility(job, JOB_LEVELS[i], o.n, o); }); }
+  JA('fighter', { n: 'Vanguard Strike', dmg: 2.4, cd: 3, tags: ['phys', 'blade'] }, { n: 'Rallying Cry', self: ['atkup', 4], rest: 25, cd: 5, fat: 0 }, { n: "Warlord's Onslaught", dmg: 1.3, hits: 3, cd: 5, tags: ['phys', 'blade'] });
+  JA('berserker', { n: 'Rending Cleave', dmg: 2.6, st: ['bleed', 0.7], cd: 3, tags: ['phys', 'blade'] }, { n: 'Bloodlust Frenzy', dmg: 0.85, hits: 3, self: ['atkup', 3], cd: 5, tags: ['phys', 'power'] }, { n: 'Carnage', dmg: 1.9, hits: 2, st: ['bleed', 0.9], cd: 5, tags: ['phys', 'power'] });
+  JA('knight', { n: 'Shield Bash', dmg: 1.8, st: ['stun', 0.6, 1], cd: 4, tags: ['phys', 'blunt'] }, { n: 'Bulwark Stance', shield: 0.25, self: ['defup', 4], cd: 5, fat: 4 }, { n: 'Judgement Cleave', dmg: 3.4, shield: 0.15, cd: 5, tags: ['phys', 'blade', 'power'] });
+  JA('assassin', { n: 'Vein Slice', dmg: 2.2, st: ['bleed', 0.8], cd: 3, tags: ['phys', 'pierce', 'crit'] }, { n: 'Death Flurry', dmg: 0.7, hits: 4, cd: 4, tags: ['phys', 'pierce', 'crit'] }, { n: 'Execution', dmg: 3.9, cd: 5, tags: ['phys', 'pierce', 'crit'] });
+  JA('duelist', { n: 'Riposte', dmg: 2.0, self: ['defup', 3], cd: 3, tags: ['phys', 'blade'] }, { n: "Fencer's Lunge", dmg: 2.9, cd: 4, tags: ['phys', 'pierce'] }, { n: 'Thousand Cuts', dmg: 0.8, hits: 5, st: ['bleed', 0.6], cd: 5, tags: ['phys', 'blade'] });
+  JA('monk', { n: 'Iron Palm', dmg: 2.3, cd: 3, tags: ['phys', 'blunt'] }, { n: 'Inner Calm', heal: 0.2, rest: 40, cd: 5, fat: 0 }, { n: 'Hundred Fists', dmg: 0.65, hits: 6, cd: 5, tags: ['phys', 'blunt'] });
+  JA('ranger', { n: 'Pinning Shot', dmg: 1.8, st: ['slow', 0.8], cd: 3, tags: ['phys', 'pierce', 'wind'] }, { n: 'Arrow Rain', aoe: 1.5, cd: 4, tags: ['phys', 'pierce', 'wind'] }, { n: 'Heartseeker', dmg: 3.6, enemy: ['weaken', 3], cd: 5, tags: ['phys', 'pierce', 'crit'] });
+  JA('mage', { n: 'Arc Bolt', dmg: 2.5, cd: 3, tags: ['arcane'] }, { n: 'Flame Burst', aoe: 1.7, allSt: ['burn', 3], cd: 4, tags: ['fire', 'arcane'] }, { n: 'Meteor Fall', dmg: 4.0, st: ['burn', 0.9], cd: 6, tags: ['fire', 'arcane'] });
+  JA('cleric', { n: 'Mend', heal: 0.30, cd: 4 }, { n: 'Sanctuary', shield: 0.30, cleanse: true, cd: 5 }, { n: 'Radiant Judgement', dmg: 3.2, heal: 0.15, cd: 5, tags: ['holy'] });
+  JA('warlock', { n: 'Hex of Frailty', dmg: 1.5, enemy: ['weaken', 3], cd: 3, tags: ['shadow', 'arcane'] }, { n: 'Venom Cloud', aoe: 1.2, allSt: ['poison', 4], cd: 5, tags: ['poison'] }, { n: 'Soul Siphon', dmg: 3.0, heal: 0.20, cd: 5, tags: ['shadow'] });
+  JA('spellblade', { n: 'Runic Slash', dmg: 2.4, st: ['burn', 0.7], cd: 3, tags: ['phys', 'blade', 'arcane'] }, { n: 'Arcane Edge', dmg: 2.0, self: ['atkup', 3], cd: 4, tags: ['phys', 'blade', 'arcane'] }, { n: 'Starfall Cut', dmg: 1.3, hits: 3, cd: 5, tags: ['phys', 'blade', 'arcane'] });
+  JA('paladin', { n: 'Smite', dmg: 2.3, cd: 3, tags: ['phys', 'blunt', 'holy'] }, { n: 'Aegis of Dawn', shield: 0.25, self: ['defup', 4], cd: 5, fat: 6 }, { n: 'Divine Wrath', dmg: 3.6, heal: 0.12, cd: 5, tags: ['phys', 'blunt', 'holy'] });
+  JA('wraithblade', { n: 'Phantom Slash', dmg: 2.6, cd: 3, tags: ['phys', 'shadow', 'blade'] }, { n: 'Veil of Nothing', shield: 0.30, self: ['haste', 3], cd: 5, fat: 4 }, { n: 'Oblivion Edge', dmg: 4.2, cd: 6, tags: ['phys', 'shadow', 'blade'] });
+  JA('ascetic', { n: 'Still Mind', rest: 50, self: ['defup', 3], cd: 5, fat: 0 }, { n: 'Empty Hand Strike', dmg: 3.0, st: ['stun', 0.5, 1], cd: 4, tags: ['phys', 'blunt'] }, { n: 'Unmoving Mountain', shield: 0.40, heal: 0.25, rest: 60, cd: 7, fat: 0 });
+  JA('bloodbound', { n: 'Crimson Lash', dmg: 2.6, st: ['bleed', 1.0], cd: 3, tags: ['phys', 'shadow'] }, { n: 'Hemorrhage', dmg: 3.0, heal: 0.12, cd: 4, tags: ['phys', 'shadow'] }, { n: 'Sanguine Tempest', aoe: 2.2, heal: 0.15, cd: 6, tags: ['phys', 'shadow'] });
+  function jobOf(id) { return JOBS[id] || null; }
+  function jobAbilitiesFor(jobId, level) { var j = JOBS[jobId]; if (!j) return []; return j.abilities.filter(function (a) { return ABILITIES[a].lvReq <= level; }); }
+
+  // ---- how a hunter fought: reduce the fight records to a profile, then to a job ----
+  // perf: one object holding the sum of every trial battle's S.stats plus HP data { fights, maxHP, stats:[S.stats...] }.
+  function fightProfile(recs) {
+    var acts = { basic: 0, power: 0, crit: 0, defend: 0, evade: 0, ability: 0, collapse: 0 }, wc = {}, taken = 0, maxHP = 1, minHP = 1, n = 0;
+    (recs || []).forEach(function (r) {
+      var st = r.stats || {}; n++;
+      Object.keys(st.n || {}).forEach(function (k) { acts[k] = (acts[k] || 0) + st.n[k]; });
+      Object.keys(st.wc || {}).forEach(function (k) { wc[k] = (wc[k] || 0) + st.wc[k]; });
+      taken += (st.taken || 0) / Math.max(1, r.maxHP || 1); if (st.minHP != null) minHP = Math.min(minHP, st.minHP); maxHP = r.maxHP || maxHP;
+    });
+    var tot = Math.max(1, acts.basic + acts.power + acts.crit + acts.defend + acts.evade + acts.ability);
+    var atk = Math.max(1, (wc.fist || 0) + Object.keys(wc).filter(function (k) { return k !== 'fist'; }).reduce(function (a, k) { return a + wc[k]; }, 0));
+    function ws() { var s = 0; for (var i = 0; i < arguments.length; i++) s += wc[arguments[i]] || 0; return s / atk; }
+    return {
+      basic: acts.basic / tot, power: acts.power / tot, crit: acts.crit / tot, defend: acts.defend / tot, evade: acts.evade / tot, ability: acts.ability / tot,
+      hurt: clamp(taken / Math.max(1, n), 0, 1), fist: ws('fist'), blade: ws('sword', 'axe'), pierce: ws('spear', 'dagger'), blunt: ws('hammer'), status: ws('serrated', 'flame', 'venom'),
+      minHP: minHP, collapses: acts.collapse || 0, attacks: atk, onlyBasicDefend: (acts.power + acts.crit + acts.evade + acts.ability) === 0
+    };
+  }
+  var JOB_WEIGHT = { basic: 1, power: 1, crit: 1.2, defend: 1.2, evade: 1.2, ability: 1.2, hurt: 0.8, fist: 1, blade: 1, pierce: 1, blunt: 1, status: 1 };
+  function assignJob(recs) {
+    var p = fightProfile(recs);
+    if (p.minHP >= 0.75) return 'wraithblade';
+    if (p.onlyBasicDefend && p.fist >= 0.9 && p.defend > 0) return 'ascetic';
+    if (p.collapses >= 3) return 'bloodbound';
+    var best = null, bs = Infinity;
+    JOB_ORDER.forEach(function (id) {
+      var j = JOBS[id]; if (j.hidden) return;
+      var d = 0; JOB_DIMS.forEach(function (k) { d += JOB_WEIGHT[k] * Math.abs(p[k] - j.ideal[k]); });
+      if (d < bs - 1e-9) { bs = d; best = id; }
+    });
+    return best;
+  }
+  function jobProfileOf(recs) { return fightProfile(recs); }
+
+  // ---- the trial itself: four trial spirits, then the Warden ----
+  var TRIAL = { sp: { D: 5.13, C: 4.2, B: 5.57, A: 4.8, S: 5.76 }, boss: { D: 1.53, C: 0.59, B: 0.62, A: 0.67, S: 0.56 } };   // calibrated: a benchmark hunter at the band's entry level clears each spirit ~90% and the Warden ~50%
+  function trialRankFor(level) { return level >= 475 ? 'S' : (level >= 235 ? 'A' : (level >= 115 ? 'B' : (level >= 55 ? 'C' : 'D'))); }
+  function planTrial(seed, rank) {
+    var T_ = CATALOG.trial, rng = seededRng('trial|' + seed), order = ['knight', 'assassin', 'archer', 'mage'];
+    for (var i = order.length - 1; i > 0; i--) { var j = Math.floor(rng() * (i + 1)); var t = order[i]; order[i] = order[j]; order[j] = t; }
+    var floors = order.map(function (k, i) {
+      var d = CATALOG.byId[T_[k]];
+      return { n: i + 1, type: 'wave', trial: true, enemies: [{ arch: d.role, rank: rank, id: d.id, name: d.name, fam: 'T', trial: true }] };
+    });
+    var w = CATALOG.byId[T_.guardian];
+    floors.push({ n: 5, type: 'boss', trial: true, enemies: [{ arch: 'boss', rank: rank, id: w.id, name: w.name, fam: 'T', trial: true, trialBoss: true }] });
+    return { rank: rank, seed: String(seed), floors: floors, floorCount: floors.length };
+  }
+
+
   var API = {
     HORDE: HORDE, COMMON_K: COMMON_K, RED: RED,
     T: T, planGate: planGate, buildEnemy: buildEnemy, gateLevelsEarned: gateLevelsEarned, threat: threat, GATE_PLAN: GATE_PLAN, GATE_LEVELS: GATE_LEVELS, GATE_GOLD: GATE_GOLD, OFF_RANK: OFF_RANK, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
@@ -3274,7 +3429,7 @@
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
     policy: policy, simulate: simulate, aliveEnemies: aliveEnemies,
-    TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
+    TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, JOBS: JOBS, JOB_ORDER: JOB_ORDER, JOB_LEVELS: JOB_LEVELS, JOB_QUEST_LEVEL: JOB_QUEST_LEVEL, JOB_RES: JOB_RES, JOB_DIMS: JOB_DIMS, jobOf: jobOf, jobAbilitiesFor: jobAbilitiesFor, assignJob: assignJob, fightProfile: fightProfile, planTrial: planTrial, TRIAL: TRIAL, trialRankFor: trialRankFor, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -3651,7 +3806,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-gates-s9b';
+  var APP_VERSION = '2026-10-12-combat-ui';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -3807,6 +3962,7 @@
     var ok = false;
     try { localStorage.setItem(LEVEL_KEY, String(hunterLevel)); ok = true; } catch (e) { ok = false; }
     if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
+    try { if (typeof Abil !== 'undefined' && Abil && Abil.syncJob) Abil.syncJob(true); if (typeof JobQuest !== 'undefined' && JobQuest) JobQuest.refresh(); } catch (e) {}
   }
   var hunterLevel = loadLevel();
 
@@ -5367,7 +5523,7 @@
           '<div class="status-line"><b>TITLE</b><span>' + (buffs.title ? escapeHtml(buffs.title) : 'NONE') + '</span></div>' +
           '<div class="status-line"><b>EVALUATED</b><span>' + escapeHtml(evaluated) + '</span></div>' +
         '</div>' +
-        '<div class="assess-row"><button class="assess-btn" id="assessOpenBtn">◉ HUNTER EVALUATION</button></div>' +
+        '<div class="assess-row"><button class="assess-btn" id="assessOpenBtn">◉ HUNTER EVALUATION</button></div>' + (JobQuest.eligible() ? '<div class="assess-row"><button class="assess-btn" id="jobQuestStatBtn" style="border-color:#ffd76a;color:#ffd76a;">✦ JOB CHANGE QUEST</button></div>' : '') +
         '<div class="stats-level-sub">' + fmt(total) + ' TOTAL STAT POINTS</div>' +
       '</div>';
 
@@ -5446,6 +5602,8 @@
     }
     var assessBtn = document.getElementById('assessOpenBtn');
     if (assessBtn) assessBtn.addEventListener('click', openAssessmentFlow);
+    var jqBtn = document.getElementById('jobQuestStatBtn');
+    if (jqBtn) jqBtn.addEventListener('click', function() { document.getElementById('statsOverlay').classList.remove('show'); JobQuest.open(); });
     refreshAssessButton();
   }
 
@@ -5566,13 +5724,13 @@
   function combatStatsHtml() {
     var C = window.SystemCombat;
     if (!C) return '';
-    var ds = C.deriveStats(stats, hunterLevel, {});
+    var ds = C.deriveStats(stats, hunterLevel, mergeJobBonus({}));
     var sp = C.spendCharges(power), bonus = C.chargeBonus(sp.spent);
     var rows = [
       ['HP', ds.maxHP], ['ATTACK', ds.atk], ['DEFENSE', ds.def], ['ENDURANCE', ds.maxStamina],
       ['MANA', ds.maxMana], ['SPEED', ds.speed], ['CRIT', Math.round(ds.crit * 1000) / 10 + '%'], ['EVASION', Math.round(ds.evasion * 1000) / 10 + '%']
     ];
-    var html = '<div class="stats-section-title"><span>COMBAT POWER</span></div><div class="stats-today panel"><div class="cs-grid">' +
+    var html = jobCardHtml() + '<div class="stats-section-title"><span>COMBAT POWER</span></div><div class="stats-today panel"><div class="cs-grid">' +
       rows.map(function(r) { return '<div class="status-line"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="stats-note">Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets endurance (how slowly attacks tire you) and mana, AGI sets speed, crit and evasion.</div></div>';
     html += '<div class="stats-section-title"><span>GATE ENERGY</span></div>' + energyCardHtml(false);
@@ -7215,6 +7373,23 @@
     return { grant: grant, carried: carried, carriedCount: carriedCount, nameOf: nameOf, def: def, openArmory: openArmory, renderShopTab: renderShopTab, renderInvTab: renderInvTab, owned: function() { clean(); return data.owned.slice(); } };
   })();
 
+  // ---- Job helpers -------------------------------------------------------------------
+  function jobDef() { var C0 = window.SystemCombat; return (C0 && C0.jobOf && hunterProfile.job) ? C0.jobOf(hunterProfile.job) : null; }
+  function mergeJobBonus(b) {
+    var o = {}; Object.keys(b || {}).forEach(function(k) { o[k] = b[k]; });
+    var j = jobDef(); if (j) Object.keys(j.bonus).forEach(function(k) { o[k] = (o[k] || 0) + j.bonus[k]; });
+    return o;
+  }
+  var BONUS_NAMES = { atk: 'ATTACK', def: 'DEFENSE', hp: 'HP', stamina: 'ENDURANCE', mana: 'MANA' };
+  function jobBonusText(j) { return Object.keys(j.bonus).map(function(k) { return '+' + Math.round(j.bonus[k] * 100) + '% ' + BONUS_NAMES[k]; }).join(' &middot; '); }
+  function jobCardHtml() {
+    var j = jobDef(), C0 = window.SystemCombat; if (!j) return '';
+    var abil = j.abilities.map(function(id) { var a = C0.abilities[id], ok = hunterLevel >= a.lvReq; return '<div class="status-line"><b>LV ' + a.lvReq + '</b><span' + (ok ? '' : ' style="opacity:.55"') + '>' + (ok ? escapeHtml(a.name) : 'LOCKED') + '</span></div>'; }).join('');
+    return '<div class="stats-section-title"><span>JOB</span></div><div class="stats-today panel"><div class="stats-today-line">' + escapeHtml(j.name).toUpperCase() + ' &middot; ' + escapeHtml(j.tag) + '</div>' +
+      '<div class="stats-note" style="text-align:left;">' + escapeHtml(j.desc) + '</div><div class="cs-grid">' +
+      '<div class="status-line"><b>RESOURCE</b><span>' + escapeHtml(C0.JOB_RES[j.res]) + '</span></div><div class="status-line"><b>PASSIVE</b><span>' + jobBonusText(j) + '</span></div>' + abil + '</div></div>';
+  }
+
   // ---- Abilities ---------------------------------------------------------------------
   // Special abilities are learned from rare elites and bosses (and from Anomalies in System and Red gates).
   // Up to four are equipped for battle. Job abilities will join this list once a job is assigned.
@@ -7236,7 +7411,18 @@
       if (typeof updateSaveStatus === 'function') updateSaveStatus(ok);
     }
     // Drop ids the engine does not know (e.g. from a restored backup of a different version).
-    function valid() { var A = (C() && C().abilities) || {}; data.owned = data.owned.filter(function(i) { return A[i]; }); data.loadout = data.loadout.filter(function(i) { return data.owned.indexOf(i) >= 0; }).slice(0, MAXSLOTS); }
+    function valid() { var A = (C() && C().abilities) || {}; data.owned = data.owned.filter(function(i) { return A[i]; }); data.loadout = data.loadout.filter(function(i) { return data.owned.indexOf(i) >= 0; }).slice(0, MAXSLOTS); jobSync(true); }
+    // Job abilities arrive on their own once the hunter is old enough (levels 50, 70 and 100).
+    var syncing = false;
+    function jobSync(announce) {
+      var j = hunterProfile.job; if (!j || !C() || !C().jobAbilitiesFor || syncing) return;
+      syncing = true;
+      var ids = C().jobAbilitiesFor(j, hunterLevel), added = [];
+      ids.forEach(function(id) { if (data.owned.indexOf(id) < 0) { data.owned.push(id); added.push(id); if (data.loadout.length < MAXSLOTS) data.loadout.push(id); } });
+      syncing = false;
+      if (added.length) { save(); if (announce) { try { showToast('NEW JOB ABILITY: ' + added.map(function(id) { return C().abilities[id].name; }).join(', ') + '.'); } catch (e) {} } }
+    }
+    function usesMana() { var A = (C() && C().abilities) || {}; return data.loadout.some(function(id) { return A[id] && A[id].mana > 0; }); }
     function defOf(id) { return (C().abilities || {})[id]; }
     function grant(id) {
       valid();
@@ -7260,12 +7446,18 @@
       A.forEach(function(id) {
         var d = defOf(id), on = data.loadout.indexOf(id) >= 0, col = (GATE_INFO[d.rank] || {}).color || '#c7cdd6';
         html += '<div class="ab-card' + (on ? ' on' : '') + '" style="--rc:' + col + '"><div class="ab-top"><div class="ab-name">' + escapeHtml(d.name) + '</div><div class="ab-rank">' + d.rank + '-RANK</div></div>' +
-          '<div class="ab-from">LEARNED FROM ' + escapeHtml(d.from).toUpperCase() + '</div>' +
+          '<div class="ab-from">' + (d.job ? 'JOB ABILITY &middot; ' : 'LEARNED FROM ') + escapeHtml(d.from).toUpperCase() + '</div>' +
           '<div class="ab-desc">' + escapeHtml(d.desc) + '</div>' +
-          '<div class="ab-meta">' + manaNow(d) + ' MANA &middot; COOLDOWN ' + d.cd + (d.fat ? ' &middot; +' + d.fat + '% FATIGUE' : '') + '</div>' +
+          '<div class="ab-meta">' + (d.mana ? manaNow(d) + ' MANA' : 'NO MANA') + ' &middot; COOLDOWN ' + d.cd + (d.fat ? ' &middot; +' + d.fat + '% FATIGUE' : '') + '</div>' +
           '<button class="' + (on ? 'stash-btn' : 'use-btn') + ' ab-btn" data-ab="' + id + '"' + (!on && full ? ' disabled' : '') + '>' + (on ? 'UNEQUIP' : (full ? 'LOADOUT FULL' : 'EQUIP')) + '</button></div>';
       });
-      html += '<div class="stats-section-title"><span>JOB ABILITIES</span></div><div class="stats-note">None. They arrive once a job is assigned.</div>';
+      var jb = C().jobOf && hunterProfile.job ? C().jobOf(hunterProfile.job) : null;
+      html += '<div class="stats-section-title"><span>JOB ABILITIES</span></div>';
+      if (!jb) html += '<div class="stats-note">None. They arrive once the System assigns you a job (Job Change Quest, level ' + C().JOB_QUEST_LEVEL + ').</div>';
+      else {
+        var locked = jb.abilities.filter(function(id) { return data.owned.indexOf(id) < 0; });
+        html += locked.length ? locked.map(function(id) { return '<div class="stats-note" style="text-align:left;">&#128274; LOCKED &middot; REQUIRES LEVEL ' + defOf(id).lvReq + '</div>'; }).join('') : '<div class="stats-note">All three of your job abilities are learned.</div>';
+      }
       $('abBody').innerHTML = html;
     }
     function open() { render(); $('abOverlay').classList.add('show'); }
@@ -7283,7 +7475,7 @@
         '<div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="abOpenBtn">MANAGE ABILITIES</button></div></div>';
     }
     document.addEventListener('click', function(e) { if (e.target && e.target.id === 'abOpenBtn') open(); });
-    return { grant: grant, loadout: loadout, owned: owned, nameOf: nameOf, defOf: defOf, open: open, summaryHtml: summaryHtml };
+    return { syncJob: jobSync, usesMana: usesMana, grant: grant, loadout: loadout, owned: owned, nameOf: nameOf, defOf: defOf, open: open, summaryHtml: summaryHtml };
   })();
 
   // ---- Battle screen -----------------------------------------------------------------
@@ -7293,7 +7485,7 @@
   var Battle = (function() {
     var KEY = 'the-system-battle';
     var cur = null, handlers = {}, fleeArm = 0, subOpen = false, locked = false;
-    var V = null, busy = false, actingUid = null, fast = false;   // V = what the screen shows while a round plays out step by step
+    var V = null, busy = false, actingUid = null, fast = false, prevPct = {};   // V = what the screen shows while a round plays out step by step
     function SS() { return V || cur.S; }
     function $(id) { return document.getElementById(id); }
     function esc(s) { return String(s).replace(/[&<>"]/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -7410,21 +7602,26 @@
       return chips.length ? '<div class="bt-chips">' + chips.join('') + '</div>' : '';
     }
     function renderField() {
-      var S = SS(), alive = [];
+      var S = SS(), alive = [], nextPct = {};
       S.enemies.forEach(function(e, i) { if (e.alive) alive.push([e, i]); });
       if (cur.sel == null || !S.enemies[cur.sel] || !S.enemies[cur.sel].alive) cur.sel = alive.length ? alive[0][1] : null;
       var html = '<div class="bt-grid' + (alive.length === 1 ? ' one' : '') + '">' + alive.map(function(p) {
-        var e = p[0], i = p[1], pct = Math.max(0, Math.round(e.hp / e.maxHP * 100));
+        var e = p[0], i = p[1], pct = Math.max(0, Math.round(e.hp / e.maxHP * 100)); nextPct[e.uid] = pct;
         var role = e.boss ? 'boss' : (e.role || 'grunt');
         return '<div class="bt-card' + (i === cur.sel ? ' sel' : '') + (e.boss ? ' boss' : '') + (e.uid === actingUid ? ' acting' : '') + '" data-i="' + i + '" data-uid="' + e.uid + '" style="--rc:' + rankColor(e.rank) + '">' +
           '<div class="bt-chead">' + icon(role) + '<div style="min-width:0"><div class="bt-name">' + esc(e.name) + '</div><div class="bt-sub">' + (e.boss ? 'BOSS' : (e.role === 'elite' ? 'ELITE' : (e.anom ? 'ANOMALY' : 'LV ' + e.level))) + ' &middot; ' + e.rank + '-RANK</div></div></div>' +
-          '<div class="bt-bar"><i style="width:' + pct + '%"></i></div><div class="bt-num"><span>HP</span><span>' + Math.ceil(e.hp) + ' / ' + e.maxHP + '</span></div>' +
+          '<div class="bt-bar bt-ebar"><u style="width:' + (prevPct[e.uid] != null ? prevPct[e.uid] : pct) + '%" data-to="' + pct + '"></u><i style="width:' + (prevPct[e.uid] != null ? prevPct[e.uid] : pct) + '%" data-to="' + pct + '"></i></div><div class="bt-num bt-enum"><span>HP</span><span>' + Math.ceil(e.hp) + ' / ' + e.maxHP + '</span></div>' +
           intentHtml(S, e) + chipsHtml(S, e) + '</div>';
       }).join('') + '</div>';
       var wait = (S.reserve || []).length;
       if (wait) html += '<div class="bt-more">+ ' + wait + ' MORE APPROACHING</div>';
       $('btField').innerHTML = html;
       $('btField').classList.toggle('etur', actingUid != null);
+      prevPct = nextPct;
+      requestAnimationFrame(function() { requestAnimationFrame(function() {
+        var bars = document.querySelectorAll('#btField .bt-ebar > i, #btField .bt-ebar > u');
+        for (var k = 0; k < bars.length; k++) bars[k].style.width = bars[k].getAttribute('data-to') + '%';
+      }); });
     }
     function barRow(label, cls, v, max) {
       return '<div class="bt-me-row"><span>' + label + '</span><div class="bt-bar ' + cls + '"><i style="width:' + Math.max(0, Math.min(100, v / max * 100)) + '%"></i></div><span>' + Math.ceil(v) + '/' + Math.round(max) + '</span></div>';
@@ -7434,7 +7631,7 @@
       var ft = C().fatigueTier(P), fchip = ft === 2 ? '<span class="bt-chip bad">EXHAUSTED &middot; LOSES NEXT TURN</span>' : (ft === 1 ? '<span class="bt-chip bad">TIRED</span>' : '');
       var st = fchip + Object.keys(P.st || {}).map(function(id) { return '<span class="bt-chip ' + (BAD[id] ? 'bad' : 'good') + '">' + (SN[id] || id).toUpperCase() + '</span>'; }).join('');
       var fat = '<div class="bt-me-row"><span>FATIGUE</span><div class="bt-bar fat"><i style="width:' + Math.max(0, Math.min(100, P.fatigue)) + '%"></i></div><span>' + Math.round(P.fatigue) + '%</span></div>';
-      var mana = (P.abilities && P.abilities.length) ? barRow('MANA', 'mana', P.mana, P.maxMana) : '';
+      var mana = (P.abilities || []).some(function(id) { var a0 = C().abilities[id]; return a0 && a0.mana > 0; }) ? barRow('MANA', 'mana', P.mana, P.maxMana) : '';
       $('btMe').innerHTML = barRow('HP', 'hpgood', P.hp, P.maxHP) + fat + mana + (st ? '<div class="bt-chips">' + st + '</div>' : '');
     }
     function actBtn(id, cls, label, sub, ok) {
@@ -7448,7 +7645,7 @@
       var html = '';
       if (subOpen) {
         html += '<div class="bt-sub-panel">' + abil.map(function(a) {
-          return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? a.cost + ' MANA' : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA'), a.ok && !over);
+          return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? ((a.cost ? a.cost + ' MANA' : '') + (a.fat ? (a.cost ? ' &middot; ' : '') + '+' + a.fat + '% FATIGUE' : '') || 'FREE') : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA'), a.ok && !over);
         }).join('') + '</div>' + actBtn('back', '', 'BACK', '', true);
       } else {
         var Pl = S.player, F = Pl.fatigue;
@@ -7615,6 +7812,7 @@
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
       var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [] });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies });
+      prevPct = {};
       cur = { v: 1, wsel: (o.weapons && o.weapons.length) ? o.weapons[0].id : null, kind: o.kind || 'practice', title: o.title || 'BATTLE', S: S, known: o.known || {}, sel: null, meta: o.meta || null, noFlee: !!o.noFlee, fleeLabel: o.fleeLabel, fleeConfirm: o.fleeConfirm, doneLabel: o.doneLabel, note: o.note || '' };
       save(); show(true);
     }
@@ -7678,9 +7876,9 @@
       function row(l, c, v, mx, txt) { return '<div class="bt-me-row"><span>' + l + '</span><div class="bt-bar ' + c + '"><i style="width:' + Math.max(0, Math.min(100, v / mx * 100)) + '%"></i></div><span>' + txt + '</span></div>'; }
       return row('HP', 'hpgood', hp, P.maxHP, Math.round(hp) + '/' + Math.round(P.maxHP)) + row('FATIGUE', 'fat', fat, 100, Math.round(fat) + '%') + (hasMana() ? row('MANA', 'mana', mana, P.maxMana, Math.round(mana) + '/' + Math.round(P.maxMana)) : '');
     }
-    function hasMana() { return Abil.loadout().length > 0; }   // the mana bar only shows once you carry an ability
+    function hasMana() { return Abil.usesMana(); }   // the mana bar only shows once you carry an ability
     function playerFor(bonus) {
-      var ds = C().deriveStats(stats, hunterLevel, bonus || {});
+      var ds = C().deriveStats(stats, hunterLevel, mergeJobBonus(bonus));
       return C().makePlayer(ds, { name: 'YOU' });
     }
     function pips(plan, run) {
@@ -7756,7 +7954,7 @@
       hide();
       Battle.open({
         kind: 'gate', title: gateLabel(g) + (g.breach ? '' : '') + ' \u00b7 FLOOR ' + (run.floor + 1) + '/' + plan.floorCount,
-        stats: stats, level: hunterLevel, power: run.bonus, hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
+        stats: stats, level: hunterLevel, power: mergeJobBonus(run.bonus), hp: run.hp, fatigue: run.fat || 0, mana: run.mana, abilities: Abil.loadout(), weapons: Wpn.carried(),
         enemies: enemies, seed: gateSeed(g) + '|f' + run.floor + '|a' + run.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
         noFlee: !!e.trapped, fleeLabel: 'RETREAT', meta: { gateId: g.id, floor: run.floor }
       });
@@ -7838,15 +8036,132 @@
     function boot() {
       var e = gateEntry;
       if (e && e.run) {
-        var ok = Battle.resume(function(o) { return o.kind === 'gate' && o.meta && o.meta.gateId === e.gateId && e.run.stage === 'fight' && o.meta.floor === e.run.floor; });
+        var ok = Battle.resume(function(o) { return (o.kind === 'trial' && JobQuest.active()) || o.kind === 'gate' && o.meta && o.meta.gateId === e.gateId && e.run.stage === 'fight' && o.meta.floor === e.run.floor; });
         if (!ok) { if (e.run.stage === 'fight') { e.run.stage = 'ready'; persist(); } show(); }
       } else {
-        Battle.resume(function() { return false; });
+        Battle.resume(function(o) { return o.kind === 'trial' && JobQuest.active(); });
         if (e && !gateById(e.gateId)) { gateEntry = null; persist(); }
       }
     }
     return { show: show, boot: boot, recoveringMs: recoveringMs, fmtMs: fmtMs };
   })();
+
+  // ---- Job Change Quest ---------------------------------------------------------------
+  // At hunter level 40 the System offers a trial: four trial spirits and the Warden. You recover fully between
+  // fights. How you fight (what you attack with, how often you defend or evade, what you carry) decides the one
+  // job you are given. It is assigned once and never changed. Falling only sends you back to the first spirit.
+  var JobQuest = (function() {
+    var KEY = 'the-system-trial', FLAG = 'the-system-jobq';
+    var st = load(), armLeave = false;
+    function C() { return window.SystemCombat; }
+    function $(id) { return document.getElementById(id); }
+    function load() {
+      try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && typeof o.floor === 'number' && Array.isArray(o.recs) && /^(ready|fight|done)$/.test(o.stage) && typeof o.seed === 'string') return o; } catch (e) {}
+      return null;
+    }
+    function save() { if (restoring) return; try { if (st) localStorage.setItem(KEY, JSON.stringify(st)); else localStorage.removeItem(KEY); } catch (e) {} }
+    function eligible() { return !!C() && hunterLevel >= C().JOB_QUEST_LEVEL && !hunterProfile.job; }
+    function active() { return !!st && st.stage === 'fight'; }
+    function plan() { return C().planTrial(st.seed, C().trialRankFor(st.level || hunterLevel)); }
+    function refresh() {
+      var b = $('jobQuestOpenBtn'); if (!b) return;
+      var el = eligible() || (st && st.stage === 'done');
+      b.style.display = el ? '' : 'none';
+      if (eligible()) { var f = null; try { f = localStorage.getItem(FLAG); } catch (e) {} if (!f) { try { localStorage.setItem(FLAG, '1'); } catch (e) {} setTimeout(function() { showToast('The System has issued a JOB CHANGE QUEST. Find it on the main screen.'); }, 0); } }
+    }
+    function bars() {
+      var ds = C().deriveStats(stats, hunterLevel, mergeJobBonus({}));
+      return '<div class="bt-me-row"><span>HP</span><div class="bt-bar hpgood"><i style="width:100%"></i></div><span>' + Math.round(ds.maxHP) + '/' + Math.round(ds.maxHP) + '</span></div>';
+    }
+    function pips(p) {
+      return '<div class="run-pips">' + p.floors.map(function(f, i) { var cls = i < st.floor ? ' done' : (i === st.floor ? ' now' : ''); if (f.type === 'boss') cls += ' boss'; return '<span class="run-pip' + cls + '">' + (f.type === 'boss' ? 'B' : (i + 1)) + '</span>'; }).join('') + '</div>';
+    }
+    function kit() { return '<div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="jqAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="jqWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button></div>'; }
+    function show() {
+      if (!st) return;
+      var html = '', title = 'JOB CHANGE QUEST';
+      $('runCloseBtn').style.display = 'none';
+      if (st.stage === 'done') {
+        var j = C().jobOf(st.result.job), hid = j.hidden;
+        html = '<div class="run-card run-res"><h2 class="win" style="' + (hid ? 'color:#ffd76a;text-shadow:0 0 16px #ffd76a;' : '') + '">' + (hid ? 'HIDDEN JOB' : 'JOB ASSIGNED') + '</h2><div class="run-rank" style="color:#ffd76a;text-shadow:0 0 18px #ffd76a;font-size:34px;">' + escapeHtml(j.name).toUpperCase() + '</div><div class="run-sub">' + escapeHtml(j.tag) + '</div>' +
+          '<div class="run-text">' + escapeHtml(j.desc) + '</div>' + (hid ? '<div class="run-text" style="opacity:.8;">Feat: ' + escapeHtml(j.hint) + '</div>' : '') +
+          '<div class="run-lines" style="text-align:left;margin-top:10px;">RESOURCE <b>' + escapeHtml(C().JOB_RES[j.res]) + '</b><br>PASSIVE <b>' + jobBonusText(j) + '</b><br>' +
+          j.abilities.map(function(id) { var a = C().abilities[id]; return 'LEVEL ' + a.lvReq + ' <b>' + escapeHtml(a.name) + '</b>' + (hunterLevel >= a.lvReq ? ' (learned)' : ''); }).join('<br>') + '</div>' +
+          '<div class="stats-note" style="margin-top:8px;">Your job is permanent. Its abilities arrive at hunter levels 50, 70 and 100.</div></div>' +
+          '<div class="loot-decision-row"><button class="use-btn" id="jqDoneBtn">ACCEPT</button></div>';
+        title = 'JOB CHANGE QUEST';
+      } else {
+        var p = plan();
+        if (st.floor === 0 && !st.msg) {
+          html = '<div class="run-card"><div class="run-rank" style="color:#ffd76a;text-shadow:0 0 18px #ffd76a;">&#10022;</div><div class="run-name">JOB CHANGE QUEST</div><div class="run-sub">THE SYSTEM WILL JUDGE HOW YOU FIGHT</div>' +
+            '<div class="run-text">Four trial spirits, then the Warden of Trials. You recover fully between fights. The way you fight decides the one job the System gives you, and it is never changed. What you attack with and what you carry both count.</div>' +
+            '<div style="margin-top:10px">' + bars() + '</div><div class="run-warn">If you fall, the trial starts again from the first spirit. Nothing is lost.</div></div>' +
+            '<div class="loot-decision-row"><button class="use-btn" id="jqBeginBtn">BEGIN</button><button class="stash-btn" id="jqLeaveBtn">NOT YET</button></div>' + kit();
+        } else {
+          html = '<div class="run-card"><div class="run-name" style="color:#ffd76a;">' + (p.floors[st.floor].type === 'boss' ? 'THE WARDEN AWAITS' : 'TRIAL ' + (st.floor + 1) + ' OF 4') + '</div><div class="run-sub">' + (p.floors[st.floor].type === 'boss' ? 'FINAL TRIAL' : 'NEXT SPIRIT') + '</div>' + pips(p) +
+            (st.msg ? '<div class="run-text" style="margin-top:8px;">' + escapeHtml(st.msg) + '</div>' : '') + '<div style="margin-top:10px">' + bars() + '</div></div>' +
+            '<div class="loot-decision-row"><button class="use-btn" id="jqBeginBtn">' + (st.floor === 0 ? 'TRY AGAIN' : 'ADVANCE') + '</button><button class="stash-btn" id="jqLeaveBtn">' + (armLeave ? 'SURE? ABANDON' : 'ABANDON') + '</button></div>' + kit();
+        }
+        $('runCloseBtn').style.display = '';
+      }
+      $('runTitle').textContent = title; $('runBody').innerHTML = html;
+      ['gateOverlay', 'gateDetailOverlay'].forEach(function(id) { $(id).classList.remove('show'); });
+      $('runOverlay').classList.add('show');
+    }
+    function open() {
+      if (!eligible() && !(st && st.stage === 'done')) return;
+      if (gateEntry) { showToast('Leave the gate you are in before the System tests you.'); return; }
+      if (!st) { st = { stage: 'ready', floor: 0, seed: String(Math.floor(Math.random() * 1e9)), recs: [], att: 0, level: hunterLevel, msg: '' }; save(); }
+      if (st.stage === 'fight') { if (!Battle.resume(function(o) { return o.kind === 'trial'; })) { st.stage = 'ready'; save(); show(); } return; }
+      show();
+    }
+    function advance() {
+      var p = plan(), f = p.floors[st.floor]; if (!f) return;
+      var enemies = f.enemies.map(function(sp) { return C().buildEnemy(sp, { vsRank: p.rank, hunterLevel: hunterLevel }); });
+      st.stage = 'fight'; armLeave = false; save();
+      $('runOverlay').classList.remove('show');
+      Battle.open({
+        kind: 'trial', title: 'JOB CHANGE QUEST · ' + (f.type === 'boss' ? 'THE WARDEN' : 'TRIAL ' + (st.floor + 1) + '/4'),
+        stats: stats, level: hunterLevel, power: {}, abilities: Abil.loadout(), weapons: Wpn.carried(),
+        enemies: enemies, seed: 'trial|' + st.seed + '|' + st.floor + '|' + st.att, name: hunterDisplayName ? hunterDisplayName() : 'YOU',
+        noFlee: false, fleeLabel: 'ABANDON', meta: { floor: st.floor }
+      });
+    }
+    function reset(msg) { st.stage = 'ready'; st.floor = 0; st.recs = []; st.att = (st.att || 0) + 1; st.msg = msg || ''; armLeave = false; save(); }
+    function onBattle(r) {
+      if (!st || st.stage !== 'fight') return;
+      if (r.fled || r.result === 'fled') { reset('You abandoned the trial. It begins again from the first spirit when you are ready.'); show(); return; }
+      if (r.result === 'victory') {
+        st.recs.push({ stats: JSON.parse(JSON.stringify(r.S.stats || {})), maxHP: r.S.player.maxHP });
+        st.floor += 1;
+        if (st.floor >= 5) {
+          var job = C().assignJob(st.recs);
+          hunterProfile.job = job; saveHunter();
+          st.stage = 'done'; st.result = { job: job }; save();
+          try { Abil.syncJob(false); } catch (e) {}
+          refresh(); show(); return;
+        }
+        st.stage = 'ready'; st.msg = (st.floor === 4 ? 'The spirits fall silent. Only the Warden remains.' : 'TRIAL ' + st.floor + ' CLEARED. You catch your breath.') ; save(); show(); return;
+      }
+      reset('The trial casts you out. Nothing is lost. The first spirit waits.'); show();
+    }
+    $('runBody').addEventListener('click', function(ev) {
+      var id = ev.target && ev.target.id; if (!id || id.indexOf('jq') !== 0 || !st) return;
+      if (id === 'jqBeginBtn') advance();
+      else if (id === 'jqLeaveBtn') {
+        if (st.stage === 'ready' && st.floor === 0 && !st.msg) { $('runOverlay').classList.remove('show'); return; }
+        if (!armLeave) { armLeave = true; show(); setTimeout(function() { if (armLeave) { armLeave = false; if (st && st.stage === 'ready' && $('runOverlay').classList.contains('show')) show(); } }, 3000); return; }
+        reset(''); armLeave = false; $('runOverlay').classList.remove('show');
+      }
+      else if (id === 'jqAbBtn') Abil.open();
+      else if (id === 'jqWpBtn') Wpn.openArmory();
+      else if (id === 'jqDoneBtn') { st = null; save(); $('runOverlay').classList.remove('show'); refresh(); try { if ($('statsOverlay').classList.contains('show')) renderStatsScreen(); } catch (e) {} showToast('The System has assigned your job.'); }
+    });
+    Battle.on('trial', onBattle);
+    var ob = $('jobQuestOpenBtn'); if (ob) ob.addEventListener('click', open);
+    return { open: open, active: active, eligible: eligible, refresh: refresh };
+  })();
+  JobQuest.refresh();
   Run.boot();
 
   function startNewQuestDay() {
