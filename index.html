@@ -3806,7 +3806,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-combat-ui';
+  var APP_VERSION = '2026-10-12-map-icons';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -6604,6 +6604,8 @@
   // ---- Map zoom and pan ----------------------------------------------------------
   var MAP_W = 600, MAP_H = 260, MAP_MIN_W = 16;
   var gateView = { x: 0, y: 0, w: MAP_W, h: MAP_H };
+  // Gate icons: a bit larger than the labels, and they grow gently as you zoom in (capped).
+  function gateIconScale(w) { return 1.25 * Math.min(2.2, 1 + 0.35 * Math.log(MAP_W / w) / Math.LN2); }
   var gateMapEffW = 0;   // how many screen pixels wide the whole map is drawn (measured after rendering)
 
   function clampGateView() {
@@ -6618,6 +6620,16 @@
   function applyGateView() {
     var svg = document.querySelector('#gateMapWrap svg');
     if (svg) svg.setAttribute('viewBox', gateView.x.toFixed(2) + ' ' + gateView.y.toFixed(2) + ' ' + gateView.w.toFixed(2) + ' ' + gateView.h.toFixed(2));
+    // Between full redraws the markers were sized for the width they were drawn at. Counter-scale
+    // them so they hold their on-screen size while a pinch or drag is in progress.
+    if (svg && svg._drawnW) {
+      var k = (gateView.w / svg._drawnW) * (gateIconScale(gateView.w) / gateIconScale(svg._drawnW));
+      var ms = svg.querySelectorAll('.gate-marker');
+      for (var i = 0; i < ms.length; i++) {
+        var t = ms[i].getAttribute('data-pos');
+        if (t) ms[i].setAttribute('transform', 'translate(' + t + ') scale(' + k.toFixed(4) + ')');
+      }
+    }
   }
 
   // Discrete zoom/pan actions (buttons, wheel clicks, tapping a city) rebuild the
@@ -6738,6 +6750,7 @@
     var pointers = {};
     var drag = null;
     var pinch = null;
+    var gestured = false;   // a pinch or real drag happened since the last full redraw
 
     function pointerList() { return Object.keys(pointers).map(function(k) { return pointers[k]; }); }
 
@@ -6777,6 +6790,7 @@
         gateView.x = pinch.center.x - relX * gateView.w;
         gateView.y = pinch.center.y - relY * gateView.h;
         clampGateView();
+        gestured = true;
         applyGateView();
       } else if (drag && list.length === 1) {
         var dxPix = e.clientX - drag.startClientX;
@@ -6786,6 +6800,7 @@
         // to a city) or trigger the end-of-gesture label refresh below.
         if (!drag.moved && (Math.abs(dxPix) > 4 || Math.abs(dyPix) > 4)) drag.moved = true;
         if (!drag.moved) return;
+        gestured = true;
         gateView.x = drag.startView.x - dxPix / drag.rect.width * gateView.w;
         gateView.y = drag.startView.y - dyPix / drag.rect.height * gateView.h;
         clampGateView();
@@ -6801,10 +6816,10 @@
       // here so the browser's native 'click' event can still land on it —
       // rebuilding the map before 'click' fires would remove the very element
       // that was tapped, silently swallowing taps like "zoom to this city".
-      var wasInteracting = (drag && drag.moved) || !!pinch;
+      var wasInteracting = gestured || (drag && drag.moved) || !!pinch;
       if (list.length < 2) pinch = null;
       if (list.length === 0) {
-        drag = null;
+        drag = null; gestured = false;
         if (wasInteracting) renderGateMap();
       }
     }
@@ -6855,23 +6870,25 @@
     var zoomScale = MAP_W / gateView.w;
     var pxPerUnit = (gateMapEffW || wrap.clientWidth || 300) / gateView.w;
     function u(px) { return px / pxPerUnit; }
+    var mk = gateIconScale(gateView.w);
+    function um(px) { return px * mk / pxPerUnit; }
     var markers = gates.map(function(g) {
       var p = projectGate(g);
       var c = gateColor(g);
       var inside = gateEntry && gateEntry.gateId === g.id;
-      var r = u(g.special ? 9 : (6 + GATE_RANKS.indexOf(g.rank)));
+      var r = um(g.special ? 9 : (6 + GATE_RANKS.indexOf(g.rank)));
       var isB = !!g.breach;
-      var sw = u(1.5);
-      var glow = u(5).toFixed(2);
-      var dash = u(2.6).toFixed(2);
+      var sw = um(1.5);
+      var glow = um(5).toFixed(2);
+      var dash = um(2.6).toFixed(2);
       var rankText = ((!g.special || isB) && zoomScale >= 2)
-        ? '<text class="gate-rank" x="' + (r + u(5)).toFixed(2) + '" y="' + u(3.5).toFixed(2) + '" style="font-size:' + u(10).toFixed(2) + 'px;fill:' + c + '" pointer-events="none">' + g.rank + '</text>'
+        ? '<text class="gate-rank" x="' + (r + um(5)).toFixed(2) + '" y="' + um(3.5).toFixed(2) + '" style="font-size:' + um(10).toFixed(2) + 'px;fill:' + c + '" pointer-events="none">' + g.rank + '</text>'
         : '';
-      return '<g class="gate-marker' + (g.special ? ' special' : '') + (isB ? ' breach' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
-        '<circle class="gate-halo" r="' + (r + u(7)).toFixed(2) + '" fill="' + c + '" opacity="0.16" pointer-events="none"></circle>' +
-        '<circle class="gate-ring" r="' + (r + u(3.4)).toFixed(2) + '" fill="none" stroke="' + c + '" stroke-width="' + sw.toFixed(2) + '" stroke-dasharray="' + dash + ' ' + dash + '" opacity="0.85" pointer-events="none"></circle>' +
+      return '<g class="gate-marker' + (g.special ? ' special' : '') + (isB ? ' breach' : '') + '" data-gate-id="' + g.id + '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')" data-pos="' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + '">' +
+        '<circle class="gate-halo" r="' + (r + um(7)).toFixed(2) + '" fill="' + c + '" opacity="0.16" pointer-events="none"></circle>' +
+        '<circle class="gate-ring" r="' + (r + um(3.4)).toFixed(2) + '" fill="none" stroke="' + c + '" stroke-width="' + sw.toFixed(2) + '" stroke-dasharray="' + dash + ' ' + dash + '" opacity="0.85" pointer-events="none"></circle>' +
         '<circle class="core" r="' + r.toFixed(2) + '" fill="' + c + '" stroke="#04060f" stroke-width="' + sw.toFixed(2) + '" style="filter: drop-shadow(0 0 ' + glow + 'px ' + c + ')"></circle>' +
-        (inside ? '<circle r="' + (r + u(4)).toFixed(2) + '" fill="none" stroke="#fff" stroke-width="' + sw.toFixed(2) + '" pointer-events="none"></circle>' : '') +
+        (inside ? '<circle r="' + (r + um(4)).toFixed(2) + '" fill="none" stroke="#fff" stroke-width="' + sw.toFixed(2) + '" pointer-events="none"></circle>' : '') +
         rankText +
       '</g>';
     }).join('');
@@ -6965,6 +6982,7 @@
         '<text class="gate-map-title" style="font-size:' + titleFont + 'px" x="300" y="150" text-anchor="middle">KANSAS</text>' +
         cities + markers +
       '</svg></div>';
+    var drawnSvg = wrap.querySelector && wrap.querySelector('svg'); if (drawnSvg) drawnSvg._drawnW = gateView.w;
     if (wrap.querySelector && !renderGateMap.measuring) {
       var svgEl = wrap.querySelector('svg');
       // Layout size, not getBoundingClientRect: the window opens with a scale animation, and a
