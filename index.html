@@ -919,6 +919,10 @@
   .ge-costs { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.03em; line-height: 1.5; }
   .ge-line { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.16em; text-align: center; color: #d8c4ff; text-shadow: 0 0 10px rgba(178,139,255,0.9); margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(125,192,255,0.2); text-transform: uppercase; }
   .loot-decision-row button:disabled, .use-btn:disabled { opacity: 0.4; }
+  .plan-pips { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 2px; }
+  .plan-pip { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700; border: 1px solid rgba(125,192,255,0.55); color: #a9dcff; background: rgba(5,16,52,0.7); }
+  .plan-pip.elite { border-color: rgba(255,154,61,0.8); color: #ffb472; }
+  .plan-pip.boss { border-color: rgba(255,59,92,0.9); color: #ff8a9c; box-shadow: 0 0 8px rgba(255,59,92,0.5); }
   .cs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
   .cs-grid .status-line { font-size: 12px; }
   .codex-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -1828,6 +1832,94 @@
     return { spent: spent, left: left };
   }
 
+
+  // ---------- Gate generator ----------
+  // A gate is a run of floors: waves of common enemies, then elite(s), then the boss.
+  // The layout is a pure function of (rank, seed): the same gate always has the same floors.
+  var GATE_PLAN = {
+    E: { waves: 2, size: [2, 3], elites: 1 },
+    D: { waves: 3, size: [2, 3], elites: 1 },
+    C: { waves: 4, size: [3, 3], elites: 1 },
+    B: { waves: 5, size: [3, 4], elites: 2 },
+    A: { waves: 6, size: [3, 4], elites: 2 },
+    S: { waves: 7, size: [4, 4], elites: 3 }
+  };
+  var GATE_LEVELS = { E: 1, D: 2, C: 3, B: 5, A: 8, S: 15 };
+  var GATE_GOLD = { E: [10, 25], D: [20, 50], C: [40, 100], B: [80, 200], A: [150, 400], S: [300, 800] };
+  var OFF_RANK = { below: 0.04, above: 0.015 };    // per wave slot: a stray from the rank below / above
+  var WAVE_MIX = [['grunt', 4], ['skirmisher', 2.2], ['brute', 1.4], ['caster', 1.6], ['guardian', 1.1]];
+  var EST = { perWaveEnemy: 2.4, elite: 20, boss: 30, secPerRound: 5, secPerFloor: 12 };
+
+  function seededRng(seed) {
+    var st = { rs: hashSeed(seed) || 1 };
+    return function () { return rnd(st); };
+  }
+  function pickMix(rng, allowHeavy) {
+    var pool = WAVE_MIX.filter(function (m) { return allowHeavy || (m[0] !== 'brute' && m[0] !== 'guardian' && m[0] !== 'caster'); });
+    var tot = pool.reduce(function (a, m) { return a + m[1]; }, 0), x = rng() * tot;
+    for (var i = 0; i < pool.length; i++) { x -= pool[i][1]; if (x <= 0) return pool[i][0]; }
+    return pool[0][0];
+  }
+  function planGate(rank, seed) {
+    var cfg = GATE_PLAN[rank] || GATE_PLAN.E, rng = seededRng('gate|' + rank + '|' + seed);
+    var idx = RANK_ORDER.indexOf(rank);
+    var floors = [], eliteAt = {};
+    // Elites sit between waves, evenly spread; the last elite always comes right before the boss.
+    for (var e = 1; e < cfg.elites; e++) eliteAt[Math.round(cfg.waves * e / cfg.elites)] = true;
+    var elitesPlaced = 0;
+    function eliteFloor() {
+      var spec = [{ arch: 'elite', rank: rank }];
+      if (idx >= 3 && rng() < 0.3) spec.push({ arch: rng() < 0.5 ? 'grunt' : 'skirmisher', rank: rank });
+      floors.push({ type: 'elite', enemies: spec }); elitesPlaced++;
+    }
+    for (var w = 1; w <= cfg.waves; w++) {
+      var n = cfg.size[0] + Math.floor(rng() * (cfg.size[1] - cfg.size[0] + 1));
+      var spec = [], heavy = 0;
+      for (var k = 0; k < n; k++) {
+        var allowHeavy = w > 1 && heavy < 2;
+        var arch = pickMix(rng, allowHeavy);
+        if (arch === 'brute' || arch === 'guardian') heavy++;
+        var er = rank, off = null, r = rng();
+        if (r < OFF_RANK.above && idx < 5) { er = RANK_ORDER[idx + 1]; off = 'above'; }
+        else if (r < OFF_RANK.above + OFF_RANK.below && idx > 0) { er = RANK_ORDER[idx - 1]; off = 'below'; }
+        spec.push(off ? { arch: arch, rank: er, off: off } : { arch: arch, rank: er });
+      }
+      floors.push({ type: 'wave', enemies: spec });
+      if (eliteAt[w] && elitesPlaced < cfg.elites - 1) eliteFloor();
+    }
+    while (elitesPlaced < cfg.elites) eliteFloor();
+    floors.push({ type: 'boss', enemies: [{ arch: 'boss', rank: rank }] });
+    floors.forEach(function (f, i) { f.n = i + 1; });
+    var rounds = 0;
+    floors.forEach(function (f) { rounds += f.type === 'wave' ? EST.perWaveEnemy * f.enemies.length : (f.type === 'elite' ? EST.elite : EST.boss); });
+    var secs = rounds * EST.secPerRound + floors.length * EST.secPerFloor, mid = secs / 60;
+    return {
+      rank: rank, seed: String(seed), floors: floors, floorCount: floors.length,
+      estRounds: Math.round(rounds), estMinutes: [Math.max(1, Math.round(mid * 0.75)), Math.max(2, Math.round(mid * 1.3))],
+      levels: GATE_LEVELS[rank], gold: GATE_GOLD[rank].slice()
+    };
+  }
+  // Builds a real combatant from a plan spec, tuned to the hunter who is about to fight it.
+  function buildEnemy(spec, ctx) {
+    ctx = ctx || {};
+    return makeEnemy(spec.arch, spec.rank, { vsRank: ctx.vsRank, hunterLevel: ctx.hunterLevel, name: spec.name, id: spec.id });
+  }
+  // Levels earned: a full clear pays the rank's full reward; falling part-way pays a share of 60%.
+  function gateLevelsEarned(rank, floorsCleared, floorCount, won) {
+    var full = GATE_LEVELS[rank] || 0;
+    if (won) return full;
+    return Math.round(full * 0.6 * clamp(floorsCleared / Math.max(1, floorCount), 0, 1));
+  }
+  // How the gate looks to this hunter, for the gate window.
+  function threat(gateRank, hunterRank) {
+    var d = RANK_ORDER.indexOf(gateRank) - RANK_ORDER.indexOf(hunterRank);
+    if (d <= -2) return { key: 'trivial', label: 'TRIVIAL' };
+    if (d === -1) return { key: 'easy', label: 'EASY' };
+    if (d === 0) return { key: 'fair', label: 'CHALLENGING' };
+    if (d === 1) return { key: 'deadly', label: 'DEADLY' };
+    return { key: 'suicidal', label: 'SUICIDAL' };
+  }
+
   // ---------- player ----------
   // stats: {STR,VIT,END,AGI}  bonus (Quest Power charges): {atk,def,hp,mana,stamina} as fractions (0.1 = +10%)
   function deriveStats(stats, level, bonus) {
@@ -2396,7 +2488,7 @@
   }
 
   var API = {
-    T: T, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
+    T: T, planGate: planGate, buildEnemy: buildEnemy, gateLevelsEarned: gateLevelsEarned, threat: threat, GATE_PLAN: GATE_PLAN, GATE_LEVELS: GATE_LEVELS, GATE_GOLD: GATE_GOLD, OFF_RANK: OFF_RANK, QP: QP, GATE_ENERGY: GATE_ENERGY, gateCost: gateCost, chargeBonus: chargeBonus, spendCharges: spendCharges, TUNE: TUNE, RANK_ANCHOR: RANK_ANCHOR, HUNTER_REF: HUNTER_REF, STATUS_NAMES: STATUS_NAMES, ARCH: ARCH,
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
@@ -2775,7 +2867,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-11-combat-s3b';
+  var APP_VERSION = '2026-10-11-combat-s4';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5353,6 +5445,7 @@
       special: false,
       lat: spot.lat, lon: spot.lon,
       createdAt: Date.now(),
+      seed: String(Math.floor(Math.random() * 1e9)),
       secretRed: Math.random() < GATE_RED_CHANCE
     };
   }
@@ -5366,6 +5459,7 @@
       byKey: true,        // opened by redeeming a Gate Key: the only way a System-Exclusive gate may exist
       lat: spot.lat, lon: spot.lon,
       createdAt: Date.now(),
+      seed: String(Math.floor(Math.random() * 1e9)),
       secretRed: false
     };
   }
@@ -5916,6 +6010,32 @@
     return days > 0 ? days + 'd ' + hours + 'h' : hours + 'h';
   }
 
+  // ---- Gate plans --------------------------------------------------------------------
+  // Every gate is a fixed run of floors decided by its seed. Older gates without a seed get one
+  // derived from their id, so they look the same every time they are opened.
+  function gateSeed(g) { return g.seed != null ? String(g.seed) : String(g.id); }
+  function hunterGateRank() { return hunterProfile.rank || 'E'; }
+  // System-Exclusive gates have no fixed rank: they open one rank above the hunter.
+  function gateEffectiveRank(g) {
+    if (g.rank) return g.rank;
+    var order = ['E', 'D', 'C', 'B', 'A', 'S'];
+    var i = order.indexOf(hunterGateRank());
+    return order[Math.min(5, (i < 0 ? 0 : i) + 1)];
+  }
+  function gatePlanFor(g) { return window.SystemCombat.planGate(gateEffectiveRank(g), gateSeed(g)); }
+  function planPipsHtml(plan) {
+    return '<div class="plan-pips">' + plan.floors.map(function(f) {
+      var t = f.type === 'wave' ? 'W' : (f.type === 'elite' ? 'E' : 'B');
+      return '<span class="plan-pip ' + f.type + '" title="Floor ' + f.n + '">' + t + '</span>';
+    }).join('') + '</div>';
+  }
+  function planSummary(plan) {
+    var waves = plan.floors.filter(function(f) { return f.type === 'wave'; }).length;
+    var elites = plan.floors.filter(function(f) { return f.type === 'elite'; }).length;
+    return plan.floorCount + ' floors &middot; ' + waves + ' wave' + (waves === 1 ? '' : 's') + ' &middot; ' + elites + ' elite' + (elites === 1 ? '' : 's') + ' &middot; 1 boss';
+  }
+  var THREAT_COLORS = { trivial: '#7f93b3', easy: '#3dffb0', fair: '#ffd76a', deadly: '#ff9a3d', suicidal: '#ff3b5c' };
+
   function openGateDetail(id) {
     selectedGateId = id;
     var g = gateById(id);
@@ -5927,11 +6047,18 @@
     var inside = gateEntry && gateEntry.gateId === g.id;
     var someoneElseInside = gateEntry && gateEntry.gateId !== g.id;
 
+    var plan = gatePlanFor(g);
+    var thr = window.SystemCombat.threat(plan.rank, hunterGateRank());
     var meta = '<div class="gate-detail-meta">' +
       '<b>STATUS:</b> ' + (inside ? 'YOU ARE INSIDE' : 'UNCLEARED') + '<br>' +
-      '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared<br>' +
+      '<b>THREAT:</b> <span style="color:' + THREAT_COLORS[thr.key] + ';">' + thr.label + '</span> <span style="opacity:.7;">for ' + ('EAS'.indexOf(hunterGateRank()) >= 0 ? 'an ' : 'a ') + hunterGateRank() + '-rank hunter</span><br>' +
+      '<b>LAYOUT:</b> ' + planSummary(plan) + planPipsHtml(plan) +
+      '<b>ESTIMATED TIME:</b> ' + plan.estMinutes[0] + '&ndash;' + plan.estMinutes[1] + ' min<br>' +
       '<b>ENTRY COST:</b> ' + (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')') + '<br>' +
-      (g.special ? '<b>ORIGIN:</b> opened by a System Gate Key' : '<b>CLEAR REWARD:</b> roughly ' + info.levels + ' level' + (info.levels === 1 ? '' : 's') + ', scaled by the boss and how many enemies fall') +
+      '<b>REWARD:</b> up to ' + plan.levels + ' level' + (plan.levels === 1 ? '' : 's') + ' &middot; ' + plan.gold[0] + '&ndash;' + plan.gold[1] + ' gold<br>' +
+      '<span style="opacity:.75;">Falling part-way still pays a share of the reward.</span><br>' +
+      '<b>BREAKS IN:</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared' +
+      (g.special ? '<br><b>ORIGIN:</b> opened by a System Gate Key' : '') +
       '</div>';
 
     var actions;
