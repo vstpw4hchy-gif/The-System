@@ -1433,7 +1433,7 @@
   @keyframes redFlicker { 0%, 100% { filter: brightness(1) drop-shadow(0 0 7px #ff1030); } 9% { filter: brightness(1.8) drop-shadow(0 0 14px #ff6a80); } 14% { filter: brightness(.9) drop-shadow(0 0 6px #ff1030); } 52% { filter: brightness(1.35) drop-shadow(0 0 12px #ff3a58); } 57% { filter: brightness(1.9) drop-shadow(0 0 16px #ffc0cc); } 63% { filter: brightness(1) drop-shadow(0 0 7px #ff1030); } }
   @keyframes auraPulse { 0% { transform: scale(.75); opacity: .7; } 100% { transform: scale(1.5); opacity: 0; } }
   /* Level-up window: shown over everything, wherever you are in the app. */
-  #lvlUpPop { position: fixed; left: 50%; top: 16%; z-index: 9999; transform: translateX(-50%); pointer-events: none; opacity: 0; }
+  #lvlUpPop { position: fixed; left: 50%; top: 50%; z-index: 9999; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; }
   #lvlUpPop.show { animation: lvlPopWrap 1.5s ease-out forwards; }
   #lvlUpPop .lu-box { position: relative; min-width: 200px; max-width: 86vw; padding: 9px 18px 8px; text-align: center; background: rgba(4,14,34,.58); border: 1px solid rgba(124,196,255,.7); box-shadow: 0 0 16px rgba(80,160,255,.4), inset 0 0 14px rgba(60,130,255,.15); }
   #lvlUpPop .lu-box::before, #lvlUpPop .lu-box::after { content: ''; position: absolute; width: 9px; height: 9px; border: 2px solid rgba(255,255,255,.85); }
@@ -1442,7 +1442,7 @@
   #lvlUpPop .lu-sys { font-size: 9px; letter-spacing: .3em; color: var(--cyan); }
   #lvlUpPop .lu-msg { white-space: nowrap; margin-top: 4px; font-size: 13px; letter-spacing: .08em; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(120,190,255,.9); }
   #lvlUpPop .lu-lv { margin-top: 4px; font-size: 11px; letter-spacing: .14em; color: #bfe0ff; } #lvlUpPop .lu-lv b { color: #ffe58a; font-size: 13px; text-shadow: 0 0 8px rgba(255,210,90,.8); }
-  @keyframes lvlPopWrap { 0% { opacity: 0; transform: translateX(-50%) scale(.85); } 14% { opacity: 1; transform: translateX(-50%) scale(1.04); } 24% { transform: translateX(-50%) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1.02); } }
+  @keyframes lvlPopWrap { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); } 24% { transform: translate(-50%, -50%) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.02); } }
   .gate-lore { margin: 10px 0 4px; text-align: left; font-size: 12.5px; }
   .gate-lore .gl-row { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid rgba(125,192,255,.15); }
   .gate-lore .gl-row b { flex: 0 0 74px; font-size: 10.5px; letter-spacing: .14em; color: var(--cyan); }
