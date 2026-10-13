@@ -1747,6 +1747,24 @@
   .dboss-float { position: absolute; right: 18px; top: 40px; font-weight: 800; font-size: 22px; color: #ff6a6a; text-shadow: 0 0 8px #000; pointer-events: none; animation: dbFloat 1s ease-out forwards; }
   .dboss-float.big { color: #ffd76a; font-size: 28px; }
   @keyframes dbFloat { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-34px); } }
+
+  .train { margin: 10px 0; padding: 10px 12px; border: 1px solid #2e5a8a; background: linear-gradient(180deg, rgba(15,35,70,0.55), rgba(8,10,25,0.6)); border-radius: 10px; }
+  .train-h { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 2px; opacity: 0.9; cursor: pointer; }
+  .train-item { margin-top: 8px; padding: 8px 10px; border: 1px solid #25406a; border-radius: 8px; background: rgba(0,0,0,0.25); font-size: 12px; line-height: 1.5; }
+  .train-item b { color: #ffd76a; }
+  .train-item.done { border-color: #4be39a; opacity: 0.75; }
+  .train-btns { display: flex; gap: 6px; margin-top: 6px; }
+  .train-btns button { flex: 1; }
+  .train-timer { font-size: 22px; font-weight: 800; letter-spacing: 2px; text-align: center; margin-top: 4px; color: #7ad7ff; }
+
+  .bt-qte { grid-column: 1 / -1; border: 1px solid #ffd76a; border-radius: 8px; padding: 8px; margin-bottom: 6px; background: rgba(255,215,106,0.08); animation: qtePulse 0.8s ease-in-out infinite; }
+  .bt-qte-cue { font-weight: 800; letter-spacing: 1px; color: #ffd76a; text-align: center; font-size: 14px; }
+  .bt-qte-bar { height: 5px; background: #2a2440; border-radius: 3px; margin: 6px 0; overflow: hidden; }
+  .bt-qte-bar i { display: block; height: 100%; background: #ffd76a; width: 100%; animation-name: qteBar; animation-timing-function: linear; animation-fill-mode: forwards; }
+  .bt-qte-row { display: flex; gap: 6px; }
+  .bt-qte-row button { flex: 1; padding: 10px 4px; font-weight: 700; }
+  @keyframes qteBar { from { width: 100%; } to { width: 0%; } }
+  @keyframes qtePulse { 0%,100% { box-shadow: 0 0 0 rgba(255,215,106,0); } 50% { box-shadow: 0 0 14px rgba(255,215,106,0.6); } }
 </style>
 </head>
 <body>
@@ -1777,6 +1795,7 @@
   <div class="status-banner panel" id="banner"></div>
 
   <div id="dbossCard"></div>
+  <div id="trainCard"></div>
 
   <section class="block">
     <div class="quest-window panel">
@@ -2376,7 +2395,7 @@
     S.player = opts.player;
     // Optional play-feel systems (combos, break meter, limit break, boss mechanics, counterplay). Off in simulations and
     // calibration so those stay valid; the app turns them on for real fights.
-    if (opts.features) { S.feat = opts.features === true ? { combo: 1, brk: 1, lim: 1, boss: 1, cp: 1 } : JSON.parse(JSON.stringify(opts.features)); S.lim = 0; S.prev = null; S.chain = []; S.spam = { k: null, n: 0 }; }
+    if (opts.features) { S.feat = opts.features === true ? { combo: 1, brk: 1, lim: 1, boss: 1, cp: 1, qte: 1 } : JSON.parse(JSON.stringify(opts.features)); S.lim = 0; S.prev = null; S.chain = []; S.spam = { k: null, n: 0 }; }
     S.reserve = [];
     S.allies = (opts.allies || []).map(function (d, i) { return normAlly(d, i); });   // shadow allies: only a Necromancer ever brings any
     (opts.enemies || []).forEach(function (d) { if (S.enemies.length < T.maxEnemiesAlive) S.enemies.push(normEnemy(d, S)); else S.reserve.push(JSON.parse(JSON.stringify(d))); });
@@ -2502,7 +2521,7 @@
 
   // player basic-type hit
   // ---------- play-feel systems: combos, reactions, break meter, limit break ----------
-  var FT = { counter: 1.15, counterCrit: 1.3, riposte: 1.25, triple: 1.35, opening: 1.2, broken: 1.2, brkBoss: 14, brkElite: 18, brkMid: 22, brkLow: 28, limMul: 1.0, limFill: 0.8, limDmg: 0.5, limHeal: 0.3, arenaPct: 50, miasma: 0.005, kill: 2.2, markMul: 1.25, ember: 1.05, killEvery: 5, markEvery: 4, arenaForce: -1, gloomCrit: 0.75, gloomDodge: 0.05 };
+  var FT = { qteChance: 0.16, qteLimit: 8, sealRounds: 2, counter: 1.15, counterCrit: 1.3, riposte: 1.25, triple: 1.35, opening: 1.2, broken: 1.2, brkBoss: 14, brkElite: 18, brkMid: 22, brkLow: 28, limMul: 1.0, limFill: 0.8, limDmg: 0.5, limHeal: 0.3, arenaPct: 50, miasma: 0.005, kill: 2.2, markMul: 1.25, ember: 1.05, killEvery: 5, markEvery: 4, arenaForce: -1, gloomCrit: 0.75, gloomDodge: 0.05 };
   function gainLimit(S, n) { if (S && S.feat && S.feat.lim) S.lim = Math.min(100, (S.lim || 0) + n * FT.limFill * ((S.rules && S.rules.limMul) || 1)); }
   // Sequence combos for the hunter's next weapon attack. Returns { name, mult } or null.
   function comboFor(S, type) {
@@ -2565,6 +2584,12 @@
       var m = h % 100;
       e.mech = m < 40 ? 'killmove' : (m < 75 ? 'mark' : null);
       if (!S.arena && ((h >>> 8) % 100) < FT.arenaPct) S.arena = ARENAS[FT.arenaForce >= 0 ? FT.arenaForce : (h >>> 16) % ARENAS.length];
+      // rule-changing phases: the battlefield shifts, or your techniques are sealed
+      if (S.feat && S.feat.boss && !e.rulePh) {
+        e.rulePh = true;
+        if (((h >>> 4) % 100) < 35) e.phases.push({ at: 0.6, kind: 'arena', arena: (h >>> 20) % ARENAS.length, msg: 'The battlefield SHIFTS around the boss!' });
+        if (((h >>> 12) % 100) < 35) e.phases.push({ at: 0.4, kind: 'seal', rounds: FT.sealRounds, msg: 'The boss SEALS your techniques! No Power Strike, abilities or Limit Break for ' + FT.sealRounds + ' rounds.' });
+      }
     });
   }
   function bossMove(S, e) {
@@ -2636,6 +2661,8 @@
         if (ph.kind === 'berserk') addStatus(e, 'berserk', 999, 0);
         else if (ph.kind === 'shield') addStatus(e, 'shield', 999, r1(e.maxHP * (ph.pct || 0.15)));
         else if (ph.kind === 'heal') healUnit(ev, e, e.maxHP * (ph.pct || 0.1));
+        else if (ph.kind === 'arena') { var na = ARENAS[ph.arena % ARENAS.length]; if (S.arena && S.arena.id === na.id) na = ARENAS[(ph.arena + 1) % ARENAS.length]; S.arena = na; ev.push({ t: 'arena', id: na.id, name: na.name, desc: na.desc }); }
+        else if (ph.kind === 'seal') { S.seal = (ph.rounds || FT.sealRounds) + 1; }
         else if (ph.kind === 'summon') {
           (ph.spawn || []).forEach(function (d) {
             if (aliveEnemies(S).length >= T.maxEnemiesAlive) return;
@@ -2708,7 +2735,35 @@
       var mc = manaCost(P, ab), ok = P.mana >= mc && cd <= 0;
       add('ability', ab.name, mc, ok, cd > 0 ? 'cooldown' : (P.mana < mc ? 'mana' : ''), { id: id, cd: cd, fat: ab.fat ? Math.max(1, Math.round(ab.fat * fatMult(P))) : 0 });
     });
+    if (S.seal > 0) out.forEach(function (l) { if (l.type === 'power' || l.type === 'ability' || l.type === 'limit') { l.ok = false; l.why = 'sealed'; } });
     return out;
+  }
+
+  // ---------- ambush moments ----------
+  // Now and then an enemy tips its hand. Read the cue and answer it for a boon; ignore it and nothing is lost.
+  var QTE_CUES = [
+    { id: 'dodge', cue: 'It lunges low and fast!', label: 'DODGE', fx: 'Blur for 3 turns (+20% dodge)' },
+    { id: 'brace', cue: 'It rears back to smash down!', label: 'BRACE', fx: 'a 12% HP shield and Fortified for 2 turns' },
+    { id: 'counter', cue: 'Its guard drops wide open!', label: 'COUNTER', fx: 'Keen and Empowered (crit chance and attack up) for 3 and 2 turns' }
+  ];
+  function rollQte(S) {
+    if (!S.feat || !S.feat.qte || S.qte || S.over || !aliveEnemies(S).length) return;
+    if (rnd(S) >= FT.qteChance) return;
+    var c = QTE_CUES[Math.floor(rnd(S) * QTE_CUES.length) % QTE_CUES.length];
+    S.qte = { id: c.id, cue: c.cue, round: S.round + 1 };
+  }
+  function qteAnswer(S, id) {
+    var ev = [], q = S.qte; if (!q || S.over) return ev;
+    S.qte = null;
+    var P = S.player, ok = q.id === id;
+    ev.push({ t: 'qte', ok: ok, id: id, right: q.id });
+    if (ok) {
+      if (q.id === 'dodge') addStatus(P, 'blur', 3, 0);
+      else if (q.id === 'brace') { addStatus(P, 'shield', 3, r1(P.maxHP * 0.12)); addStatus(P, 'defup', 2, 0); }
+      else { addStatus(P, 'keen', 3, 0); addStatus(P, 'atkup', 2, 0); }
+      gainLimit(S, 8);
+    } else addStatus(P, 'weaken', 1, 0);
+    return ev;
   }
 
   // ---------- effects from abilities / items ----------
@@ -2925,7 +2980,8 @@
     if (S.over) return [];
     var ev = [], P = S.player;
     var a = sanitise(S, action);
-    if (a.downgraded) ev.push({ t: 'illegal', msg: 'Not enough resource — Basic Attack used.' });
+    S.qte = null;
+    if (a.downgraded) ev.push({ t: 'illegal', msg: S.seal > 0 && action && (action.type === 'power' || action.type === 'ability' || action.type === 'limit') ? 'Your techniques are sealed — Basic Attack used.' : 'Not enough resource — Basic Attack used.' });
 
     S.round++;
     // a collapsed hunter cannot act this round
@@ -3031,6 +3087,7 @@
       Object.keys(e.mcd).forEach(function (k) { if (e.mcd[k] > 0) e.mcd[k]--; });
     });
     Object.keys(S.cd).forEach(function (k) { if (S.cd[k] > 0) S.cd[k]--; });
+    if (S.seal > 0) S.seal--;
     if (S.feat) {
       S.enemies.forEach(function (e) { if (e.brkImmune > 0) e.brkImmune--; });
       gainLimit(S, 1);
@@ -3052,6 +3109,7 @@
     P.mana = Math.min(P.maxMana, P.mana + Math.max(1, Math.round(T.manaRegen * manaScale(P.level))));
     if (S.round >= T.roundHardCap) { S.over = 'defeat'; S.timeout = true; return; }
     pickIntents(S);
+    rollQte(S);
   }
 
   // ---------- enemy templates scaled to a rank ----------
@@ -4332,7 +4390,7 @@
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
-    policy: policy, simulate: simulate, opening: opening, EQUIP: EQUIP, EQ_SLOTS: EQ_SLOTS, EQ_SLOT_NAMES: EQ_SLOT_NAMES, EQ_CLOTHING_MAX: EQ_CLOTHING_MAX, eqDef: eqDef, shopEquip: shopEquip, lootEquip: lootEquip, equipTotals: equipTotals, applyFoeMods: applyFoeMods, eqText: eqText, combatUse: combatUse, describeCombat: describeCombat, ITEM_COMBAT: ITEM_COMBAT, isFast: isFast, FT: FT, equipSets: equipSets, RELICS: RELICS, relicOffer: relicOffer, limitInfo: limitInfo, ROOMS: ROOMS, forkOptions: forkOptions, resolveRoom: resolveRoom, MERCHANT: MERCHANT, moveInfo: moveInfo, SPECIAL_TXT: SPECIAL_TXT, fxText: fxText, stTxt: stNameTxt, ST_GIST: ST_GIST, ST_NAME: ST_NAME, RIVALS: RIVALS, rivalFor: rivalFor, rivalEnemy: rivalEnemy, relicEffects: relicEffects, comboHint: comboHint, ARENAS: ARENAS, LIMITS: LIMITS, limitDef: limitDef, aliveEnemies: aliveEnemies, aliveAllies: aliveAllies,
+    policy: policy, simulate: simulate, opening: opening, EQUIP: EQUIP, EQ_SLOTS: EQ_SLOTS, EQ_SLOT_NAMES: EQ_SLOT_NAMES, EQ_CLOTHING_MAX: EQ_CLOTHING_MAX, eqDef: eqDef, shopEquip: shopEquip, lootEquip: lootEquip, equipTotals: equipTotals, applyFoeMods: applyFoeMods, eqText: eqText, combatUse: combatUse, describeCombat: describeCombat, ITEM_COMBAT: ITEM_COMBAT, isFast: isFast, FT: FT, equipSets: equipSets, RELICS: RELICS, relicOffer: relicOffer, qteAnswer: qteAnswer, QTE_CUES: QTE_CUES, limitInfo: limitInfo, ROOMS: ROOMS, forkOptions: forkOptions, resolveRoom: resolveRoom, MERCHANT: MERCHANT, moveInfo: moveInfo, SPECIAL_TXT: SPECIAL_TXT, fxText: fxText, stTxt: stNameTxt, ST_GIST: ST_GIST, ST_NAME: ST_NAME, RIVALS: RIVALS, rivalFor: rivalFor, rivalEnemy: rivalEnemy, relicEffects: relicEffects, comboHint: comboHint, ARENAS: ARENAS, LIMITS: LIMITS, limitDef: limitDef, aliveEnemies: aliveEnemies, aliveAllies: aliveAllies,
     TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, JOBS: JOBS, JOB_ORDER: JOB_ORDER, JOB_LEVELS: JOB_LEVELS, JOB_QUEST_LEVEL: JOB_QUEST_LEVEL, JOB_RES: JOB_RES, JOB_DIMS: JOB_DIMS, jobOf: jobOf, SHADOW: SHADOW, extractChance: extractChance, makeShadow: makeShadow, deployShadow: deployShadow, shadowPower: shadowPower, shadowActive: shadowActive, canExtract: canExtract, jobAbilitiesFor: jobAbilitiesFor, assignJob: assignJob, fightProfile: fightProfile, planTrial: planTrial, TRIAL: TRIAL, trialRankFor: trialRankFor, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
@@ -4370,6 +4428,51 @@
     return '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ICON_PATHS[name] || '') + '</svg></span>';
   }
 
+
+  // ---- History: the record of what you actually did ---------------------------------------
+  // Feeds the journal, the trophy room, the collections, the weekly review and the license card.
+  var Hist = (function() {
+    var KEY = 'the-system-hist', d = load();
+    function load() {
+      var o = null; try { o = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+      if (!o || typeof o !== 'object') o = {};
+      o.days = o.days || {}; o.log = Array.isArray(o.log) ? o.log : []; o.trophies = Array.isArray(o.trophies) ? o.trophies : [];
+      o.coll = o.coll || {}; ['st', 'cb', 'rx', 'gear', 'wcls', 'claimed', 'hidden'].forEach(function(k) { if (!Array.isArray(o.coll[k])) o.coll[k] = []; });
+      o.tot = o.tot || { gates: 0, falls: 0 }; o.weeklySeen = o.weeklySeen || null;
+      return o;
+    }
+    function save() { if (restoring) return; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+    function today() { var k = todayKey(); return d.days[k] || (d.days[k] = { r: [0, 0, 0, 0], clr: 0, boss: 0, gates: 0, side: 0, rest: 0 }); }
+    function prune() { var ks = Object.keys(d.days).sort(); while (ks.length > 120) delete d.days[ks.shift()]; }
+    function log(kind, txt) {
+      var last = d.log[0]; if (last && last.t === txt && Date.now() - last.ts < 60000) return;
+      d.log.unshift({ ts: Date.now(), k: kind, t: txt }); if (d.log.length > 250) d.log.length = 250; save();
+    }
+    function trophy(o) {
+      if (d.trophies.some(function(t) { return t.day === o.day && t.id === o.id && t.src === o.src; })) return;
+      d.trophies.unshift(o); if (d.trophies.length > 300) d.trophies.length = 300; save();
+    }
+    function mark(kind, id) { var a = d.coll[kind]; if (a.indexOf(id) < 0) { a.push(id); save(); try { Records.checkColl(); } catch (e) {} } }
+    var EXI = ['ex-pushups', 'ex-situps', 'ex-squats', 'ex-run'];
+    function sync() {
+      var t = today(), changed = false, prevClr = t.clr;
+      EXI.forEach(function(id, i) {
+        var v = +(state.values[id] || 0);
+        if (v !== t.r[i]) {
+          var best = 0; Object.keys(d.days).forEach(function(k) { if (k !== todayKey() && d.days[k].r[i] > best) best = d.days[k].r[i]; });
+          if (best >= 10 && t.r[i] <= best && v > best) log('record', 'NEW RECORD: ' + v + ' ' + ({ 'ex-pushups': 'push-ups', 'ex-situps': 'sit-ups', 'ex-squats': 'squats', 'ex-run': 'km run' })[id] + ' in a day (previous best ' + best + ').');
+          t.r[i] = v; changed = true;
+        }
+      });
+      var rs = state.mods && state.mods.waivedAll ? 1 : 0; if (rs !== (t.rest || 0)) { t.rest = rs; changed = true; }
+      var c = allDone() ? 1 : 0;
+      if (c !== t.clr) { t.clr = c; changed = true; if (c && !t.rest) log('quest', 'Cleared the daily quest.'); }
+      try { Eqp.ownedIds().forEach(function(id) { if (d.coll.gear.indexOf(id) < 0) { d.coll.gear.push(id); changed = true; } }); } catch (e) {}
+      try { Wpn.owned().forEach(function(id) { var df = Wpn.def(id); if (df && df.cls && d.coll.wcls.indexOf(df.cls) < 0) { d.coll.wcls.push(df.cls); changed = true; } }); } catch (e) {}
+      if (changed) { prune(); save(); }
+    }
+    return { sync: sync, log: log, trophy: trophy, mark: mark, today: today, save: save, data: function() { return d; } };
+  })();
 
   // ---- Sound, haptics and screen effects ------------------------------------------------
   // Every sound is synthesized on the spot (no audio files). Everything can be switched off from the stats screen.
@@ -4867,7 +4970,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-13-boss-paths-fx';
+  var APP_VERSION = '2026-10-13-side-quests-qte';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5053,7 +5156,7 @@
   var lvQueue = [], lvBusy = false;
   function showLevelUp(from, to) {   // one window per level gained, shown one after another
     try { Fx.play('levelup'); Fx.pulse('blue'); } catch (e) {}
-    for (var l = from + 1; l <= to; l++) lvQueue.push(l);
+    for (var l = from + 1; l <= to; l++) { lvQueue.push(l); try { if (l % 10 === 0) Hist.log('level', 'Reached level ' + l + '.'); } catch (e) {} }
     if (!lvBusy) nextLevelUp();
   }
   function nextLevelUp() {
@@ -5543,6 +5646,8 @@
     }
     renderStatGrid();
     try { DailyBoss.sync(); } catch (e) {}
+    try { Hist.sync(); } catch (e) {}
+    try { Train.draw(); } catch (e) {}
   }
 
   // Extra work taken on above the normal quest (from cursed tokens) pays extra gold, in proportion.
@@ -6671,7 +6776,7 @@
           '<div class="status-line"><b>TITLE</b><span>' + (buffs.title ? escapeHtml(buffs.title) : 'NONE') + '</span></div>' +
           '<div class="status-line"><b>EVALUATED</b><span>' + escapeHtml(evaluated) + '</span></div>' +
         '</div>' +
-        '<div class="assess-row"><button class="assess-btn" id="assessOpenBtn">◉ HUNTER EVALUATION</button></div>' + '<div class="assess-row"><button class="assess-btn" id="bestiaryStatBtn">&#9672; BESTIARY</button></div>' + '<div class="assess-row" style="gap:6px;">' + ['sound:SOUND', 'haptics:HAPTICS', 'shake:SHAKE'].map(function(x) { var k = x.split(':')[0]; return '<button class="assess-btn fx-tgl" data-fx="' + k + '" style="flex:1;">' + x.split(':')[1] + ' ' + (Fx.cfg()[k] ? 'ON' : 'OFF') + '</button>'; }).join('') + '</div>' + (hunterProfile.rankTrial ? '<div class="assess-row"><button class="assess-btn" id="rankTrialStatBtn" style="border-color:#ff9a3c;color:#ff9a3c;">&#9876; RANK-UP TRIAL: ' + hunterProfile.rankTrial + '-RANK</button></div>' : '') + (JobQuest.eligible() ? '<div class="assess-row"><button class="assess-btn" id="jobQuestStatBtn" style="border-color:#ffd76a;color:#ffd76a;">✦ JOB CHANGE QUEST</button></div>' : '') +
+        '<div class="assess-row"><button class="assess-btn" id="assessOpenBtn">◉ HUNTER EVALUATION</button></div>' + '<div class="assess-row"><button class="assess-btn" id="recordsStatBtn">&#9733; HUNTER RECORDS</button></div><div class="assess-row"><button class="assess-btn" id="bestiaryStatBtn">&#9672; BESTIARY</button></div>' + '<div class="assess-row" style="gap:6px;">' + ['sound:SOUND', 'haptics:HAPTICS', 'shake:SHAKE'].map(function(x) { var k = x.split(':')[0]; return '<button class="assess-btn fx-tgl" data-fx="' + k + '" style="flex:1;">' + x.split(':')[1] + ' ' + (Fx.cfg()[k] ? 'ON' : 'OFF') + '</button>'; }).join('') + '</div>' + (hunterProfile.rankTrial ? '<div class="assess-row"><button class="assess-btn" id="rankTrialStatBtn" style="border-color:#ff9a3c;color:#ff9a3c;">&#9876; RANK-UP TRIAL: ' + hunterProfile.rankTrial + '-RANK</button></div>' : '') + (JobQuest.eligible() ? '<div class="assess-row"><button class="assess-btn" id="jobQuestStatBtn" style="border-color:#ffd76a;color:#ffd76a;">✦ JOB CHANGE QUEST</button></div>' : '') +
         '<div class="stats-level-sub">' + fmt(total) + ' TOTAL STAT POINTS</div>' +
       '</div>';
 
@@ -6755,6 +6860,8 @@
     var rtBtn = document.getElementById('rankTrialStatBtn');
     if (rtBtn) rtBtn.addEventListener('click', function() { document.getElementById('statsOverlay').classList.remove('show'); RankTrial.open(); });
     document.querySelectorAll('.fx-tgl').forEach(function(b) { b.addEventListener('click', function() { Fx.toggle(b.getAttribute('data-fx')); b.textContent = b.textContent.split(' ')[0] + ' ' + (Fx.cfg()[b.getAttribute('data-fx')] ? 'ON' : 'OFF'); }); });
+    var rcBtn = document.getElementById('recordsStatBtn');
+    if (rcBtn) rcBtn.addEventListener('click', function() { document.getElementById('statsOverlay').classList.remove('show'); Records.open(); });
     var bsBtn = document.getElementById('bestiaryStatBtn');
     if (bsBtn) bsBtn.addEventListener('click', function() { document.getElementById('statsOverlay').classList.remove('show'); Bestiary.open(); });
     refreshAssessButton();
@@ -6898,6 +7005,7 @@
       '<div class="stats-note">' + (liveRun ? 'HP, mana and fatigue are your live values from the gate you are in. ' : 'HP and mana show full outside a gate. ') + 'Your four stats become these numbers in a gate battle: STR sets attack, VIT sets HP and defense, END sets endurance (how slowly attacks tire you) and mana, AGI sets speed, crit and evasion.</div></div>';
     html += '<div class="stats-section-title"><span>GATE ENERGY</span></div>' + energyCardHtml(false);
     try { html += '<div class="stats-section-title"><span>QUEST STREAK</span></div>' + Streak.cardHtml(); } catch (e) {}
+    try { html += Scars.cardHtml(); } catch (e) {}
     html += '<div class="stats-section-title"><span>QUEST POWER</span></div><div class="stats-today panel">' +
       QP_CHARGES.map(function(c) {
         return '<div class="qp-row"><div class="qp-rname">' + c.label + '<small>' + c.src + ' &middot; ' + c.does + ' per full charge</small></div>' +
@@ -6957,11 +7065,13 @@
   }
   function grantGateEnergy() {
     try { Streak.onClear(); } catch (e) {}
+    try { Train.onClear(); } catch (e) {}
     if (state.mods.waivedAll) { state.energyGained = { added: 0, waived: true }; return; }
     state.energyGained = { added: gainEnergy(GE.perClear), waived: false };
   }
   function undoGateEnergy() {
     try { Streak.onUndo(); } catch (e) {}
+    try { Train.onUndo(); } catch (e) {}
     var g = state.energyGained;
     if (g && g.added) { energy.value = Math.max(0, energy.value - g.added); saveEnergy(); refreshEnergyViews(); }
     state.energyGained = null;
@@ -6982,6 +7092,7 @@
   }
   // Pay back a gate's entry cost when nothing was fought (left again, or the gate broke).
   function refundGateEntry(entry) {
+    if (entry && !entry.fought && entry.prep && entry.prep.paidGold) { goldBalance += entry.prep.paidGold; entry.prep.paidGold = 0; saveGold(); try { renderGoldDisplays(); } catch (x) {} }
     if (entry && entry.paid > 0 && !entry.fought) {
       gainEnergy(entry.paid);
       return entry.paid;
@@ -7182,6 +7293,7 @@
     hunterProfile.rankTrial = null;
     if (previous && rankIndex(finalRank) > rankIndex(previous)) { hunterProfile.rankTrial = finalRank; finalRank = previous; }
     hunterProfile.rank = finalRank;
+    try { if (!previous) Hist.log('rank', 'Evaluated as a ' + finalRank + '-rank hunter.'); else if (hunterProfile.rankTrial) Hist.log('rank', 'The evaluation says ' + hunterProfile.rankTrial + '-rank: a Rank-Up Trial was issued.'); } catch (e) {}
     hunterProfile.assessedAt = Date.now();
     hunterProfile.assessedLevel = level;
     hunterProfile.assessedPoints = points;
@@ -7715,7 +7827,7 @@
   }
 
   function gateExpiresAt(g) {
-    return g.createdAt + (g.breach ? BREACH_HOURS * 3600000 : GATE_BREAK_DAYS * 86400000);
+    return g.createdAt + (g.breach ? BREACH_HOURS * 3600000 : (g.hidden ? 14 : GATE_BREAK_DAYS) * 86400000);
   }
 
   // A gate within a day of breaking is flagged: it pulses on the map and warns you once.
@@ -7747,6 +7859,7 @@
         setTimeout(function() { showToast(newBreaches.length > 1 ? 'Dungeon Breaks! ' + newBreaches.length + ' uncleared gates broke and spilled their monsters out.' : 'DUNGEON BREAK! An uncleared ' + newBreaches[0].rank + '-rank gate broke and its monsters spilled out.'); }, 0);
       }
     }
+    try { Hidden.check(); } catch (e) {}
     var warn = gates.filter(function(g) { return gateImminent(g) && !g.warned; });
     if (warn.length) {
       warn.forEach(function(g) { g.warned = true; });
@@ -7770,15 +7883,15 @@
   }
 
   function gateColor(g) {
-    return g.breach ? GATE_BREAK_INFO.color : (g.special ? GATE_SPECIAL_INFO.color : GATE_INFO[g.rank].color);
+    return g.breach ? GATE_BREAK_INFO.color : (g.special ? specialInfo(g).color : GATE_INFO[g.rank].color);
   }
   // A red gate looks like any other until you step through, so its true nature only shows once you are inside.
   function gateRevealedRed(g) { return !!(g && g.secretRed && gateEntry && gateEntry.gateId === g.id && gateEntry.trapped); }
-  function gateInfoFor(g) { return g.breach ? GATE_BREAK_INFO : (gateRevealedRed(g) ? GATE_RED_INFO : (g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank])); }
+  function gateInfoFor(g) { return g.breach ? GATE_BREAK_INFO : (gateRevealedRed(g) ? GATE_RED_INFO : (g.special ? specialInfo(g) : GATE_INFO[g.rank])); }
   function gateFull(g) { var i = gateInfoFor(g); return i.full || (i.name + ' GATE'); }
 
   function gateLabel(g) {
-    return g.breach ? GATE_BREAK_INFO.name : (gateRevealedRed(g) ? GATE_RED_INFO.name : (g.special ? GATE_SPECIAL_INFO.name : GATE_INFO[g.rank].name));
+    return g.breach ? GATE_BREAK_INFO.name : (gateRevealedRed(g) ? GATE_RED_INFO.name : (g.special ? specialInfo(g).name : GATE_INFO[g.rank].name));
   }
 
   // ---- Map zoom and pan ----------------------------------------------------------
@@ -8302,12 +8415,27 @@
   }
   var THREAT_COLORS = { trivial: '#7f93b3', easy: '#3dffb0', fair: '#ffd76a', deadly: '#ff9a3d', suicidal: '#ff3b5c' };
 
+  var PREP = { scout: { name: 'SCOUT', k: 0.25, d: 'Reveals the boss: name, weaknesses, resistances and moves.' }, whet: { name: 'WHETSTONE', k: 0.4, d: '+10% attack for the whole gate.' }, ward: { name: 'WARD', k: 0.35, d: 'Start the first floor behind a shield worth 15% of your max HP.' } };
+  var prepSel = {}, prepGate = null;
+  function prepCost(g, key) { var pl = gatePlanFor(g, true); return Math.max(1, Math.round((pl.gold[0] + pl.gold[1]) / 2 * PREP[key].k)); }
+  function prepTotal(g) { var t = 0; Object.keys(prepSel).forEach(function(k) { if (prepSel[k] && PREP[k]) t += prepCost(g, k); }); return t; }
+  function scoutText(g) {
+    try {
+      var pl = gatePlanFor(g), f = null;
+      for (var i = pl.floors.length - 1; i >= 0; i--) if (pl.floors[i].type === 'boss') { f = pl.floors[i]; break; }
+      if (!f) return '';
+      var en = window.SystemCombat.buildEnemy(f.enemies[0], { vsRank: hunterGateRank(), hunterLevel: hunterLevel });
+      var mv = (en.moves || []).map(function(m) { try { return window.SystemCombat.moveInfo(m).name || m.name; } catch (x) { return m.name; } }).filter(Boolean);
+      return 'BOSS: ' + en.name + '. Weak to ' + ((en.weak || []).join(', ') || 'nothing') + '. Resists ' + ((en.resist || []).join(', ') || 'nothing') + '.' + (mv.length ? ' Moves: ' + mv.join(', ') + '.' : '');
+    } catch (x) { return ''; }
+  }
   function openGateDetail(id) {
+    if (prepGate !== id) { prepSel = {}; prepGate = id; }
     selectedGateId = id;
     var g = gateById(id);
     if (!g) return;
     var body = document.getElementById('gateDetailBody');
-    var info = g.breach ? GATE_BREAK_INFO : (g.special ? GATE_SPECIAL_INFO : GATE_INFO[g.rank]);
+    var info = g.breach ? GATE_BREAK_INFO : (g.special ? specialInfo(g) : GATE_INFO[g.rank]);
     var cost = gateEnergyCost(g);
     var canPay = energy.value >= cost;
     var inside = gateEntry && gateEntry.gateId === g.id;
@@ -8320,11 +8448,11 @@
       (gateChallenge(g) ? '<b>CHALLENGE:</b> <span style="color:#ffd76a;">' + CHALLENGES[gateChallenge(g)].name + '</span><br><span style="opacity:.8;">' + escapeHtml(CHALLENGES[gateChallenge(g)].desc) + ' Pays +' + Math.round((CHALLENGES[gateChallenge(g)].pay - 1) * 100) + '% gold and a guaranteed extra loot drop on victory.</span><br>' : '') +
       '<b>THREAT:</b> <span style="color:' + THREAT_COLORS[thr.key] + ';">' + thr.label + '</span> <span style="opacity:.7;">for ' + ('EAS'.indexOf(hunterGateRank()) >= 0 ? 'an ' : 'a ') + hunterGateRank() + '-rank hunter</span><br>' +
       '<b>ESTIMATED TIME:</b> ' + plan.estMinutes[0] + '&ndash;' + plan.estMinutes[1] + ' min<br>' +
-      '<b>ENTRY COST:</b> ' + (g.breach ? 'free &mdash; it is already spilling out' : (g.special ? 'free &mdash; the key pays for it' : cost + ' Gate Energy (you have ' + energy.value + ')')) + '<br>' +
+      '<b>ENTRY COST:</b> ' + (g.breach ? 'free &mdash; it is already spilling out' : (g.special ? (g.hidden ? 'free &mdash; it opened for you' : 'free &mdash; the key pays for it') : cost + ' Gate Energy (you have ' + energy.value + ')')) + '<br>' +
       '<b>REWARD:</b> up to ' + plan.levels + ' level' + (plan.levels === 1 ? '' : 's') + ' &middot; ' + plan.gold[0] + '&ndash;' + plan.gold[1] + ' gold<br>' +
       '<span style="opacity:.75;">Falling part-way still pays a share of the reward.</span><br>' +
       '<b>' + (g.breach ? 'SCATTERS IN:' : 'BREAKS IN:') + '</b> ' + timeUntil(gateExpiresAt(g)) + ' if left uncleared' +
-      (g.special ? '<br><b>ORIGIN:</b> opened by a System Gate Key<br><b>EXCLUSIVE:</b> its boss always leaves its signature (ability or weapon), and the gold is doubled' : '') + (g.breach ? '<br><b>ORIGIN:</b> a gate that broke' : '') +
+      (g.special ? '<br><b>ORIGIN:</b> ' + (g.hidden ? 'a hidden gate, opened by ' + HIDDEN[g.hidden].why : 'opened by a System Gate Key') + '<br><b>EXCLUSIVE:</b> its boss always leaves its signature (ability or weapon), and the gold is doubled' : '') + (g.breach ? '<br><b>ORIGIN:</b> a gate that broke' : '') +
       '</div>';
 
     var actions;
@@ -8336,7 +8464,13 @@
     } else {
       var recov = Run.recoveringMs();
       if (recov) canPay = false;
-      actions = (recov ? '<div class="gate-special-note">You are still recovering from your last defeat. The next gate can be entered in ' + Run.fmtMs(recov) + '.</div>' : '') + (canPay || recov ? '' : '<div class="gate-special-note">Not enough Gate Energy. Need ' + cost + ', you have ' + energy.value + '. Every cleared daily quest pays +' + GE.perClear + '.</div>') + '<div class="loot-decision-row">' +
+      var prepHtml = '<div class="stats-note" style="margin:8px 0 4px;"><b>PREPARE</b> (paid in gold, refunded if you leave before the first fight)</div><div class="loot-decision-row" style="flex-wrap:wrap;">' +
+        Object.keys(PREP).map(function(k) {
+          var dis = (k === 'scout' && g.secretRed) ? ' disabled' : '';
+          return '<button class="stash-btn prep-btn" data-prep="' + k + '"' + dis + ' style="flex:1 1 30%;' + (prepSel[k] ? 'border-color:#ffd76a;color:#ffd76a;' : '') + '">' + (prepSel[k] ? '&#10003; ' : '') + PREP[k].name + '<br><span style="font-size:11px;opacity:.8;">' + prepCost(g, k) + 'g</span></button>';
+        }).join('') + '</div><div class="stats-note" style="margin:4px 0;">' + Object.keys(PREP).map(function(k) { return PREP[k].name + ': ' + PREP[k].d; }).join(' ') + (g.secretRed ? ' (Scouting is impossible here; this gate hides what it is.)' : '') + '</div>' + (prepTotal(g) > goldBalance ? '<div class="gate-special-note">Not enough gold for the chosen preparations (' + prepTotal(g) + ' needed, you have ' + goldBalance + ').</div>' : '');
+      if (prepTotal(g) > goldBalance) canPay = false;
+      actions = prepHtml + (recov ? '<div class="gate-special-note">You are still recovering from your last defeat. The next gate can be entered in ' + Run.fmtMs(recov) + '.</div>' : '') + (canPay || recov ? '' : '<div class="gate-special-note">Not enough Gate Energy. Need ' + cost + ', you have ' + energy.value + '. Every cleared daily quest pays +' + GE.perClear + '.</div>') + '<div class="loot-decision-row">' +
         '<button class="use-btn" id="gateEnterBtn"' + (canPay ? '' : ' disabled') + '>ENTER GATE' + (cost ? ' &middot; ' + cost : '') + '</button>' +
         '<button class="stash-btn" id="gateDetailCloseBottomBtn">CANCEL</button>' +
       '</div>';
@@ -8350,6 +8484,7 @@
       '<div class="gate-detail-desc">' + escapeHtml(info.desc) + '</div>' +
       meta + actions;
 
+    Array.prototype.forEach.call(body.querySelectorAll('.prep-btn'), function(b) { b.addEventListener('click', function() { var k = b.getAttribute('data-prep'); prepSel[k] = !prepSel[k]; openGateDetail(id); }); });
     var enterBtn = document.getElementById('gateEnterBtn');
     if (enterBtn) enterBtn.addEventListener('click', function() { enterGate(g.id); });
     var cd = document.getElementById('gateContinueDetailBtn');
@@ -8370,8 +8505,17 @@
     var cost = gateEnergyCost(g);
     if (energy.value < cost) { showToast('Not enough Gate Energy. This gate costs ' + cost + ' and you have ' + energy.value + '.'); return; }
     if (Run.recoveringMs()) { showToast('You are still recovering. The next gate can be entered in ' + Run.fmtMs(Run.recoveringMs()) + '.'); return; }
+    var pt = (prepGate === g.id) ? prepTotal(g) : 0;
+    if (pt > goldBalance) { showToast('Not enough gold for your preparations.'); return; }
     if (cost && !spendEnergy(cost)) return;
-    gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed, paid: cost };
+    var prep = null;
+    if (pt > 0) {
+      prep = { paidGold: pt };
+      Object.keys(prepSel).forEach(function(k) { if (prepSel[k] && PREP[k] && !(k === 'scout' && g.secretRed)) prep[k] = 1; });
+      goldBalance -= pt; saveGold(); try { renderGoldDisplays(); } catch (x) {}
+    }
+    prepSel = {}; prepGate = null;
+    gateEntry = { gateId: g.id, enteredAt: Date.now(), trapped: !!g.secretRed, paid: cost, prep: prep };
     var rr0 = g.secretRed ? redRankFor(g) : null;
     if (rr0) { gateEntry.redRank = rr0.rank; gateEntry.redOver = rr0.over; }
     saveGateEntry();
@@ -8796,7 +8940,7 @@
         renderShopList();
       }
     });
-    return { grant: grant, totals: totals, wornDefs: wornDefs, migrate: migrate, renderInvTab: renderInvTab, renderShopTab: renderShopTab, def: def, save: save };
+    return { ownedIds: function() { clean(); return data.owned.map(function(o) { return o.id; }); }, grant: grant, totals: totals, wornDefs: wornDefs, migrate: migrate, renderInvTab: renderInvTab, renderShopTab: renderShopTab, def: def, save: save };
   })();
   (function() { try { if (Eqp.migrate(inventory)) { saveInventory(); renderInventoryBadge(); } } catch (e) {} })();
 
@@ -8807,6 +8951,8 @@
     var j = jobDef(); if (j) Object.keys(j.bonus).forEach(function(k) { o[k] = (o[k] || 0) + j.bonus[k]; });
     try { var eb = Eqp.totals().bonus; Object.keys(eb).forEach(function(k) { o[k] = (o[k] || 0) + eb[k]; }); } catch (e) {}
     try { var sb = Streak.bonus(); Object.keys(sb).forEach(function(k) { o[k] = (o[k] || 0) + sb[k]; }); } catch (e) {}
+    try { var scb = Scars.bonus(); Object.keys(scb).forEach(function(k) { o[k] = (o[k] || 0) + scb[k]; }); } catch (e) {}
+    try { var cb = Train.chainBonus(); Object.keys(cb).forEach(function(k) { o[k] = (o[k] || 0) + cb[k]; }); } catch (e) {}
     return o;
   }
   // Your stats for a fight: what you have earned plus any timed stat boosts from items still running.
@@ -8843,6 +8989,7 @@
       var t = todayKey(); if (d.last === t) return;
       d.prev = { last: d.last, days: d.days, best: d.best };
       d.days = d.last === yesterday() ? d.days + 1 : 1; d.last = t; d.best = Math.max(d.best, d.days); save();
+      try { TIERS.forEach(function(x) { if (x.n === d.days) Hist.log('streak', 'A ' + d.days + '-day streak: ' + x.name + ' tier reached.'); }); } catch (e) {}
     }
     function onUndo() { if (d.last === todayKey() && d.prev) { d.last = d.prev.last; d.days = d.prev.days; d.best = d.prev.best; d.prev = null; save(); } }
     function tier() { var c = current(), t = null; TIERS.forEach(function(x) { if (c >= x.n) t = x; }); return t; }
@@ -8855,7 +9002,7 @@
         '<div class="stats-note" style="text-align:left;">' + txt + '</div>' + (nx ? '<div class="stats-note" style="text-align:left;opacity:.8;">NEXT: ' + nx.n + ' DAYS (' + nx.name + ')</div>' : '') +
         (c && d.last === yesterday() ? '<div class="stats-note" style="text-align:left;color:#ffd76a;">Clear today\'s quest to keep the streak alive.</div>' : '') + '</div>';
     }
-    return { onClear: onClear, onUndo: onUndo, bonus: bonus, lim: lim, current: current, tier: tier, cardHtml: cardHtml };
+    return { onClear: onClear, onUndo: onUndo, bonus: bonus, lim: lim, current: current, best: function() { return d.best; }, tier: tier, cardHtml: cardHtml };
   })();
 
   // ---- Abilities ---------------------------------------------------------------------
@@ -9183,6 +9330,7 @@
           case 'summon': out.push(['foe', ev.name + ' joins the fight!']); break;
           case 'arrive': out.push(['foe', ev.name + ' rushes in!' + (ev.left ? ' (' + ev.left + ' more waiting)' : '')]); break;
           case 'phase': out.push(['foe', ev.msg || 'Something changes...']); break;
+          case 'arena': out.push(['foe', 'THE BATTLEFIELD SHIFTS: ' + ev.name + '. ' + ev.desc]); break;
           case 'heal': out.push([ev.uid === 'P' ? 'good' : 'sys', (ev.uid === 'P' ? 'You recover ' : nameOf(ev.uid) + ' recovers ') + ev.amt + ' HP.']); break;
           case 'rested': out.push(['good', 'You shake off ' + ev.amt + '% fatigue.']); break;
           case 'collapse': out.push(['foe', 'You are too exhausted to act! Your turn is lost.']); break;
@@ -9353,6 +9501,7 @@
       }
       if (kind === 'combo') { var ch0 = C().comboHint ? C().comboHint(S) : null; return ch0 ? { title: 'COMBO', kind: 'OPPORTUNITY', good: true, body: ch0 + '. Combos only trigger on weapon attacks (Attack, Power Strike, Crit Strike).' } : null; }
       if (kind === 'adapt') return { title: 'ENEMIES ADAPTING', kind: 'WARNING', good: false, body: 'You keep using the same move. Elites, bosses and other non-grunt enemies learn it and take 25% less damage from it. Change your action (Defend, Evade or a different attack) to reset this.' };
+      if (kind === 'seal') return { title: 'TECHNIQUES SEALED', kind: 'DEBUFF', good: false, body: 'The boss sealed your techniques. Power Strike, abilities and your Limit Break are unavailable for ' + (S.seal || 0) + ' more round(s). Attack, Crit Strike, Defend, Evade and items still work.' };
       if (kind === 'arena') { var ar = S.arena; return ar ? { title: 'ARENA: ' + ar.name.toUpperCase(), kind: 'BATTLEFIELD', good: false, body: ar.desc } : null; }
       if (kind === 'lim') return { title: 'LIMIT BREAK', kind: 'GAUGE', good: true, body: 'Fighting and taking hits fill this gauge. At 100% you can unleash your job\'s Limit Break once for free. After using it the gauge starts over. Breaking an enemy and landing reactions fill it faster.' + (function() { try { var ld = C().limitDef(hunterProfile.job); return ' YOUR LIMIT BREAK, ' + ld.name.toUpperCase() + ': ' + C().limitInfo(hunterProfile.job); } catch (e) { return ''; } })() };
       if (kind === 'brk') return { title: 'BREAK METER', kind: 'ENEMY GAUGE', good: true, body: 'Hitting an enemy\'s weakness fills its break meter. At 100% it is BROKEN: stunned and takes 20% more damage for a short time. Power Strikes that interrupt a charge also help.' };
@@ -9436,6 +9585,7 @@
         if (cmh) extra += fchipHtml('gold', 'COMBO READY', 'combo');
         if (Sx.spam && Sx.spam.n >= 2) extra += fchipHtml('bad', Sx.spam.n >= 3 ? 'ENEMIES ADAPTED' : 'ENEMIES ADAPTING', 'adapt');
         if (Sx.arena) extra += fchipHtml('bad', 'ARENA: ' + esc(Sx.arena.name.toUpperCase()), 'arena');
+        if (Sx.seal > 0) extra += fchipHtml('bad', 'TECHNIQUES SEALED &middot; ' + Math.max(0, Sx.seal - 1 + (Sx.seal > 0 ? 1 : 0)), 'seal');
       }
       if (extra) st += extra;
       var shd = (SS().allies || []).length ? '<div class="bt-shades"><div class="bt-shh">SHADOWS</div>' + SS().allies.map(function(a) {
@@ -9451,7 +9601,7 @@
     function actBtn(id, cls, label, sub, ok) {
       return '<button class="bt-act ' + cls + '" data-act="' + id + '"' + (ok ? '' : ' disabled') + '>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
     }
-    var ITEM_LIMIT = 3, itemSel = null;
+    var ITEM_LIMIT = 3, itemSel = null, qteKey = null, qteTimer = null;
     // Everything in your inventory that can be used in a fight, grouped by name.
     function battleItems() {
       var seen = {}, out = [];
@@ -9478,7 +9628,18 @@
       legal.forEach(function(l) { if (l.type !== 'ability') L[l.type] = l; });
       var abil = legal.filter(function(l) { return l.type === 'ability'; });
       var T = C().T, ch = S.enemies.some(function(e) { return e.alive && e.chargeMove; });
-      var html = '';
+      var html = '', qteOn = false;
+      if (!subOpen && S.qte && !busy && !S.over) {
+        qteOn = true;
+        var qlim = (C().FT && C().FT.qteLimit) || 8;
+        html += '<div class="bt-qte"><div class="bt-qte-cue">&#9888; ' + esc(S.qte.cue) + '</div><div class="bt-qte-bar"><i style="animation-duration:' + qlim + 's"></i></div><div class="bt-qte-row">' +
+          C().QTE_CUES.map(function(c) { return '<button class="bt-act" data-act="qte:' + c.id + '">' + c.label + '</button>'; }).join('') + '</div>' +
+          '<div class="stats-note" style="margin:4px 0 0;">READ THE CUE. A right answer grants a boon (+8% Limit too). Ignoring it costs nothing.</div></div>';
+        if (qteKey !== S.qte.round) {
+          qteKey = S.qte.round; clearTimeout(qteTimer);
+          qteTimer = setTimeout(function() { if (cur && cur.S.qte && cur.S.qte.round === qteKey) { cur.S.qte = null; save(); renderActs(); } }, qlim * 1000);
+        }
+      }
       if (subOpen === 'items') {
         var its = battleItems(), selIt = its.filter(function(x) { return x.name === itemSel; })[0] || null;
         html += '<div class="bt-sub-panel">' + its.map(function(x) {
@@ -9492,7 +9653,7 @@
         html += actBtn('back', '', 'BACK', '', true);
       } else if (subOpen) {
         html += '<div class="bt-sub-panel">' + abil.map(function(a) {
-          return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? ((a.cost ? a.cost + ' MANA' : '') + (a.fat ? (a.cost ? ' &middot; ' : '') + '+' + a.fat + '% FATIGUE' : '') || 'FREE') : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA'), a.ok && !over);
+          return actBtn('ab:' + a.id, 'ab', esc(a.label), a.ok ? ((a.cost ? a.cost + ' MANA' : '') + (a.fat ? (a.cost ? ' &middot; ' : '') + '+' + a.fat + '% FATIGUE' : '') || 'FREE') : (a.why === 'sealed' ? 'SEALED' : (a.why === 'cooldown' ? 'COOLDOWN ' + a.cd : 'NO MANA')), a.ok && !over);
         }).join('') + '</div>' + actBtn('back', '', 'BACK', '', true);
       } else {
         var Pl = S.player, F = Pl.fatigue;
@@ -9505,9 +9666,9 @@
         if (Pl.collapsed) {
           html += '<div class="bt-sub-panel" style="grid-template-columns:1fr">' + actBtn('basic', 'power rec', 'TOO EXHAUSTED', 'YOUR TURN IS LOST &mdash; TAP TO CONTINUE', !over) + '</div>';
         } else {
-          if (L.limit) html += actBtn('limit', 'limit' + (L.limit.ok ? ' ready' : ''), 'LIMIT BREAK &middot; ' + esc(L.limit.label.toUpperCase()), L.limit.ok ? 'READY &middot; FREE' : 'CHARGING ' + L.limit.lim + '%', !over && L.limit.ok);
+          if (L.limit) html += actBtn('limit', 'limit' + (L.limit.ok ? ' ready' : ''), 'LIMIT BREAK &middot; ' + esc(L.limit.label.toUpperCase()), L.limit.ok ? 'READY &middot; FREE' : (L.limit.why === 'sealed' ? 'SEALED' : 'CHARGING ') + L.limit.lim + '%', !over && L.limit.ok);
           html += actBtn('basic', '', 'ATTACK', fl(L.basic), !over);
-          html += actBtn('power', 'power' + (ch ? ' rec' : ''), 'POWER STRIKE', L.power && L.power.cd > 0 ? 'COOLDOWN ' + L.power.cd : fl(L.power) + ' &middot; x' + T.powerMult, !over && L.power && L.power.ok);
+          html += actBtn('power', 'power' + (ch ? ' rec' : ''), 'POWER STRIKE', L.power && L.power.why === 'sealed' ? 'SEALED' : (L.power && L.power.cd > 0 ? 'COOLDOWN ' + L.power.cd : fl(L.power)) + ' &middot; x' + T.powerMult, !over && L.power && L.power.ok);
           html += actBtn('crit', 'crit', 'CRIT STRIKE', L.crit && L.crit.cd > 0 ? 'COOLDOWN ' + L.crit.cd : fl(L.crit) + ' &middot; x' + T.critStrikeMult, !over && L.crit && L.crit.ok);
           html += actBtn('defend', 'defend', 'DEFEND', '-' + T.fat.defendRelief + '% FATIGUE &middot; -60% dmg', !over);
           html += actBtn('evade', 'evade', 'EVADE', fl(L.evade), !over);
@@ -9554,6 +9715,7 @@
       payKills();
       var done = cur, h = handlers[done.kind];
       try { Bestiary.record(done); } catch (e) {}
+      try { Scars.onFight(done); } catch (e) {}
       if (done.S && done.S.feat && done.S.stats && done.S.stats.au) { try { Abil.recordUse(done.S.stats.au); } catch (e) {} }
       cur = null; save();
       $('btResult').classList.remove('show');
@@ -9564,6 +9726,11 @@
     function learn(evs, action) {
       var S = cur.S;
       evs.forEach(function(ev) {
+        try {
+          if (ev.t === 'status' && ev.uid !== 'P' && BAD[ev.id]) Hist.mark('st', ev.id);
+          else if (ev.t === 'combo') Hist.mark('cb', ev.name);
+          else if (ev.t === 'react') Hist.mark('rx', ev.name);
+        } catch (e) {}
         if (ev.t === 'move') { var me = S.enemies.filter(function(x) { return x.uid === ev.uid; })[0]; if (me && ev.name) { var mk = me.id || me.name; cur.mv = cur.mv || {}; cur.mv[mk] = cur.mv[mk] || {}; cur.mv[mk][ev.name] = 1; } }
         if (ev.t !== 'dmg' || ev.src !== 'P' || ev.dst === 'P' || !ev.tag || !(ev.weak || ev.resist)) return;
         var e = S.enemies.filter(function(x) { return x.uid === ev.dst; })[0]; if (!e) return;
@@ -9644,6 +9811,7 @@
         else if (ev.t === 'status' && ev.uid === 'P' && BAD[ev.id]) Fx.play('debuff');
         else if (ev.t === 'status' && ev.uid !== 'P' && !BAD[ev.id]) Fx.play('buff');
         else if (ev.t === 'broken') { Fx.play('break'); Fx.shake($('battleOverlay'), true); }
+        else if (ev.t === 'phase' || ev.t === 'arena') { Fx.play('boss'); Fx.shake($('battleOverlay'), true); Fx.pulse('red'); }
         else if (ev.t === 'react') Fx.play('react');
         else if (ev.t === 'combo') Fx.play('combo');
         else if (ev.t === 'act' && ev.type === 'limit') { Fx.play('limit'); Fx.pulse('gold'); Fx.shake($('battleOverlay'), true); }
@@ -9776,6 +9944,14 @@
         useInventoryItemInBattle(pick.name);
         perform({ type: 'item', name: pick.name, effects: pick.use.effects });
         return;
+      }
+      if (a.indexOf('qte:') === 0) {
+        if (busy || locked || !cur.S.qte) return;
+        var qev = C().qteAnswer(cur.S, a.slice(4)), q0 = qev[0], cue = null; C().QTE_CUES.forEach(function(c) { if (q0 && c.id === q0.right) cue = c; });
+        clearTimeout(qteTimer); save();
+        if (q0 && q0.ok) { pushLog([['good', 'AMBUSH READ! You answered it with ' + cue.label + ': ' + cue.fx + '.']]); flash('PERFECT READ', ''); Fx.play('combo'); }
+        else { pushLog([['foe', 'You misread it. It was a ' + (cue ? cue.label : '?') + ' moment. You are Weakened for 1 turn.']]); flash('MISREAD', 'react'); Fx.play('debuff'); }
+        renderAll(); return;
       }
       if (a === 'back') { subOpen = false; renderActs(); return; }
       if (a.indexOf('ab:') === 0) { perform({ type: 'ability', id: a.slice(3) }); return; }
@@ -9940,6 +10116,7 @@
         var f = plan.floors[run.floor], P = playerFor(runBonus(run));
         var kindTxt = f.type === 'boss' ? 'BOSS FLOOR' : (f.type === 'elite' ? 'ELITE FLOOR' : (f.horde ? 'HORDE FLOOR' : 'WAVE'));
         html = '<div class="run-card"><div class="run-name" style="color:' + col + ';">FLOOR ' + (run.floor + 1) + ' OF ' + plan.floorCount + '</div><div class="run-sub">' + kindTxt + ' &middot; AHEAD</div>' + gateLoreHtml(g, plan, false) + (run.ch ? challengeHtml(run.ch, true) : '') + relicsLine(run) + pips(plan, run) +
+          (run.scout ? '<div class="run-text" style="margin-top:8px;color:#9fd8ff;">SCOUTED &mdash; ' + escapeHtml(run.scout) + '</div>' : '') +
           (run.msg ? '<div class="run-text" style="margin-top:8px;">' + escapeHtml(run.msg) + '</div>' : '') +
           '<div style="margin-top:10px">' + bars(run.hp, run.fat || 0, run.mana, P) + '</div></div>' +
           '<div class="loot-decision-row"><button class="use-btn" id="runAdvanceBtn">ADVANCE</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runRetreatBtn">' + (retreatArm ? 'SURE? RETREAT' : 'RETREAT') + '</button>') + '</div><div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="runWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button>' + Shadows.btnHtml('runShBtn') + '</div>' +
@@ -9963,6 +10140,13 @@
       e.run = { ch: gateChallenge(g), floor: 0, cleared: 0, att: 0, stage: 'ready', hp: P.maxHP, fat: 0, mana: P.maxMana, bonus: C().chargeBonus(sp.spent), spent: sp.spent, msg: '' };
       e.fought = true;
       e.run.relics = []; e.run.offer = C().relicOffer(gateSeed(g) + '|start', []);
+      try {
+        var pp = e.prep || {};
+        if (pp.whet) e.run.bonus = mergeB(e.run.bonus, { atk: 0.10 });
+        if (pp.ward) e.run.wardFirst = true;
+        if (pp.scout) e.run.scout = scoutText(g);
+      } catch (x) {}
+      try { var tb = Train.takeGateBuffs(); if (tb.bonus) { e.run.bonus = mergeB(e.run.bonus, tb.bonus); } if (tb.lim) e.run.nightLim = tb.lim; if (tb.note) e.run.msg = tb.note; var P2 = playerFor(runBonus(e.run)); e.run.hp = P2.maxHP; e.run.mana = P2.maxMana; } catch (x) {}
       try {
         var rv = C().rivalFor(gateSeed(g)), rpl = gatePlanFor(g);
         if (rv && !g.special) { for (var ri = 1; ri < rpl.floors.length; ri++) { var rf = rpl.floors[ri]; if (rf.type === 'wave' && !rf.horde) { e.run.rival = { floor: ri, id: rv.id }; break; } } }
@@ -10001,6 +10185,8 @@
       if (rivalDef) note = 'RIVAL HUNTER: ' + rivalDef.name + ' \u2014 ' + rivalDef.intro;
       var rel = relicFx(run);
       if (Object.keys(rel.rules).length) rules = Object.assign({}, rules || {}, rel.rules);
+      if (run.wardFirst && run.floor === 0 && !run.cleared) rules = Object.assign({}, rules || {}, { startShield: Math.max(0.15, (rules && rules.startShield) || 0) });
+      if (run.nightLim) rules = Object.assign({}, rules || {}, { startLim: ((rules && rules.startLim) || 0) + run.nightLim });
       if (Object.keys(rel.st).length) startStatus = Object.assign({}, startStatus || {}, rel.st);
       if (run.carry) { startStatus = Object.assign({}, startStatus || {}, run.carry); run.carry = null; }
       run.stage = 'fight'; e.fought = true; persist();
@@ -10044,6 +10230,14 @@
       if (lv) { healOnLevelUp(); showLevelUp(hunterLevel - lv, hunterLevel); }
       if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
       if (won) { gates = gates.filter(function(x) { return x.id !== g.id; }); saveGates(); }
+      try {
+        var hd = Hist.today(), bi = null; Hist.data().tot.gates += won ? 1 : 0; Hist.data().tot.falls += kind === 'defeat' ? 1 : 0; if (won) hd.gates = (hd.gates || 0) + 1;
+        Hist.log(won ? 'gate' : (kind === 'defeat' ? 'fall' : 'retreat'), (won ? 'Cleared ' : (kind === 'defeat' ? 'Fell inside ' : 'Retreated from ')) + 'a ' + rank + '-rank ' + (g.breach ? 'Dungeon Break' : 'gate') + (won ? '' : ' after ' + run.cleared + ' floor' + (run.cleared === 1 ? '' : 's')) + '.');
+        var lf = plan.floors[plan.floors.length - 1];
+        if (won && lf && lf.type === 'boss' && lf.enemies[0] && C().CATALOG.byId[lf.enemies[0].id]) { bi = C().CATALOG.byId[lf.enemies[0].id]; Hist.trophy({ id: bi.id, name: bi.name, rank: bi.rank, day: todayKey(), lv: hunterLevel, job: hunterProfile.job || null, enraged: false, src: 'gate' }); }
+        if (won && g.hidden) { Hist.mark('hidden', g.hidden); Hist.log('hidden', 'Cleared the hidden gate ' + HIDDEN[g.hidden].name + '.'); try { var hl = rollLootItem(); if (hl.effect && hl.effect.type === 'equipment') { Eqp.grant(hl.effect.id); bonusLoot = hl.name + ' (equipment)'; } else { inventory.unshift(makeEntry(hl, false)); saveInventory(); renderInventoryBadge(); bonusLoot = hl.mystery ? 'a mystery item' : hl.name; } } catch (x2) {} }
+        Hist.save(); Records.checkColl();
+      } catch (x) {}
       run.stage = 'done'; run.result = { kind: kind, levels: lv, gold: gold, cooldown: cool, cleared: run.cleared, floors: plan.floorCount, name: gateFull(g), dropGold: run.lootGold || 0, dropN: run.lootN || 0, chal: chal, bonusLoot: bonusLoot, found: (run.found || []).map(Abil.nameOf), foundW: (run.foundW || []).map(Wpn.nameOf) };
       persist(); retreatArm = 0;
       try { render(); } catch (x) {}
@@ -10295,13 +10489,14 @@
       var prev = data.day && data.day !== day ? data : null;
       if (prev) {
         if (prev.dead) { data.streak = (data.streak || 0); }
-        else { data.esc = Math.min(3, (data.esc || 0) + 1); data.escapes = (data.escapes || 0) + 1; data.streak = 0; }
+        else if (prev.rested) { /* a rest day: the boss rested too and does not escape */ }
+        else { data.esc = Math.min(3, (data.esc || 0) + 1); data.escapes = (data.escapes || 0) + 1; data.streak = 0; try { Hist.log('escape', prev.name + ' escaped and will return enraged.'); } catch (e) {} }
       }
       var id = pickBoss(day), ds = C().CATALOG.byId[id], ex = ['ex-pushups', 'ex-situps', 'ex-squats', 'ex-run'];
       data.day = day; data.id = id; data.name = ds.name; data.rank = ds.rank;
       data.weak = ex[hash('weak|' + day) % ex.length];
       data.hpMax = Math.round((hunterLevel + 20) * 250 * (1 + 0.25 * (data.esc || 0)));
-      data.p = 0; data.dead = false; data.reward = null;
+      data.p = 0; data.dead = false; data.rested = false; data.reward = null;
       save();
     }
     function reward() {
@@ -10319,6 +10514,7 @@
       var wasEnraged = (data.esc || 0) > 0; data.esc = 0;
       data.dead = true; data.reward = { gold: gold, item: item, enraged: wasEnraged };
       save();
+      try { var th = Hist.today(); th.boss = 1; Hist.log('boss', 'Slew ' + data.name + ' (' + data.rank + '-rank' + (wasEnraged ? ', enraged' : '') + ').'); Hist.trophy({ id: data.id, name: data.name, rank: data.rank, day: data.day, lv: hunterLevel, job: hunterProfile.job || null, enraged: wasEnraged, src: 'daily' }); Hist.save(); Records.checkColl(); } catch (e) {}
       try { Fx.play('bossDown'); Fx.pulse('gold'); Fx.shake(document.body, true); } catch (e) {}
       var f = document.createElement('div'); f.className = 'bt-flash limit'; f.textContent = 'BOSS DEFEATED'; document.body.appendChild(f);
       setTimeout(function() { if (f.parentNode) f.parentNode.removeChild(f); }, 1400);
@@ -10333,6 +10529,7 @@
       if (!C() || !C().CATALOG) return;
       var day = state.day;
       if (data.day !== day) newDay(day);
+      if (state.mods && state.mods.waivedAll && !data.dead) { data.rested = true; save(); shownDay = day; draw(); return; }
       var f = frac(), dmg = Math.round((f - (data.p || 0)) * data.hpMax), first = shownDay !== day;
       data.p = f;
       var died = false;
@@ -10365,7 +10562,9 @@
       var c = $('dbossCard'); if (!c) return;
       var pp = data.dead ? 1 : (data.p || 0), left = Math.max(0, Math.round(data.hpMax * (1 - pp))), pct = Math.round((1 - pp) * 100), esc = data.esc || 0;
       var note;
-      if (data.dead) {
+      if (data.rested && !data.dead) {
+        note = '<b>REST DAY.</b> The boss rests too. It will not escape, and it will be here tomorrow.';
+      } else if (data.dead) {
         var r = data.reward || {};
         note = '<b>DEFEATED.</b> +' + (r.gold || 0) + ' gold' + (r.item ? ' and <b>' + escapeHtml(r.item) + '</b>' : '') + (r.enraged ? ' (enraged bonus)' : '') + '. A new boss rises at midnight.';
       } else {
@@ -10383,6 +10582,358 @@
     return { sync: sync, data: function() { return data; } };
   })();
   try { DailyBoss.sync(); } catch (e) {}
+
+
+  // ---- Hunter Records ------------------------------------------------------------------
+  // One window, five tabs: Journal, Trophies, Collections, Weekly Review and the License card.
+  var Records = (function() {
+    var tab = 'journal', COLL = null;
+    function C() { return window.SystemCombat; }
+    function $(id) { return document.getElementById(id); }
+    function dstr(ts) { var t = new Date(ts); return (t.getMonth() + 1) + '/' + t.getDate(); }
+    function collections() {
+      var d = Hist.data().coll, rv = {}; try { rv = JSON.parse(localStorage.getItem('the-system-bestiary') || '{}').rv || {}; } catch (e) {}
+      var classes = []; Object.keys(C().WEAPONS).forEach(function(id) { var c = C().WEAPONS[id].cls; if (classes.indexOf(c) < 0) classes.push(c); });
+      var ranks = ['E', 'D', 'C', 'B', 'A', 'S'], th = Hist.data().trophies;
+      return [
+        { id: 'arms', name: 'ARMORY OF ARMS', desc: 'Own a weapon of every one of the ' + classes.length + ' weapon types.', have: d.wcls.filter(function(c) { return classes.indexOf(c) >= 0; }).length, need: classes.length },
+        { id: 'afflict', name: 'AFFLICTION MASTER', desc: 'Inflict Bleed, Burn, Poison, Stun, Weaken, Guard Break and Slow on enemies.', have: ['bleed', 'burn', 'poison', 'stun', 'weaken', 'guardbreak', 'slow'].filter(function(x) { return d.st.indexOf(x) >= 0; }).length, need: 7 },
+        { id: 'combo', name: 'COMBO ARTIST', desc: 'Land a Counter, a Riposte, a Triple Combo and an Opening.', have: ['COUNTER', 'RIPOSTE', 'TRIPLE COMBO', 'OPENING'].filter(function(x) { return d.cb.indexOf(x) >= 0; }).length, need: 4 },
+        { id: 'react', name: 'ALCHEMIST', desc: 'Trigger Toxic Blaze, Hemorrhage and Thermal Shock.', have: ['TOXIC BLAZE', 'HEMORRHAGE', 'THERMAL SHOCK'].filter(function(x) { return d.rx.indexOf(x) >= 0; }).length, need: 3 },
+        { id: 'rivals', name: 'RIVAL SLAYER', desc: 'Defeat all ' + C().RIVALS.length + ' rival hunters.', have: C().RIVALS.filter(function(x) { return rv[x.id]; }).length, need: C().RIVALS.length },
+        { id: 'bosses', name: 'BOSS HUNTER', desc: 'Slay a boss of every rank, E to S.', have: ranks.filter(function(r) { return th.some(function(t) { return t.rank === r; }); }).length, need: 6 },
+        { id: 'hidden', name: 'SECRET KEEPER', desc: 'Find and clear every hidden gate.', have: d.hidden.length, need: 4 }
+      ];
+    }
+    function rewardFor(c) {
+      var g = C().GATE_GOLD[hunterGateRank()] || [10, 25], gold = Math.round((g[0] + g[1]) / 2 * 2);
+      goldBalance += gold; saveGold(); renderGoldDisplays();
+      var item = ''; try { var it = rollLootItem(); if (it.effect && it.effect.type === 'equipment') { Eqp.grant(it.effect.id); item = it.name + ' (equipment)'; } else { inventory.unshift(makeEntry(it, false)); saveInventory(); renderInventoryBadge(); item = it.mystery ? 'a mystery item' : it.name; } } catch (e) {}
+      return { gold: gold, item: item };
+    }
+    function checkColl() {
+      var d = Hist.data().coll, got = false;
+      collections().forEach(function(c) {
+        if (c.have >= c.need && d.claimed.indexOf(c.id) < 0) {
+          d.claimed.push(c.id); got = true; var r = rewardFor(c);
+          Hist.log('collection', 'Completed the collection ' + c.name + ': +' + r.gold + ' gold' + (r.item ? ' and ' + r.item : '') + '.');
+          try { Fx.play('relic'); Fx.pulse('gold'); } catch (e) {}
+          showToast('COLLECTION COMPLETE: ' + c.name + '. +' + r.gold + ' gold' + (r.item ? ' and ' + r.item : '') + '.');
+        }
+      });
+      if (got) Hist.save();
+    }
+    function week() {
+      var d = Hist.data().days, out = { clr: 0, r: [0, 0, 0, 0], boss: 0, gates: 0, side: 0, rest: 0, best: [0, 0, 0, 0], n: 0 }, t = new Date();
+      for (var i = 0; i < 7; i++) {
+        var k = t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(), x = d[k]; t.setDate(t.getDate() - 1);
+        if (!x) continue; out.n++; out.clr += x.clr ? 1 : 0; out.boss += x.boss || 0; out.gates += x.gates || 0; out.side += x.side || 0; out.rest += x.rest ? 1 : 0;
+        for (var j = 0; j < 4; j++) { out.r[j] += x.r[j] || 0; out.best[j] = Math.max(out.best[j], x.r[j] || 0); }
+      }
+      return out;
+    }
+    function weeklyHtml() {
+      var w = week(), nm = ['Push-ups', 'Sit-ups', 'Squats', 'Run (km)'], tg = [100, 100, 100, 10], tip;
+      var low = 0; for (var i = 1; i < 4; i++) if (w.r[i] / tg[i] < w.r[low] / tg[low]) low = i;
+      if (w.clr < 5) tip = 'Aim to clear the daily quest on at least 5 of the next 7 days. Right now it is ' + w.clr + '.';
+      else if (w.side < 3) tip = 'Try 3 side quests next week. You did ' + w.side + '. They pay gold and Gate Energy.';
+      else tip = 'Your weakest lift this week was ' + nm[low].toLowerCase() + '. Make it your Weakness Training target.';
+      return '<div class="run-card" style="text-align:left;"><div class="run-name" style="text-align:center;">WEEKLY REVIEW</div><div class="run-sub" style="text-align:center;">THE LAST 7 DAYS</div>' +
+        '<div class="run-lines">QUESTS CLEARED <b>' + w.clr + ' / 7</b><br>' + nm.map(function(n, i) { return n.toUpperCase() + ' <b>' + (i === 3 ? Math.round(w.r[i] * 10) / 10 : w.r[i]) + '</b> (best day ' + (i === 3 ? Math.round(w.best[i] * 10) / 10 : w.best[i]) + ')'; }).join('<br>') + '<br>BOSSES SLAIN <b>' + w.boss + '</b> &middot; GATES CLEARED <b>' + w.gates + '</b><br>SIDE QUESTS <b>' + w.side + '</b> &middot; REST DAYS <b>' + w.rest + '</b></div>' +
+        '<div class="run-text" style="margin-top:10px;color:#ffd76a;">NEXT WEEK: ' + escapeHtml(tip) + '</div></div>';
+    }
+    function journalHtml() {
+      var l = Hist.data().log;
+      if (!l.length) return '<div class="run-text" style="margin-top:10px;">Nothing yet. Clear a quest, slay a boss or enter a gate and your story starts here.</div>';
+      var ico = { boss: '&#9760;', gate: '&#10162;', fall: '&#10007;', rival: '&#9876;', rank: '&#9733;', level: '&#8679;', streak: '&#128293;', quest: '&#10003;', record: '&#9889;', escape: '&#8856;', collection: '&#9672;', scar: '&#10086;', side: '&#9201;', rest: '&#9790;', hidden: '&#10022;', retreat: '&#8617;' };
+      return l.slice(0, 80).map(function(x) { return '<div class="run-card" style="margin-top:6px;padding:8px 10px;text-align:left;font-size:12px;"><span style="opacity:.6;">' + dstr(x.ts) + '</span> &nbsp;' + (ico[x.k] || '&#8226;') + ' ' + escapeHtml(x.t) + '</div>'; }).join('');
+    }
+    function trophyHtml() {
+      var t = Hist.data().trophies;
+      if (!t.length) return '<div class="run-text" style="margin-top:10px;">Your trophy room is empty. Every boss you slay is displayed here.</div>';
+      return '<div class="stats-note">' + t.length + ' BOSSES SLAIN</div>' + t.map(function(x) {
+        var col = (HUNTER_RANK_INFO[x.rank] || {}).color || '#fff';
+        return '<div class="run-card" style="margin-top:6px;padding:8px 10px;text-align:left;border-left:3px solid ' + col + ';"><b>&#9760; ' + escapeHtml(x.name) + '</b> <span style="float:right;color:' + col + ';">' + x.rank + '-RANK</span><div class="stats-note">' + escapeHtml(x.day) + ' &middot; LEVEL ' + x.lv + (x.job ? ' &middot; ' + escapeHtml(C().jobOf(x.job).name.toUpperCase()) : '') + (x.enraged ? ' &middot; <span style="color:#ff9a3c;">ENRAGED</span>' : '') + ' &middot; ' + (x.src === 'daily' ? 'DAILY BOSS' : 'GATE BOSS') + '</div></div>';
+      }).join('');
+    }
+    function collHtml() {
+      var d = Hist.data().coll;
+      return '<div class="stats-note">Completing a collection pays gold and an item, once.</div>' + collections().map(function(c) {
+        var done = d.claimed.indexOf(c.id) >= 0, pct = Math.round(Math.min(1, c.have / c.need) * 100);
+        return '<div class="run-card" style="margin-top:6px;padding:8px 10px;text-align:left;' + (done ? 'border-color:#4be39a;' : '') + '"><b>' + c.name + '</b> <span style="float:right;color:' + (done ? '#4be39a' : '#ffd76a') + ';">' + (done ? 'COMPLETE' : c.have + ' / ' + c.need) + '</span><div class="stats-note">' + escapeHtml(c.desc) + '</div><div class="dboss-hp" style="margin-top:4px;"><i style="width:' + pct + '%;background:' + (done ? '#4be39a' : 'linear-gradient(90deg,#7a5cff,#ffd76a)') + '"></i></div></div>';
+      }).join('');
+    }
+    function licenseHtml() {
+      return '<div class="run-card"><div class="run-name">HUNTER LICENSE</div><canvas id="licCanvas" width="640" height="400" style="width:100%;max-width:420px;border-radius:10px;margin-top:8px;"></canvas>' +
+        '<div class="loot-decision-row" style="margin-top:8px;"><button class="use-btn" id="licSaveBtn">SAVE IMAGE</button><button class="stash-btn" id="licShareBtn">SHARE</button></div></div>';
+    }
+    function drawLicense() {
+      var cv = $('licCanvas'); if (!cv) return; var x = cv.getContext('2d'), rank = hunterProfile.rank || 'E', info = HUNTER_RANK_INFO[rank], col = info.color;
+      var g = x.createLinearGradient(0, 0, 640, 400); g.addColorStop(0, '#0a1330'); g.addColorStop(1, '#1b0f3a'); x.fillStyle = g; x.fillRect(0, 0, 640, 400);
+      x.strokeStyle = col; x.lineWidth = 4; x.strokeRect(14, 14, 612, 372); x.lineWidth = 1; x.strokeRect(24, 24, 592, 352);
+      x.fillStyle = col; x.font = 'bold 18px sans-serif'; x.fillText('H U N T E R   L I C E N S E', 44, 62);
+      x.font = 'bold 190px sans-serif'; x.globalAlpha = 0.9; x.fillText(rank, 410, 250); x.globalAlpha = 1;
+      x.fillStyle = '#ffffff'; x.font = 'bold 34px sans-serif'; x.fillText(String(hunterDisplayName()).toUpperCase().slice(0, 18), 44, 118);
+      x.font = '18px sans-serif'; x.fillStyle = '#c9d4ff';
+      var d = Hist.data(), job = hunterProfile.job ? C().jobOf(hunterProfile.job).name : 'NONE', tot = 0; Object.keys(d.days).forEach(function(k) { tot += d.days[k].r[0] + d.days[k].r[1] + d.days[k].r[2]; });
+      var lines = ['LEVEL  ' + hunterLevel, 'JOB  ' + job.toUpperCase(), 'STREAK  ' + Streak.current() + ' days (best ' + Streak.best() + ')', 'BOSSES SLAIN  ' + d.trophies.length, 'GATES CLEARED  ' + d.tot.gates, 'REPS LOGGED  ' + tot];
+      lines.forEach(function(t, i) { x.fillText(t, 44, 170 + i * 32); });
+      x.fillStyle = col; x.font = '13px sans-serif'; x.fillText(info.title + '  ·  THE SYSTEM', 44, 366);
+    }
+    function render() {
+      var tabs = [['journal', 'JOURNAL'], ['trophy', 'TROPHIES'], ['coll', 'COLLECTIONS'], ['week', 'WEEKLY'], ['lic', 'LICENSE']];
+      var body = tab === 'journal' ? journalHtml() : tab === 'trophy' ? trophyHtml() : tab === 'coll' ? collHtml() : tab === 'week' ? weeklyHtml() : licenseHtml();
+      $('runTitle').textContent = 'HUNTER RECORDS';
+      $('runBody').innerHTML = '<div class="codex-tabs">' + tabs.map(function(t) { return '<button class="codex-tab' + (t[0] === tab ? ' active' : '') + '" data-rctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body + '<div class="loot-decision-row" style="margin-top:10px;"><button class="stash-btn" id="rcCloseBtn">CLOSE</button></div>';
+      $('runCloseBtn').style.display = '';
+      ['gateOverlay', 'gateDetailOverlay'].forEach(function(id) { $(id).classList.remove('show'); });
+      $('runOverlay').classList.add('show');
+      if (tab === 'lic') drawLicense();
+    }
+    function open(t) { try { Hist.sync(); } catch (e) {} checkColl(); if (t) tab = t; render(); }
+    $('runBody').addEventListener('click', function(ev) {
+      var t = ev.target; if (!t || !t.getAttribute) return;
+      if (t.id === 'rcCloseBtn') { $('runOverlay').classList.remove('show'); return; }
+      var rt = t.getAttribute('data-rctab'); if (rt) { tab = rt; render(); return; }
+      if (t.id === 'licSaveBtn') { var cv = $('licCanvas'); if (!cv) return; var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'hunter-license.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a); return; }
+      if (t.id === 'licShareBtn') {
+        var c2 = $('licCanvas'); if (!c2) return;
+        c2.toBlob(function(b) { try { var f = new File([b], 'hunter-license.png', { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: 'My Hunter License' }); else showToast('Sharing is not supported here. Use SAVE IMAGE instead.'); } catch (e) { showToast('Sharing is not supported here. Use SAVE IMAGE instead.'); } });
+      }
+    });
+    function weeklyReady() { var k = (function() { var t = new Date(); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(); })(); var d = Hist.data(); if (new Date().getDay() === 0 && d.weeklySeen !== k) { d.weeklySeen = k; Hist.save(); setTimeout(function() { showToast('Your WEEKLY REVIEW is ready (Stats > Hunter Records).'); }, 1500); } }
+    return { open: open, checkColl: checkColl, weeklyReady: weeklyReady, week: week };
+  })();
+  try { Records.weeklyReady(); } catch (e) {}
+
+
+  // ---- Training Board ------------------------------------------------------------------
+  // Optional extras on top of the daily quest: two timed side quests, a weakness drill for your lowest stat, one rest day a week,
+  // a chain bonus for stacking days, and dawn / night bonuses for when you train.
+  var Train = (function() {
+    var KEY = 'the-system-side', OPEN = 'the-system-train-open', st = load(), armRest = false, tick = null;
+    function C() { return window.SystemCombat; }
+    function $(id) { return document.getElementById(id); }
+    var POOL = [
+      { id: 'blitz', name: 'PUSH-UP BLITZ', kind: 'clock', secs: 180, desc: 'Do 50 push-ups within 3:00.' },
+      { id: 'legs', name: 'IRON LEGS', kind: 'clock', secs: 240, desc: 'Do 60 squats within 4:00.' },
+      { id: 'core', name: 'CORE BURN', kind: 'clock', secs: 240, desc: 'Do 60 sit-ups within 4:00.' },
+      { id: 'sprint', name: 'SPRINT', kind: 'clock', secs: 420, desc: 'Run 1 km in under 7:00.' },
+      { id: 'longrun', name: 'ENDURANCE RUN', kind: 'endure', secs: 1200, desc: 'Run for 20 minutes without stopping.' },
+      { id: 'plank', name: 'IRON PLANK', kind: 'endure', secs: 120, desc: 'Hold a plank for 2:00.' },
+      { id: 'wallsit', name: 'WALL SIT', kind: 'endure', secs: 90, desc: 'Hold a wall sit for 1:30.' }
+    ];
+    var WEAK = { 'ex-pushups': { name: 'push-ups', n: 30 }, 'ex-situps': { name: 'sit-ups', n: 30 }, 'ex-squats': { name: 'squats', n: 30 }, 'ex-run': { name: 'km of running', n: 2 } };
+    function load() {
+      try { var o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && typeof o.day === 'string') return o; } catch (e) {}
+      return { day: null, done: {}, active: null, weak: 0, tod: null };
+    }
+    function save() { if (restoring) return; try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+    function hash(x) { return C().hashSeed ? (C().hashSeed(x) >>> 0) : 0; }
+    function ensureDay() { if (st.day !== state.day) { st = { day: state.day, done: {}, active: null, weak: 0, tod: (st.tod && st.tod.day === state.day) ? st.tod : null }; save(); } }
+    function todays() {
+      var a = hash('side|' + state.day) % POOL.length, b = (a + 1 + hash('side2|' + state.day) % (POOL.length - 1)) % POOL.length;
+      return [POOL[a], POOL[b]];
+    }
+    function rewardOf() { var g = C().GATE_GOLD[hunterGateRank()] || [10, 25]; return { gold: Math.max(5, Math.round((g[0] + g[1]) / 2 * 0.5)), energy: 25 }; }
+    function weakStat() { var lo = null; ['STR', 'VIT', 'END', 'AGI'].forEach(function(k) { if (lo === null || stats[k] < stats[lo]) lo = k; }); return lo; }
+    function weakEx(stat) {
+      var best = null, bw = -1; Object.keys(EXERCISE_INFO).forEach(function(id) { var w = EXERCISE_INFO[id].stats[stat] || 0; if (w > bw) { bw = w; best = id; } });
+      return best;
+    }
+    function weekKey() { var t = new Date(); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(); }
+    function restUsed() { return Hist.data().restWeek === weekKey(); }
+    function restOk() { return !restUsed() && questModifiable() && !state.mods.waivedAll; }
+    // chain: consecutive days with the quest cleared AND a side quest done (a rest day keeps the chain alive)
+    function chainLen() {
+      var d = Hist.data().days, t = new Date(), n = 0, first = true;
+      for (var i = 0; i < 60; i++) {
+        var k = t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(), x = d[k]; t.setDate(t.getDate() - 1);
+        var ok = x && ((x.clr && (x.side || 0) >= 1) || (x.rest && !x.clr) || (x.rest && x.clr));
+        if (ok) { n++; first = false; } else if (first && i === 0) { continue; } else break;
+      }
+      return n;
+    }
+    function chainBonus() { var n = chainLen(); return n ? { atk: Math.min(0.10, 0.02 * n) } : {}; }
+    function fmtT(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + (sec % 60 < 10 ? '0' : '') + (sec % 60); }
+    function giveReward(name) {
+      var r = rewardOf(); goldBalance += r.gold; saveGold(); renderGoldDisplays(); var e = 0; try { e = gainEnergy(r.energy); } catch (x) {}
+      var h = Hist.today(); h.side = (h.side || 0) + 1; Hist.save();
+      Hist.log('side', 'Completed the side quest ' + name + ': +' + r.gold + ' gold, +' + e + ' Gate Energy.');
+      try { Fx.play('coin'); Fx.pulse('blue'); } catch (x) {}
+      showToast(name + ' complete: +' + r.gold + ' gold and +' + e + ' Gate Energy.');
+    }
+    function draw() {
+      var c = $('trainCard'); if (!c) return; ensureDay();
+      var open = true; try { open = localStorage.getItem(OPEN) !== '0'; } catch (e) {}
+      var n = chainLen(), cb = chainBonus(), tr = rewardOf();
+      var html = '<div class="train panel"><div class="train-h" id="trainHead"><span>TRAINING BOARD</span><span>' + (open ? '&#9662;' : '&#9656;') + '</span></div>';
+      if (open) {
+        html += '<div class="stats-note" style="margin-top:6px;">CHAIN <b>' + n + '</b> DAY' + (n === 1 ? '' : 'S') + (cb.atk ? ' &middot; +' + Math.round(cb.atk * 100) + '% ATTACK IN GATE FIGHTS' : ' &middot; clear the quest and one side quest to start a chain (+2% attack per day, up to +10%)') + '</div>';
+        todays().forEach(function(q) {
+          var done = st.done[q.id], act = st.active && st.active.id === q.id;
+          html += '<div class="train-item' + (done ? ' done' : '') + '"><b>' + q.name + '</b> &middot; ' + (q.kind === 'clock' ? 'BEAT THE CLOCK' : 'ENDURANCE') + '<br>' + q.desc + '<br><span style="opacity:.75;">Reward: ' + tr.gold + ' gold and ' + tr.energy + ' Gate Energy.</span>';
+          if (done) html += '<br><b style="color:#4be39a;">COMPLETE</b>';
+          else if (act) html += '<div class="train-timer" id="trainTimer">0:00</div><div class="train-btns"><button class="use-btn" id="sideDone" data-q="' + q.id + '">DONE</button><button class="stash-btn" id="sideCancel">GIVE UP</button></div>';
+          else html += '<div class="train-btns"><button class="use-btn" data-sidestart="' + q.id + '"' + (st.active ? ' disabled' : '') + '>START</button></div>';
+          html += '</div>';
+        });
+        var ws = weakStat(), wx = weakEx(ws), w = WEAK[wx];
+        html += '<div class="train-item' + (st.weak ? ' done' : '') + '"><b>WEAKNESS TRAINING</b> &middot; ' + ws + '<br>Your lowest stat is ' + ws + '. Do ' + w.n + ' extra ' + w.name + ' beyond today\'s quest.<br><span style="opacity:.75;">Reward: +2 ' + ws + ' permanently, and 10 Gate Energy.</span>' +
+          (st.weak ? '<br><b style="color:#4be39a;">COMPLETE</b>' : '<div class="train-btns"><button class="use-btn" id="weakDone">I DID IT</button></div>') + '</div>';
+        var ru = restUsed();
+        html += '<div class="train-item"><b>REST DAY</b> &middot; ONE PER WEEK<br>Skip today\'s quest with no penalty. Your streak and chain survive, you are fully healed, and your next gate starts <b>Recovered</b> (+10% HP, +5% attack). You earn no loot or level today.' +
+          (state.mods.waivedAll ? '<br><b style="color:#4be39a;">TODAY IS A REST DAY</b>' : (ru ? '<br><span style="opacity:.7;">Already used this week.</span>' : (restOk() ? '<div class="train-btns"><button class="stash-btn" id="restBtn">' + (armRest ? 'SURE? REST TODAY' : 'DECLARE REST DAY') + '</button></div>' : '<br><span style="opacity:.7;">Not available once today\'s quest is cleared.</span>'))) + '</div>';
+        var h = new Date().getHours();
+        html += '<div class="stats-note" style="margin-top:8px;">TIME BONUS: clear the quest before 8 AM for <b>+20 Gate Energy (Dawn Hunter)</b>, or after 9 PM for <b>+30% starting Limit in your next gate (Night Hunter)</b>.' + (st.tod ? ' Earned today: <b>' + (st.tod.kind === 'dawn' ? 'DAWN HUNTER' : 'NIGHT HUNTER') + '</b>.' : '') + '</div>';
+      }
+      c.innerHTML = html + '</div>';
+      startTick();
+    }
+    function startTick() {
+      if (tick) { clearInterval(tick); tick = null; }
+      if (!st.active) return;
+      var upd = function() {
+        var el = $('trainTimer'); if (!el) return; var q = null; POOL.forEach(function(x) { if (x.id === st.active.id) q = x; });
+        var el_s = (Date.now() - st.active.t0) / 1000;
+        el.textContent = fmtT(el_s) + (q ? ' / ' + (q.kind === 'clock' ? 'LIMIT ' : 'GOAL ') + fmtT(q.secs) : '');
+        el.style.color = q && q.kind === 'clock' && el_s > q.secs ? '#ff6a6a' : (q && q.kind === 'endure' && el_s >= q.secs ? '#4be39a' : '#7ad7ff');
+      };
+      upd(); tick = setInterval(upd, 500);
+    }
+    function onClick(ev) {
+      var t = ev.target; if (!t || !t.closest) return;
+      var b = t.closest('button, #trainHead'); if (!b) return; ensureDay();
+      if (b.id === 'trainHead') { var o = true; try { o = localStorage.getItem(OPEN) !== '0'; } catch (e) {} try { localStorage.setItem(OPEN, o ? '0' : '1'); } catch (e) {} draw(); return; }
+      var ss = b.getAttribute('data-sidestart');
+      if (ss) { if (st.active || st.done[ss]) return; st.active = { id: ss, t0: Date.now() }; save(); draw(); return; }
+      if (b.id === 'sideCancel') { st.active = null; save(); draw(); return; }
+      if (b.id === 'sideDone' && st.active) {
+        var q = null; POOL.forEach(function(x) { if (x.id === st.active.id) q = x; }); if (!q) return;
+        var secs = (Date.now() - st.active.t0) / 1000;
+        if (q.kind === 'clock' && secs > q.secs) { st.active = null; save(); showToast('Too slow: ' + fmtT(secs) + ' against a ' + fmtT(q.secs) + ' limit. Try again.'); draw(); return; }
+        if (q.kind === 'endure' && secs < q.secs) { showToast('Keep going: ' + fmtT(q.secs - secs) + ' left.'); return; }
+        st.done[q.id] = 1; st.active = null; save(); giveReward(q.name); draw(); return;
+      }
+      if (b.id === 'weakDone' && !st.weak) {
+        var ws = weakStat(); stats[ws] = Math.round((stats[ws] + 2) * 100) / 100; saveStats(); st.weak = 1; save();
+        try { gainEnergy(10); } catch (e) {} try { renderStatGrid(); } catch (e) {}
+        Hist.log('side', 'Finished Weakness Training: +2 ' + ws + ' permanently.'); showToast('Weakness Training complete: +2 ' + ws + ' and 10 Gate Energy.'); try { Fx.play('relic'); Fx.pulse('blue'); } catch (e) {} draw(); return;
+      }
+      if (b.id === 'restBtn') {
+        if (!restOk()) return;
+        if (!armRest) { armRest = true; draw(); setTimeout(function() { if (armRest) { armRest = false; draw(); } }, 4000); return; }
+        armRest = false; declareRest(); return;
+      }
+    }
+    function declareRest() {
+      var item = { name: 'Rest Day' };
+      applyCore(item, { type: 'waiveAll', rewards: false }, null);
+      state.mods.log.push('Rest Day: quest waived (rest day)');
+      saveState();
+      var hd = Hist.data(); hd.restWeek = weekKey(); hd.recovered = true; Hist.today().rest = 1; Hist.save();
+      try { localStorage.removeItem('the-system-recovery'); } catch (e) {}
+      Hist.log('rest', 'Took a rest day. Streak safe, fully healed, Recovered buff ready.');
+      try { Fx.play('shrine'); Fx.pulse('blue'); } catch (e) {}
+      showToast('Rest day declared. Your streak is safe and your next gate starts Recovered.');
+      render(); updateBanner(); draw();
+    }
+    // time-of-day bonus when the quest is cleared
+    function onClear() {
+      ensureDay(); if (state.mods.waivedAll || st.tod) return;
+      var h = new Date().getHours();
+      if (h >= 4 && h < 8) { var e = 0; try { e = gainEnergy(20); } catch (x) {} st.tod = { day: state.day, kind: 'dawn', energy: e }; save(); Hist.log('side', 'Dawn Hunter: cleared the quest before 8 AM (+' + e + ' Gate Energy).'); showToast('DAWN HUNTER: +' + e + ' Gate Energy.'); }
+      else if (h >= 21 || h < 4) { st.tod = { day: state.day, kind: 'night' }; Hist.data().nightLim = 30; Hist.save(); save(); Hist.log('side', 'Night Hunter: your next gate starts with 30% Limit.'); showToast('NIGHT HUNTER: your next gate starts with +30% Limit.'); }
+      draw();
+    }
+    function onUndo() {
+      ensureDay(); if (!st.tod) return;
+      if (st.tod.kind === 'dawn' && st.tod.energy) { energy.value = Math.max(0, energy.value - st.tod.energy); saveEnergy(); refreshEnergyViews(); }
+      if (st.tod.kind === 'night') { Hist.data().nightLim = 0; Hist.save(); }
+      st.tod = null; save();
+    }
+    // consumed when a gate run begins
+    function takeGateBuffs() {
+      var h = Hist.data(), out = { bonus: null, lim: 0, note: '' };
+      if (h.recovered) { out.bonus = { hp: 0.10, atk: 0.05 }; out.note = 'RECOVERED: +10% HP and +5% attack for this gate. '; h.recovered = false; }
+      if (h.nightLim) { out.lim = h.nightLim; out.note += 'NIGHT HUNTER: every fight starts with ' + h.nightLim + '% more Limit. '; h.nightLim = 0; }
+      Hist.save(); return out;
+    }
+    document.addEventListener('click', function(ev) { var c = $('trainCard'); if (c && c.contains(ev.target)) onClick(ev); });
+    return { draw: draw, chainBonus: chainBonus, chainLen: chainLen, onClear: onClear, onUndo: onUndo, takeGateBuffs: takeGateBuffs };
+  })();
+  try { Train.draw(); } catch (e) {}
+
+
+  // ---- Scars ---------------------------------------------------------------------------
+  // Win a gate fight while clinging to under 10% HP and the fight leaves a Scar for 3 days: a small penalty and a small bonus. Up to 3 at once.
+  var Scars = (function() {
+    var KEY = 'the-system-scars', list = load();
+    var TYPES = [
+      { id: 'arm', name: 'Gashed Arm', bonus: { atk: -0.05, crit: 0.06 }, txt: '-5% attack, +6% crit chance' },
+      { id: 'nerves', name: 'Rattled Nerves', bonus: { def: -0.05, evasion: 0.06 }, txt: '-5% defense, +6% evasion' },
+      { id: 'ribs', name: 'Cracked Ribs', bonus: { hp: -0.06, atk: 0.05 }, txt: '-6% HP, +5% attack' },
+      { id: 'burn', name: 'Burned Hand', bonus: { atk: -0.04, mana: 0.10 }, txt: '-4% attack, +10% mana' },
+      { id: 'resolve', name: 'Shaken Resolve', bonus: { hp: -0.04, def: 0.06 }, txt: '-4% HP, +6% defense' }
+    ];
+    function load() { try { var o = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(o) ? o : []; } catch (e) { return []; } }
+    function save() { if (restoring) return; try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} }
+    function live() { var n = Date.now(); var l = list.filter(function(x) { return x.exp > n; }); if (l.length !== list.length) { list = l; save(); } return list; }
+    function bonus() { var o = {}; live().forEach(function(x) { Object.keys(x.bonus).forEach(function(k) { o[k] = (o[k] || 0) + x.bonus[k]; }); }); return o; }
+    function onFight(done) {
+      if (!done || !done.S || done.S.over !== 'victory' || (done.kind !== 'gate' && done.kind !== 'ranktrial')) return;
+      var low = done.S.stats && done.S.stats.minHP; if (low == null || low > 0.10) return;
+      var have = live().map(function(x) { return x.id; }), pool = TYPES.filter(function(t) { return have.indexOf(t.id) < 0; });
+      if (!pool.length || live().length >= 3) return;
+      var h = (window.SystemCombat.hashSeed(String(done.title) + '|' + Date.now()) >>> 0) % pool.length, t = pool[h];
+      list.push({ id: t.id, name: t.name, bonus: t.bonus, txt: t.txt, exp: Date.now() + 72 * 3600000 }); save();
+      try { Hist.log('scar', 'Survived at ' + Math.max(1, Math.round(low * 100)) + '% HP and earned a scar: ' + t.name + ' (' + t.txt + ', 3 days).'); } catch (e) {}
+      try { Fx.play('hurt'); } catch (e) {}
+      showToast('SCAR: ' + t.name + ' (' + t.txt + ') for 3 days.');
+    }
+    function cardHtml() {
+      var l = live();
+      return '<div class="stats-section-title"><span>SCARS</span></div><div class="stats-today panel">' + (l.length ? l.map(function(x) { var h = Math.max(1, Math.ceil((x.exp - Date.now()) / 3600000)); return '<div class="stats-today-line">' + escapeHtml(x.name.toUpperCase()) + ' &middot; ' + escapeHtml(x.txt) + ' &middot; ' + h + 'h LEFT</div>'; }).join('') : '<div class="stats-note" style="text-align:left;">No scars. Win a gate fight with under 10% HP left and the System marks you: a small penalty and a small bonus for 3 days.</div>') + '</div>';
+    }
+    return { onFight: onFight, bonus: bonus, cardHtml: cardHtml, count: function() { return live().length; } };
+  })();
+
+  // ---- Hidden gates --------------------------------------------------------------------
+  // Rare gates that open only when you have done something specific. Each is a System-Exclusive gate (signature drop, double gold),
+  // lasts 14 days, and returns until cleared. Clearing one pays a bonus item and counts toward a collection.
+  var HIDDEN = {
+    flame: { name: 'TRIAL OF FLAME', why: 'a 7-day streak', desc: 'A gate that only opens for hunters whose fire has burned seven days straight.' },
+    duel: { name: "DUELISTS' VAULT", why: 'defeating 3 rival hunters', desc: 'The rivals you beat left something behind. It waits behind a sealed door.' },
+    tyrant: { name: "TYRANT'S REST", why: 'slaying 10 Daily Bosses', desc: 'The bosses you slew were only its servants. Now it knows your name.' },
+    abyss: { name: 'THE DEEP SILENCE', why: 'a 30-day streak', desc: 'A gate at the bottom of everything. It opens for the ones who never stopped.' }
+  };
+  function specialInfo(g) {
+    if (g && g.hidden && HIDDEN[g.hidden]) { var h = HIDDEN[g.hidden]; return { color: '#ff9ad6', name: h.name, desc: h.desc, full: h.name + ' (HIDDEN GATE)' }; }
+    return GATE_SPECIAL_INFO;
+  }
+  var Hidden = (function() {
+    function met(k) {
+      if (k === 'flame') return Streak.best() >= 7;
+      if (k === 'abyss') return Streak.best() >= 30;
+      if (k === 'tyrant') return (DailyBoss.data().kills || 0) >= 10;
+      if (k === 'duel') { var rv = {}; try { rv = JSON.parse(localStorage.getItem('the-system-bestiary') || '{}').rv || {}; } catch (e) {} return Object.keys(rv).length >= 3; }
+      return false;
+    }
+    function check() {
+      if (!window.SystemCombat) return;
+      var d = Hist.data(); d.hu = d.hu || [];
+      Object.keys(HIDDEN).forEach(function(k) {
+        if (!met(k)) return;
+        var first = d.hu.indexOf(k) < 0, cleared = d.coll.hidden.indexOf(k) >= 0;
+        if (first) { d.hu.push(k); Hist.save(); }
+        if (cleared || gates.some(function(g) { return g.hidden === k; })) return;
+        var g = spawnKeyGate(); g.hidden = k; gates.push(g); saveGates();
+        if (first) { Hist.log('hidden', 'A hidden gate opened: ' + HIDDEN[k].name + ' (' + HIDDEN[k].why + ').'); showToast('A HIDDEN GATE opened: ' + HIDDEN[k].name + '. Look for the pink portal on the map.'); try { Fx.play('door'); Fx.pulse('gold'); } catch (e) {} }
+        try { if (document.getElementById('gateOverlay').classList.contains('show')) renderGateMap(); } catch (e) {}
+      });
+    }
+    return { check: check };
+  })();
 
   // ---- Rank-Up Trial -----------------------------------------------------------------
   // When an evaluation says you have outgrown your rank, the System issues a trial: a wave, an elite and a
@@ -10457,7 +11008,7 @@
             else { inventory.unshift(makeEntry(fl, false)); saveInventory(); renderInventoryBadge(); loot = fl.mystery ? 'a mystery item' : fl.name; }
           } catch (x) {}
           if (gold) { goldBalance += gold; saveGold(); renderGoldDisplays(); }
-          hunterProfile.rank = st.target; hunterProfile.rankTrial = null; saveHunter();
+          hunterProfile.rank = st.target; hunterProfile.rankTrial = null; saveHunter(); try { Hist.log('rank', 'Passed the Rank-Up Trial and became a ' + st.target + '-rank hunter.'); } catch (e) {}
           st.stage = 'done'; st.result = { gold: gold, loot: loot }; save();
           try { renderGateMap(); } catch (e) {}
           show(); return;
@@ -10504,7 +11055,7 @@
       });
       save();
     }
-    function rival(id) { data.rv[id] = (data.rv[id] || 0) + 1; save(); }
+    function rival(id) { data.rv[id] = (data.rv[id] || 0) + 1; save(); try { var rd = null; C().RIVALS.forEach(function(x) { if (x.id === id) rd = x; }); Hist.log('rival', 'Defeated the rival hunter ' + (rd ? rd.name : id) + '.'); Records.checkColl(); } catch (e) {} }
     function open() {
       var ranks = ['E', 'D', 'C', 'B', 'A', 'S'], all = Object.keys(data.e).map(function(k) { var r = data.e[k]; r.id = k; return r; });
       var total = 0, tp = {}; ranks.forEach(function(rk) { tp[rk] = all.filter(function(r) { return r.rank === rk; }).length; total += tp[rk]; });
