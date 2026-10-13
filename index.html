@@ -1443,6 +1443,12 @@
   #lvlUpPop .lu-msg { white-space: nowrap; margin-top: 4px; font-size: 13px; letter-spacing: .08em; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(120,190,255,.9); }
   #lvlUpPop .lu-lv { margin-top: 4px; font-size: 11px; letter-spacing: .14em; color: #bfe0ff; } #lvlUpPop .lu-lv b { color: #ffe58a; font-size: 13px; text-shadow: 0 0 8px rgba(255,210,90,.8); }
   @keyframes lvlPopWrap { 0% { opacity: 0; transform: translateX(-50%) scale(.85); } 14% { opacity: 1; transform: translateX(-50%) scale(1.04); } 24% { transform: translateX(-50%) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1.02); } }
+  .gate-lore { margin: 10px 0 4px; text-align: left; font-size: 12.5px; }
+  .gate-lore .gl-row { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid rgba(125,192,255,.15); }
+  .gate-lore .gl-row b { flex: 0 0 74px; font-size: 10.5px; letter-spacing: .14em; color: var(--cyan); }
+  .gate-lore .gl-types span { display: flex; flex-wrap: wrap; gap: 5px; }
+  .gate-lore .gl-types i { font-style: normal; padding: 2px 7px; border: 1px solid rgba(125,192,255,.35); background: rgba(20,50,90,.4); color: #dcebff; font-size: 11.5px; }
+  .gate-lore .gl-q { color: #ffd76a; letter-spacing: .2em; text-shadow: 0 0 8px rgba(255,215,106,.5); }
   @keyframes ringSpinBack { to { transform: rotate(-360deg); } }
   @keyframes arcFlash { 0% { opacity: .95; } 35% { opacity: .2; } 55% { opacity: 1; } 80% { opacity: .35; } }
   @keyframes ringSpin { to { transform: rotate(360deg); } }
@@ -1576,6 +1582,12 @@
   .bt-intent.release { animation: btPulse .9s infinite; } .bt-intent.guard { border-color: #7f93b3; }
   .bt-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
   .bt-chip { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border: 1px solid rgba(125,192,255,0.35); color: var(--cyan); }
+  .bt-chip.tap { cursor: pointer; text-decoration: underline dotted rgba(125,192,255,.55); text-underline-offset: 2px; -webkit-tap-highlight-color: transparent; font-size: 10px; padding: 2px 6px; }
+  #btFxInfo { position: fixed; left: 50%; top: 30%; transform: translateX(-50%) scale(.96); width: min(88vw, 320px); z-index: 50; padding: 10px 14px 8px; background: rgba(4,14,34,.95); border: 1px solid var(--cyan); box-shadow: 0 0 22px rgba(80,160,255,.45); opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; font-family: 'Share Tech Mono', monospace; }
+  #btFxInfo.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+  #btFxInfo.good { border-color: var(--green); box-shadow: 0 0 22px rgba(61,255,176,.35); } #btFxInfo.bad { border-color: #ff5a78; box-shadow: 0 0 22px rgba(255,59,92,.35); }
+  #btFxInfo .fxi-k { font-size: 10px; letter-spacing: .2em; color: #9fc4ee; } #btFxInfo .fxi-t { margin-top: 3px; font-size: 17px; font-weight: 700; color: #fff; letter-spacing: .06em; }
+  #btFxInfo .fxi-b { margin-top: 6px; font-size: 13.5px; line-height: 1.4; color: #dcebff; } #btFxInfo .fxi-x { margin-top: 6px; font-size: 9.5px; color: #7f93b3; text-align: right; }
   .bt-chip.bad { color: #ff7a8e; border-color: rgba(255,59,92,0.5); } .bt-chip.good { color: var(--green); border-color: rgba(61,255,176,0.5); }
   .bt-float { position: absolute; right: 12px; left: auto; top: 30px; transform: none; font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 18px; color: #fff; text-shadow: 0 0 8px var(--red), 0 0 2px #000; pointer-events: none; animation: btFloat .9s forwards; z-index: 3; }
   .bt-float.crit { color: #ffd76a; font-size: 22px; } .bt-float.weak { color: var(--green); } .bt-float.heal { color: var(--green); }
@@ -4092,7 +4104,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-12-levelup-popup';
+  var APP_VERSION = '2026-10-13-effect-info';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -7445,6 +7457,22 @@
     var kind = g.breach ? 'breach' : (g.special ? 'system' : (red ? 'red' : null));
     return window.SystemCombat.planGate(rr ? rr.rank : gateEffectiveRank(g), gateSeed(g), { kind: kind, over: !!(rr && rr.over), anom: g.special ? 0.25 : ((g.secretRed && !g.breach) ? (preview ? 0 : 0.3) : 0) });
   }
+  // Inside a gate you learn its theme and the kinds of monsters in it. About one gate in ten keeps that
+  // secret (the same ones every time, decided by the gate's seed), and a Red Gate always does.
+  function gateMystery(g) {
+    if (!g) return false;
+    if (g.secretRed && !g.breach && !g.special) return true;
+    var h = 2166136261, t = 'mystery|' + gateSeed(g);
+    for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return ((h >>> 0) % 100) < 10;
+  }
+  function gateLoreHtml(g, plan, withTypes) {
+    var mystery = gateMystery(g), seen = {}, names = [];
+    if (!mystery) plan.floors.forEach(function(f) { if (f.type !== 'wave') return; f.enemies.forEach(function(e) { var n = e.name; if (n && !seen[n]) { seen[n] = 1; names.push(n); } }); });
+    var h = '<div class="gate-lore"><div class="gl-row"><b>THEME</b><span' + (mystery ? ' class="gl-q"' : '') + '>' + (mystery ? '? ? ?' : escapeHtml(plan.themeName || 'Unknown')) + '</span></div>';
+    if (withTypes) h += '<div class="gl-row gl-types"><b>ENEMIES</b>' + (mystery ? '<span class="gl-q">? ? ? &nbsp;? ? ? &nbsp;? ? ?</span>' : '<span>' + names.map(function(n) { return '<i>' + escapeHtml(n) + '</i>'; }).join('') + '</span>') + '</div>';
+    return h + '</div>';
+  }
   function planPipsHtml(plan) {
     return '<div class="plan-pips">' + plan.floors.map(function(f) {
       var t = f.type === 'wave' ? (f.horde ? 'H' : 'W') : (f.type === 'elite' ? 'E' : 'B');
@@ -8225,12 +8253,69 @@
       if (mv.status && typeof mv.status === 'object' && !e.chargeMove) label += ' <span style="opacity:.75">+' + (C().STATUS_NAMES[mv.status.id] || mv.status.id) + '</span>';
       return '<div class="bt-intent ' + cls + '"><b>' + head + '</b>' + label + '</div>';
     }
+    // What every effect tag does. Tap a tag on you or on an enemy to read it.
+    var FX_INFO = {
+      bleed:      ['debuff', 'Bleeding. Takes damage at the end of every round (a quarter of the attacker\'s attack each time).'],
+      burn:       ['debuff', 'Burning. Takes damage at the end of every round (30% of the attacker\'s attack each time).'],
+      poison:     ['debuff', 'Poisoned. Loses 3% of its max HP at the end of every round.'],
+      stun:       ['debuff', 'Stunned. Loses its next action.'],
+      weaken:     ['debuff', 'Weakened. Its attack is reduced by 25%.'],
+      guardbreak: ['debuff', 'Guard broken. Its defense is reduced by 40%, so it takes more damage.'],
+      slow:       ['debuff', 'Slowed. Its speed is reduced by 40%.'],
+      regen:      ['buff',   'Regenerating. Recovers HP at the end of every round.'],
+      shield:     ['buff',   'Shielded. Absorbs damage before any HP is lost, until the shield is used up.'],
+      berserk:    ['buff',   'Berserk. Attack is raised by 50%, but defense is lowered by 20%.'],
+      atkup:      ['buff',   'Empowered. Attack is raised by 25%.'],
+      defup:      ['buff',   'Fortified. Defense is raised by 25%.'],
+      haste:      ['buff',   'Hasted. Speed is raised by 40%.'],
+      focus:      ['buff',   'Focused. Concentrating for the next strike.'],
+      keen:       ['buff',   'Keen. Critical hit chance is raised by 25%, so more of your strikes crit for extra damage.'],
+      blur:       ['buff',   'Blurred. Chance to dodge incoming attacks is raised by 20%.']
+    };
+    function fxInfoFor(key) {
+      var a = key.split('|'), kind = a[0], S = SS(), P = S.player;
+      if (kind === 'st') {
+        var id = a[1], who = a[2] === 'P' ? P : byUid(S, a[2]), d = FX_INFO[id]; if (!d) return null;
+        var u = who && who.st && who.st[id], extra = [];
+        if (u) {
+          if (u.dur >= 999) extra.push('Lasts the whole fight.');
+          else if (u.dur > 0) extra.push('Lasts ' + u.dur + ' more round' + (u.dur === 1 ? '' : 's') + '.');
+          if (u.v && (id === 'bleed' || id === 'burn' || id === 'poison' || id === 'regen')) extra.push((id === 'regen' ? 'Heals ' : 'Deals ') + Math.round(u.v) + ' per round.');
+          if (u.v && id === 'shield') extra.push(Math.round(u.v) + ' damage left to absorb.');
+        }
+        var self = a[2] === 'P';
+        var txt = d[1];
+        if (id === 'stun' && self) txt = 'Stunned. You lose your next turn.';
+        if (id === 'keen' && !self) txt = 'Keen. Its attacks crit more often.';
+        return { title: (C().STATUS_NAMES[id] || id).toUpperCase(), kind: d[0] === 'buff' ? (self ? 'BUFF on you' : 'BUFF on the enemy') : (self ? 'DEBUFF on you' : 'DEBUFF on the enemy'), good: (d[0] === 'buff') === self, body: txt + (extra.length ? ' ' + extra.join(' ') : '') };
+      }
+      if (kind === 'guard') return { title: 'GUARDED', kind: 'BUFF on the enemy', good: false, body: 'It raised its guard this round. Damage it takes until its next move is halved.' };
+      if (kind === 'tired') return { title: 'TIRED', kind: 'WARNING', good: false, body: 'Your fatigue is high. There is no penalty yet, but at 100% you will lose a turn. Defend or use a recovery item to ease it.' };
+      if (kind === 'exh') return { title: 'EXHAUSTED', kind: 'DEBUFF on you', good: false, body: 'You are out of stamina and will lose your next turn. Your fatigue resets after the turn is lost.' };
+      if (kind === 'sig') return { title: 'SIGNATURE TECHNIQUE', kind: 'REWARD', good: true, body: 'This enemy has a special technique. Defeating it can teach you that ability.' };
+      if (kind === 'wk') return { title: (a[2] === 'weak' ? 'WEAK: ' : 'RESISTS: ') + a[1].toUpperCase(), kind: a[2] === 'weak' ? 'WEAKNESS' : 'RESISTANCE', good: a[2] === 'weak', body: a[2] === 'weak' ? 'Takes 40% extra damage from ' + a[1] + ' attacks.' : 'Takes 40% less damage from ' + a[1] + ' attacks.' };
+      return null;
+    }
+    function hideFxInfo() { var el = $('btFxInfo'); if (el) el.classList.remove('show'); }
+    document.addEventListener('click', function(e) {
+      var chip = e.target && e.target.closest ? e.target.closest('.bt-chip[data-fx]') : null;
+      if (!chip) { if (!(e.target && e.target.closest && e.target.closest('#btFxInfo'))) hideFxInfo(); return; }
+      if (!cur) return;
+      var info = fxInfoFor(chip.getAttribute('data-fx')); if (!info) return;
+      e.stopPropagation();
+      var el = $('btFxInfo');
+      if (!el) { el = document.createElement('div'); el.id = 'btFxInfo'; $('battleOverlay').appendChild(el); el.addEventListener('click', hideFxInfo); }
+      el.className = 'show ' + (info.good ? 'good' : 'bad');
+      el.innerHTML = '<div class="fxi-k">' + esc(info.kind) + '</div><div class="fxi-t">' + esc(info.title) + '</div><div class="fxi-b">' + esc(info.body) + '</div><div class="fxi-x">tap to close</div>';
+      clearTimeout(el._t); el._t = setTimeout(hideFxInfo, 9000);
+    }, true);
+    function fchipHtml(cls, label, key) { return '<span class="bt-chip tap ' + cls + '" data-fx="' + esc(key) + '">' + label + '</span>'; }
     function chipsHtml(S, e) {
       var chips = [], SN = C().STATUS_NAMES, kn = (cur.known && cur.known[e.id || e.name]) || {};
-      Object.keys(e.st || {}).forEach(function(id) { chips.push('<span class="bt-chip ' + (BAD[id] ? 'good' : 'bad') + '">' + (SN[id] || id).toUpperCase() + '</span>'); });
-      if (e.guard) chips.push('<span class="bt-chip">GUARDED</span>');
-      if (e.abilityId && e.alive) chips.push('<span class="bt-chip gold">SIGNATURE TECHNIQUE</span>');
-      Object.keys(kn).forEach(function(k) { chips.push('<span class="bt-chip ' + (kn[k] === 'weak' ? 'good' : 'bad') + '">' + (kn[k] === 'weak' ? 'WEAK: ' : 'RESISTS: ') + k.toUpperCase() + '</span>'); });
+      Object.keys(e.st || {}).forEach(function(id) { chips.push(fchipHtml(BAD[id] ? 'good' : 'bad', (SN[id] || id).toUpperCase(), 'st|' + id + '|' + e.uid)); });
+      if (e.guard) chips.push(fchipHtml('', 'GUARDED', 'guard'));
+      if (e.abilityId && e.alive) chips.push(fchipHtml('gold', 'SIGNATURE TECHNIQUE', 'sig'));
+      Object.keys(kn).forEach(function(k) { chips.push(fchipHtml(kn[k] === 'weak' ? 'good' : 'bad', (kn[k] === 'weak' ? 'WEAK: ' : 'RESISTS: ') + k.toUpperCase(), 'wk|' + k + '|' + kn[k])); });
       return chips.length ? '<div class="bt-chips">' + chips.join('') + '</div>' : '';
     }
     function renderField() {
@@ -8267,8 +8352,8 @@
     function renderMe() {
       nextMe = {};
       var P = SS().player, SN = C().STATUS_NAMES;
-      var ft = C().fatigueTier(P), fchip = ft === 2 ? '<span class="bt-chip bad">EXHAUSTED &middot; LOSES NEXT TURN</span>' : (ft === 1 ? '<span class="bt-chip bad">TIRED</span>' : '');
-      var st = fchip + Object.keys(P.st || {}).map(function(id) { return '<span class="bt-chip ' + (BAD[id] ? 'bad' : 'good') + '">' + (SN[id] || id).toUpperCase() + '</span>'; }).join('');
+      var ft = C().fatigueTier(P), fchip = ft === 2 ? fchipHtml('bad', 'EXHAUSTED &middot; LOSES NEXT TURN', 'exh') : (ft === 1 ? fchipHtml('bad', 'TIRED', 'tired') : '');
+      var st = fchip + Object.keys(P.st || {}).map(function(id) { return fchipHtml(BAD[id] ? 'bad' : 'good', (SN[id] || id).toUpperCase(), 'st|' + id + '|P'); }).join('');
       var fat = '<div class="bt-me-row"><span>FATIGUE</span>' + slideBar('FATIGUE', 'fat', Math.max(0, Math.min(100, P.fatigue))) + '<span>' + Math.round(P.fatigue) + '%</span></div>';
       var mana = (P.abilities || []).some(function(id) { var a0 = C().abilities[id]; return a0 && a0.mana > 0; }) ? barRow('MANA', 'mana', P.mana, P.maxMana) : '';
       $('btMe').innerHTML = barRow('HP', 'hpgood', P.hp, P.maxHP) + fat + mana + (st ? '<div class="bt-chips">' + st + '</div>' : '');
@@ -8530,7 +8615,7 @@
       subOpen = false; fleeArm = 0; locked = false; V = null; busy = false; actingUid = null;
       banner(null); $('btLog').innerHTML = ''; $('btResult').classList.remove('show');
       $('battleOverlay').classList.add('show'); document.body.style.overflow = 'hidden';
-      pushLog([['sys', fresh ? 'The System: BATTLE START.' : 'The System: battle resumed.']]);
+      pushLog([['sys', fresh ? 'The System: BATTLE START. Tap any effect tag to read what it does.' : 'The System: battle resumed.']]);
       renderAll();
       if (cur.S.over) showResult();
     }
@@ -8629,7 +8714,7 @@
         title = g ? gateFull(g) : 'GATE';
         var P0 = playerFor(C().chargeBonus(C().spendCharges(power).spent)), sp = C().spendCharges(power).spent;
         var qp = QP_CHARGES.filter(function(c) { return sp[c.key] > 0; }).map(function(c) { return c.short + ' x' + sp[c.key] + ' (' + c.does + ')'; });
-        html = '<div class="run-card"><div class="run-rank" style="color:' + col + ';text-shadow:0 0 18px ' + col + ';">' + (g.breach ? '!' : (g.special ? '&#10022;' : (gateRevealedRed(g) ? 'R' : g.rank))) + '</div><div class="run-name">' + (g.breach ? info.name : gateFull(g)) + '</div><div class="run-sub">YOU STAND AT THE THRESHOLD</div>' +
+        html = '<div class="run-card"><div class="run-rank" style="color:' + col + ';text-shadow:0 0 18px ' + col + ';">' + (g.breach ? '!' : (g.special ? '&#10022;' : (gateRevealedRed(g) ? 'R' : g.rank))) + '</div><div class="run-name">' + (g.breach ? info.name : gateFull(g)) + '</div><div class="run-sub">YOU STAND AT THE THRESHOLD</div>' + gateLoreHtml(g, plan, true) +
           (gateRevealedRed(g) ? '<div class="run-warn" style="margin-top:8px;">The gate warped as it sealed. It is no longer ' + ('EAS'.indexOf(g.rank) >= 0 ? 'an ' : 'a ') + g.rank + '-rank gate. This is a RED GATE, with its own rules and a danger far beyond what the map showed. Even its common creatures are a real threat.</div>' : '') + '<div class="run-text">Floor after floor, your HP and fatigue carry over with only a partial recovery between fights. Every attack tires you, and at 100% fatigue you lose a turn. Pace yourself.</div>' +
           '<div style="margin-top:10px">' + bars(P0.maxHP, 0, P0.maxMana, P0) + '</div>' +
           '<div class="stats-note" style="margin-top:8px;">QUEST POWER SPENT: ' + (qp.length ? qp.join(' &middot; ') : 'none stored') + '</div>' +
@@ -8640,7 +8725,7 @@
         title = g ? gateFull(g) : 'GATE';
         var f = plan.floors[run.floor], P = playerFor(run.bonus);
         var kindTxt = f.type === 'boss' ? 'BOSS FLOOR' : (f.type === 'elite' ? 'ELITE FLOOR' : (f.horde ? 'HORDE FLOOR' : 'WAVE'));
-        html = '<div class="run-card"><div class="run-name" style="color:' + col + ';">FLOOR ' + (run.floor + 1) + ' OF ' + plan.floorCount + '</div><div class="run-sub">' + kindTxt + ' &middot; AHEAD</div>' + pips(plan, run) +
+        html = '<div class="run-card"><div class="run-name" style="color:' + col + ';">FLOOR ' + (run.floor + 1) + ' OF ' + plan.floorCount + '</div><div class="run-sub">' + kindTxt + ' &middot; AHEAD</div>' + gateLoreHtml(g, plan, false) + pips(plan, run) +
           (run.msg ? '<div class="run-text" style="margin-top:8px;">' + escapeHtml(run.msg) + '</div>' : '') +
           '<div style="margin-top:10px">' + bars(run.hp, run.fat || 0, run.mana, P) + '</div></div>' +
           '<div class="loot-decision-row"><button class="use-btn" id="runAdvanceBtn">ADVANCE</button>' + (e.trapped ? '' : '<button class="stash-btn" id="runRetreatBtn">' + (retreatArm ? 'SURE? RETREAT' : 'RETREAT') + '</button>') + '</div><div class="loot-decision-row" style="margin-top:8px;"><button class="stash-btn" id="runAbBtn">ABILITIES (' + Abil.loadout().length + ')</button><button class="stash-btn" id="runWpBtn">WEAPONS (' + Wpn.carriedCount() + ')</button></div>' +
