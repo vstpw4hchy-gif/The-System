@@ -1765,6 +1765,25 @@
   .bt-qte-row button { flex: 1; padding: 10px 4px; font-weight: 700; }
   @keyframes qteBar { from { width: 100%; } to { width: 0%; } }
   @keyframes qtePulse { 0%,100% { box-shadow: 0 0 0 rgba(255,215,106,0); } 50% { box-shadow: 0 0 14px rgba(255,215,106,0.6); } }
+
+  #newsOverlay { z-index: 90; }
+  .news-tv { max-width: 480px; margin: 0 auto; border: 1px solid #5a6fb0; border-radius: 10px; background: linear-gradient(180deg, #0a1030, #05081a); overflow: hidden; box-shadow: 0 0 24px rgba(80,120,255,0.25); }
+  .news-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #101a4a; border-bottom: 1px solid #5a6fb0; }
+  .news-live { background: #d8262f; color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 2px; padding: 2px 7px; border-radius: 3px; animation: newsBlink 1.4s infinite; }
+  .news-chan { font-weight: 800; letter-spacing: 3px; font-size: 12px; color: #cfe0ff; }
+  .news-time { margin-left: auto; font-size: 11px; opacity: .7; }
+  .news-head { padding: 12px 12px 4px; font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #fff; line-height: 1.2; }
+  .news-body { padding: 4px 12px 12px; min-height: 220px; max-height: 52vh; overflow-y: auto; }
+  .news-line { margin: 8px 0; font-size: 14px; line-height: 1.45; animation: newsIn .35s ease-out; }
+  .news-line b { color: #ffd76a; letter-spacing: 1px; font-size: 11px; display: block; }
+  .news-line.gate { border-left: 3px solid #5a6fb0; padding-left: 8px; }
+  .news-tick { overflow: hidden; white-space: nowrap; background: #d8262f; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 5px 0; }
+  .news-tick span { display: inline-block; padding-left: 100%; animation: newsTick 38s linear infinite; }
+  .news-btns { display: flex; gap: 8px; padding: 10px 12px; }
+  .news-btns button { flex: 1; }
+  @keyframes newsBlink { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+  @keyframes newsIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes newsTick { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 </style>
 </head>
 <body>
@@ -1980,6 +1999,7 @@
     <div id="gateStatusBanner"></div>
     <div class="loot-box-text" style="margin-bottom:12px;">Gates open at random across the state. Tap a marker to inspect it and choose whether to enter. Left uncleared a week, a gate breaks and spills its monsters out.</div>
     <div class="gate-legend" id="gateLegend"></div>
+    <div class="loot-decision-row" style="margin-bottom:8px;"><button class="stash-btn" id="newsReplayBtn">&#128250; LAST NEWS REPORT</button></div>
     <div class="gate-zoom-row">
       <button class="gate-zoom-btn" id="gateZoomOutBtn">−</button>
       <button class="gate-zoom-btn wide" id="gateZoomResetBtn">RESET VIEW</button>
@@ -1988,6 +2008,16 @@
     <div id="gateMapWrap"></div>
     <div class="gate-map-hint">Scroll/pinch to zoom, drag to pan, or tap a city name to jump in.</div>
     <div id="gateList"></div>
+  </div>
+</div>
+
+<div class="inv-overlay" id="newsOverlay">
+  <div class="news-tv">
+    <div class="news-bar"><span class="news-live">LIVE</span><span class="news-chan">SYSTEM NEWS 24</span><span class="news-time" id="newsTime"></span></div>
+    <div class="news-head" id="newsHead"></div>
+    <div class="news-body" id="newsBody"></div>
+    <div class="news-tick"><span id="newsTick"></span></div>
+    <div class="news-btns"><button class="stash-btn" id="newsVoiceBtn" style="flex:0 0 auto;padding:0 12px;">VOICE: ON</button><button class="stash-btn" id="newsSkipBtn">SKIP</button><button class="use-btn" id="newsMapBtn">OPEN GATE MAP</button></div>
   </div>
 </div>
 
@@ -4531,6 +4561,7 @@
       levelup: function() { arp([523, 659, 784, 1047], 0.09, 'triangle', 0.2, 0.3); },
       rankup: function() { arp([392, 523, 659, 784, 1047, 1319], 0.12, 'triangle', 0.22, 0.4); tone(130, 130, 1.0, 'sine', 0.16); },
       coin: function() { tone(1319, 1319, 0.06, 'square', 0.08); tone(1760, 1760, 0.14, 'square', 0.08, 0.06); },
+      news: function() { arp([659, 784, 659, 988], 0.11, 'triangle', 0.11, 0.2); },
       relic: function() { tone(988, 988, 0.2, 'sine', 0.16); tone(1319, 1319, 0.35, 'sine', 0.16, 0.12); },
       door: function() { noise(0.25, 0.3, 'lowpass', 400); tone(80, 50, 0.3, 'sine', 0.25); },
       boss: function() { tone(70, 40, 0.8, 'sawtooth', 0.28); noise(0.7, 0.26, 'lowpass', 500); arp([262, 311, 392], 0.18, 'sawtooth', 0.1, 0.5); },
@@ -4970,7 +5001,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-13-side-quests-qte';
+  var APP_VERSION = '2026-10-14-news';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -7836,7 +7867,188 @@
     return Date.now() >= gateExpiresAt(g);
   }
 
-  // Drops expired gates and tops the map back up to GATE_TARGET_COUNT. Cheap to
+
+  // ---- System News 24: a news report whenever new gates open ----
+  var News = (function() {
+    var KEY = 'the-system-news', timers = [], cur = null;
+    var $ = function(id) { return document.getElementById(id); };
+    var pick = function(a) { return a[Math.floor(Math.random() * a.length)]; };
+    var DIRS = ['east', 'north-east', 'north', 'north-west', 'west', 'south-west', 'south', 'south-east'];
+    var RWORD = { E: 'minor', D: 'low-grade', C: 'mid-tier', B: 'high-threat', A: 'extremely dangerous', S: 'catastrophic' };
+    var RANK_REACT = {
+      E: ['Officials describe it as a routine clear for newer hunters.', 'The Association is calling it a good training opportunity.', 'Little danger is expected.'],
+      D: ['Hunters are advised to bring supplies and check their gear first.', 'Officials expect a steady stream of low-rank hunters.', 'The Association calls it manageable with preparation.'],
+      C: ['The Association recommends entering with a full health reserve.', 'Local witnesses reported an unsettling hum before it opened.', 'Experienced hunters are already heading that way.'],
+      B: ['Authorities have asked civilians to keep their distance.', 'The Association rates this one as a serious test even for veterans.', 'Witnesses describe the sky darkening just before it appeared.'],
+      A: ['A perimeter has been set up and traffic is being diverted.', 'The Association has issued a regional advisory for this gate.', 'Only well-prepared hunters are urged to attempt it.'],
+      S: ['The Association has issued a statewide alert.', 'Residents nearby are being asked to shelter in place.', 'Officials say the energy readings are off the charts.']
+    };
+    var ASSOC = [
+      'The Hunters Association reminds everyone that an uncleared gate breaks after seven days and spills its monsters into the surrounding area.',
+      'A spokesperson for the Hunters Association says gate activity has been steady this season and that hunters should rest as seriously as they train.',
+      'The Hunters Association is reminding licensed hunters that fatigue builds with every swing, so pace yourself inside the gate.',
+      'The Association says its rank examiners are standing by, and that a hunter who proves their strength can be promoted at any time.',
+      'According to the Hunters Association, rival hunters have been spotted working the gates and some may challenge you inside.',
+      'The Association is warning hunters about a rise in dungeon-break activity. Clear your gates before the week is out.',
+      'Association officials stress that retreating from a gate is not a failure. A hunter who survives today can clear the gate tomorrow.',
+      'The Hunters Association has praised hunters who keep a daily training routine, calling it the foundation of every successful clear.',
+      'An Association researcher says monster weaknesses are real, and that the right element can make a fight far easier.',
+      'The Hunters Association has announced it will keep recording every gate cleared, so make sure yours counts.'
+    ];
+    var FILLER = [
+      'In other news, a local merchant says demand for healing draughts is up sharply this week.',
+      'Weather: clear skies overall, though mana storms are possible near the larger gates this evening.',
+      'Traffic: expect delays on the highways near any newly opened gate as hunters rush in.',
+      'Sports desk: a veteran hunter reportedly cleared three gates in one afternoon. Experts credit months of daily push-ups, sit-ups, squats and running.',
+      'Health desk: doctors say a steady training routine beats an occasional all-out effort. Rest days are part of the plan.',
+      'Business desk: mana stone prices are holding steady after a quiet weekend.',
+      'Local color: a street vendor near one of the new gates says business has never been better.',
+      'A hunters guild spokesperson says newcomers are showing up in record numbers this month.',
+      'Overnight, residents reported strange lights over the plains. The Association says this is normal gate activity.'
+    ];
+    var OPENERS = { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Good evening' };
+    function an(w) { return /^[aeiouAEIOU]/.test(w) || /^[EAS]-/.test(w) ? 'an ' + w : 'a ' + w; }
+    function dayPart() { var h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
+    function where(g) {
+      var best = null, k = Math.cos(38.5 * Math.PI / 180) * 69;
+      KS_CITIES.forEach(function(c) {
+        var dx = (g.lon - c.lon) * k, dy = (g.lat - c.lat) * 69, d = Math.sqrt(dx * dx + dy * dy);
+        if (!best || d < best.d) best = { c: c, d: d, dx: dx, dy: dy };
+      });
+      if (!best) return 'the state';
+      if (best.d < 6) return 'the outskirts of ' + best.c.name;
+      var ang = Math.atan2(best.dy, best.dx) * 180 / Math.PI; if (ang < 0) ang += 360;
+      var dir = DIRS[Math.round(ang / 45) % 8], mi = Math.max(5, Math.round(best.d / 5) * 5);
+      return mi + ' miles ' + dir + ' of ' + best.c.name;
+    }
+    function cityOf(g) {
+      var best = null; KS_CITIES.forEach(function(c) { var d = Math.abs(g.lon - c.lon) + Math.abs(g.lat - c.lat); if (!best || d < best.d) best = { c: c, d: d }; });
+      return best ? best.c.name : 'Kansas';
+    }
+    function build(list) {
+      var n = list.length, lines = [], tick = [];
+      var mine = 'EDCBAS'.indexOf(hunterGateRank());
+      var sorted = list.slice().sort(function(a, b) { return 'EDCBAS'.indexOf(b.rank) - 'EDCBAS'.indexOf(a.rank); });
+      var head = n === 1 ? 'NEW GATE OPENS' : n + ' NEW GATES OPEN';
+      if (sorted[0] && 'EDCBAS'.indexOf(sorted[0].rank) >= 3) head = (n === 1 ? 'DANGEROUS GATE OPENS' : 'DANGEROUS GATES OPEN') + (n > 1 ? ' ACROSS THE STATE' : '');
+      lines.push({ who: 'ANCHOR', text: OPENERS[dayPart()] + ', and welcome to System News 24. ' + (n === 1 ? 'We are following a developing story: a new gate has opened on the map.' : 'We are following a developing story: ' + n + ' new gates have opened across the state.') });
+      sorted.forEach(function(g, i) {
+        var rk = g.rank || 'E', place = where(g);
+        var intro = i === 0 ? pick(['Our first report comes from', 'We begin with a report from', 'Our correspondent is live from']) : pick(['Also reported', 'Another gate has appeared', 'Meanwhile']);
+        var txt = i === 0 ? intro + ' ' + place + ', where ' + an(rk + '-rank gate') + ' has opened. That is ' + an(RWORD[rk]) + ' threat. ' : intro + ': ' + an(rk + '-rank gate') + ', ' + place + '. ';
+        txt += pick(RANK_REACT[rk]);
+        lines.push({ who: 'FIELD REPORTER', text: txt, gate: true });
+        tick.push(rk + '-RANK GATE NEAR ' + cityOf(g).toUpperCase());
+      });
+      var top = sorted[0];
+      if (top && 'EDCBAS'.indexOf(top.rank) > mine) lines.push({ who: 'HUNTERS ASSOCIATION', text: 'The Association notes that the ' + top.rank + '-rank gate near ' + cityOf(top) + ' is above the recommended level for ' + hunterGateRank() + '-rank hunters. Train, prepare, and bring every advantage you have.' });
+      else lines.push({ who: 'HUNTERS ASSOCIATION', text: pick(ASSOC) });
+      var gl = gates.filter(function(g) { return !g.breach; }), soon = gl.filter(function(g) { return !g.special && gateImminent(g); }).length;
+      if (gl.length > n) lines.push({ who: 'ANCHOR', text: 'In total, ' + gl.length + ' gates now stand open on the map' + (soon ? ', and ' + soon + ' of them ' + (soon === 1 ? 'is' : 'are') + ' close to breaking.' : '.') });
+      if (soon) tick.push('BREAK WATCH: ' + soon + ' GATE' + (soon === 1 ? '' : 'S') + ' ABOUT TO BREAK');
+      var f1 = pick(FILLER), f2; do { f2 = pick(FILLER); } while (f2 === f1);
+      lines.push({ who: 'ANCHOR', text: f1 });
+      if (Math.random() < 0.6) { lines.push({ who: 'ANCHOR', text: pick(ASSOC.filter(function(a) { return !lines.some(function(l) { return l.text === a; }); })) }); } else lines.push({ who: 'ANCHOR', text: f2 });
+      lines.push({ who: 'ANCHOR', text: pick(['That is all for now. Stay sharp, hunters.', 'We will keep watching the gates. Stay safe out there.', 'This has been System News 24. Good luck out there, hunters.']) });
+      tick.push(pick(['HUNTERS ASSOCIATION URGES CAUTION', 'TRAIN HARD, REST HARDER', 'UNCLEARED GATES BREAK AFTER SEVEN DAYS', 'STAY SHARP, HUNTERS']));
+      return { t: Date.now(), head: head, lines: lines, tick: tick };
+    }
+    function clearT() { timers.forEach(clearTimeout); timers = []; }
+    var VKEY = 'the-system-news-voice', voiceOn = true, voices = [];
+    try { voiceOn = localStorage.getItem(VKEY) !== 'off'; } catch (e) {}
+    var canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+    function loadVoices() { try { voices = window.speechSynthesis.getVoices().filter(function(v) { return /^en/i.test(v.lang); }); } catch (e) { voices = []; } }
+    if (canSpeak) { loadVoices(); try { window.speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (e) {} }
+    // Three "people" share the browser's voices: each gets its own voice when the device has several, and its own pitch and pace either way.
+    var VOICE_FOR = { 'ANCHOR': { i: 0, pitch: 1.0, rate: 1.0 }, 'FIELD REPORTER': { i: 1, pitch: 0.85, rate: 1.08 }, 'HUNTERS ASSOCIATION': { i: 2, pitch: 0.7, rate: 0.95 } };
+    function speak(l, done) {
+      if (!canSpeak || !voiceOn) { done(false); return; }
+      try {
+        var u = new SpeechSynthesisUtterance(l.text), cfg = VOICE_FOR[l.who] || VOICE_FOR.ANCHOR;
+        if (voices.length) u.voice = voices[cfg.i % voices.length];
+        u.pitch = cfg.pitch; u.rate = cfg.rate; u.lang = (u.voice && u.voice.lang) || 'en-US';
+        var fin = false, end = function() { if (fin) return; fin = true; done(true); };
+        u.onend = end; u.onerror = end;
+        window.speechSynthesis.speak(u);
+        timers.push(setTimeout(end, 20000 + l.text.length * 120));   // never hang if a device never reports the end
+      } catch (e) { done(false); }
+    }
+    function stopSpeech() { try { if (canSpeak) window.speechSynthesis.cancel(); } catch (e) {} }
+    function setVoiceBtn() { var b = $('newsVoiceBtn'); if (!b) return; b.textContent = canSpeak ? 'VOICE: ' + (voiceOn ? 'ON' : 'OFF') : 'NO VOICE'; b.disabled = !canSpeak; }
+    function lineEl(l) { var d = document.createElement('div'); d.className = 'news-line' + (l.gate ? ' gate' : ''); d.innerHTML = '<b>' + l.who + '</b>' + escapeHtml(l.text); return d; }
+    function render(r, live, jingle) {
+      cur = r; clearT(); stopSpeech();
+      $('newsHead').textContent = r.head;
+      $('newsTime').textContent = new Date(r.t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+      $('newsTick').textContent = r.tick.join('   •   ') + '   •   ';
+      var body = $('newsBody'); body.innerHTML = '';
+      setVoiceBtn();
+      $('newsSkipBtn').textContent = live ? 'SKIP' : 'CLOSE';
+      $('newsOverlay').classList.add('show');
+      if (jingle) { try { Fx.play('news'); } catch (e) {} }
+      var run = ++playId;
+      function step(i) {
+        if (run !== playId || i >= r.lines.length) { if (run === playId) $('newsSkipBtn').textContent = 'CLOSE'; return; }
+        var l = r.lines[i]; body.appendChild(lineEl(l)); body.scrollTop = body.scrollHeight;
+        speak(l, function(spoke) { if (run !== playId) return; timers.push(setTimeout(function() { step(i + 1); }, spoke ? 450 : 1700)); });
+      }
+      if (live) timers.push(setTimeout(function() { step(0); }, jingle ? 900 : 100)); else r.lines.forEach(function(l) { body.appendChild(lineEl(l)); });
+    }
+    var playId = 0;
+    function show(list) {
+      if (!list || !list.length) return;
+      var r = build(list);
+      try { localStorage.setItem(KEY, JSON.stringify(r)); } catch (e) {}
+      render(r, true, true);
+    }
+    function replay() {
+      var r = null; try { r = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+      if (!r || !r.lines) { showToast('No news report yet. New gates open every morning after midnight.'); return; }
+      document.getElementById('gateOverlay').classList.remove('show');
+      render(r, true, false);
+    }
+    function close() {
+      var live = cur && $('newsSkipBtn').textContent === 'SKIP';
+      playId++; clearT(); stopSpeech();
+      if (live) { $('newsBody').innerHTML = ''; cur.lines.forEach(function(l) { $('newsBody').appendChild(lineEl(l)); }); $('newsSkipBtn').textContent = 'CLOSE'; return; }
+      $('newsOverlay').classList.remove('show');
+    }
+    document.addEventListener('DOMContentLoaded', function() {});
+    $('newsSkipBtn').addEventListener('click', close);
+    $('newsVoiceBtn').addEventListener('click', function() {
+      voiceOn = !voiceOn; try { localStorage.setItem(VKEY, voiceOn ? 'on' : 'off'); } catch (e) {}
+      if (!voiceOn) stopSpeech(); setVoiceBtn();
+      if (voiceOn && canSpeak) { try { var u = new SpeechSynthesisUtterance('Voice on.'); window.speechSynthesis.speak(u); } catch (e) {} }
+    });
+    $('newsMapBtn').addEventListener('click', function() { playId++; clearT(); stopSpeech(); $('newsOverlay').classList.remove('show'); $('gateOpenBtn').click(); });
+    $('newsReplayBtn').addEventListener('click', replay);
+    return { show: show, replay: replay };
+  })();
+
+  // New gates arrive once a day, just after midnight (12:01 AM local): a random 1 to 5. Gates you leave
+  // uncleared stay on the map until they break. Missing days stacks the batches (up to 3), and the map holds at most GATE_MAX.
+  var GATE_SPAWN_KEY = 'the-system-gate-spawn', GATE_DAILY_MIN = 1, GATE_DAILY_MAX = 5, GATE_MAX = 12, GATE_START = 5;
+  function localDayNum(d) { return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); }
+  function dailyGateSpawn() {
+    var now = new Date(), today = localDayNum(now), last = null;
+    try { var raw = localStorage.getItem(GATE_SPAWN_KEY); if (raw !== null) last = parseInt(raw, 10); } catch (e) {}
+    var live = function() { return gates.filter(function(g) { return !g.breach; }).length; };
+    var add = 0;
+    if (last === null || isNaN(last)) {
+      if (live() === 0) add = GATE_START;   // brand new hunter: a starter set
+    } else if (today > last) {
+      if (now.getHours() === 0 && now.getMinutes() < 1) return false;   // wait for 12:01 AM
+      var batches = Math.min(3, today - last);
+      for (var b = 0; b < batches; b++) add += GATE_DAILY_MIN + Math.floor(Math.random() * (GATE_DAILY_MAX - GATE_DAILY_MIN + 1));
+    } else return false;
+    try { localStorage.setItem(GATE_SPAWN_KEY, String(today)); } catch (e) {}
+    var n = Math.max(0, Math.min(add, GATE_MAX - live()));
+    var fresh = [];
+    for (var i = 0; i < n; i++) { var ng = spawnGate(hunterLevel); gates.push(ng); fresh.push(ng); }
+    if (n > 0 && last !== null && !isNaN(last)) setTimeout(function() { try { News.show(fresh); } catch (e) { showToast(n + ' new gate' + (n === 1 ? ' has' : 's have') + ' opened on the map.'); } }, 900);
+    return n > 0;
+  }
+  // Older note: drops expired gates. Cheap to
   // call often; only does real work when a gate has actually broken or is missing.
   function maintainGates() {
     var removedStray = removeUnbackedSpecialGates();
@@ -7866,11 +8078,7 @@
       saveGates();
       setTimeout(function() { showToast('BREAK IMMINENT: ' + (warn.length > 1 ? warn.length + ' gates are' : 'a ' + gateLabel(warn[0]) + ' gate is') + ' about to break. Clear ' + (warn.length > 1 ? 'them' : 'it') + ' or it spills out.'); }, 0);
     }
-    var added = false;
-    while (gates.filter(function(g) { return !g.breach; }).length < GATE_TARGET_COUNT) {
-      gates.push(spawnGate(hunterLevel));
-      added = true;
-    }
+    var added = dailyGateSpawn();
     var changed = hadBroken || added || removedStray;
     if (changed) saveGates();
     return changed;
