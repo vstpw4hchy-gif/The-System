@@ -1784,6 +1784,14 @@
   @keyframes newsBlink { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
   @keyframes newsIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @keyframes newsTick { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+
+  .bt-trait { display: inline-block; font-size: 9px; letter-spacing: 1px; font-weight: 800; padding: 1px 5px; margin-left: 4px; border-radius: 3px; vertical-align: middle; border: 1px solid #7a86a8; color: #b9c3e6; }
+  .bt-trait.t-GILDED { color: #1a1200; background: linear-gradient(90deg, #ffd76a, #fff1b0, #ffd76a); border-color: #ffd76a; }
+  .bt-trait.t-FRAIL { color: #9fb0d8; border-color: #5a6a94; }
+  .bt-trait.t-STURDY { color: #8fd0ff; border-color: #4a88b8; }
+  .bt-trait.t-HARDY { color: #ffb08f; border-color: #c06a4a; }
+  .bt-qte-row button small { display: block; font-size: 9px; font-weight: 600; opacity: .8; letter-spacing: 0; margin-top: 2px; }
+  .bt-pick { grid-column: 1 / -1; border: 1px solid #4be39a; border-radius: 8px; padding: 8px; margin-bottom: 6px; background: rgba(75,227,154,0.08); }
 </style>
 </head>
 <body>
@@ -2551,7 +2559,7 @@
 
   // player basic-type hit
   // ---------- play-feel systems: combos, reactions, break meter, limit break ----------
-  var FT = { qteChance: 0.16, qteLimit: 8, sealRounds: 2, counter: 1.15, counterCrit: 1.3, riposte: 1.25, triple: 1.35, opening: 1.2, broken: 1.2, brkBoss: 14, brkElite: 18, brkMid: 22, brkLow: 28, limMul: 1.0, limFill: 0.8, limDmg: 0.5, limHeal: 0.3, arenaPct: 50, miasma: 0.005, kill: 2.2, markMul: 1.25, ember: 1.05, killEvery: 5, markEvery: 4, arenaForce: -1, gloomCrit: 0.75, gloomDodge: 0.05 };
+  var FT = { qteDodgeFat: 6, qteCounter: 1.25, qteWrongFat: 4, qteChance: 0.2, qteLimit: 8, sealRounds: 2, counter: 1.15, counterCrit: 1.3, riposte: 1.25, triple: 1.35, opening: 1.2, broken: 1.2, brkBoss: 14, brkElite: 18, brkMid: 22, brkLow: 28, limMul: 1.0, limFill: 0.8, limDmg: 0.5, limHeal: 0.3, arenaPct: 50, miasma: 0.005, kill: 2.2, markMul: 1.25, ember: 1.05, killEvery: 5, markEvery: 4, arenaForce: -1, gloomCrit: 0.75, gloomDodge: 0.05 };
   function gainLimit(S, n) { if (S && S.feat && S.feat.lim) S.lim = Math.min(100, (S.lim || 0) + n * FT.limFill * ((S.rules && S.rules.limMul) || 1)); }
   // Sequence combos for the hunter's next weapon attack. Returns { name, mult } or null.
   function comboFor(S, type) {
@@ -2770,29 +2778,68 @@
   }
 
   // ---------- ambush moments ----------
-  // Now and then an enemy tips its hand. Read the cue and answer it for a boon; ignore it and nothing is lost.
+  // Now and then an enemy tips its hand. Read the cue, pick the answer that fits it, and you get a boon at a small price.
+  // Four answers exist; each cue wants one of them, and the buttons are shuffled every time, so you have to read, not memorise a position.
+  //   DODGE   -> Blur 3 turns (+20% dodge), but the scramble costs fatigue
+  //   BRACE   -> 12% HP shield and Fortified, but your next attack is weakened for a turn
+  //   COUNTER -> a free strike of your choice right now, before your turn begins
+  //   FOCUS   -> restores mana and fills your Limit, but leaves you Marked for a round
+  var QTE_ANS = {
+    dodge:   { label: 'DODGE',   fx: 'Blur for 3 turns (+20% dodge). Costs ~6% fatigue.' },
+    brace:   { label: 'BRACE',   fx: 'A 12% HP shield and Fortified for 2 turns. Your next attack is Weakened.' },
+    counter: { label: 'COUNTER', fx: 'A free strike of your choice right now, at x1.25 damage and half the fatigue.' },
+    focus:   { label: 'FOCUS',   fx: '+20% mana and +14% Limit. You are left Marked for a round.' }
+  };
   var QTE_CUES = [
-    { id: 'dodge', cue: 'It lunges low and fast!', label: 'DODGE', fx: 'Blur for 3 turns (+20% dodge)' },
-    { id: 'brace', cue: 'It rears back to smash down!', label: 'BRACE', fx: 'a 12% HP shield and Fortified for 2 turns' },
-    { id: 'counter', cue: 'Its guard drops wide open!', label: 'COUNTER', fx: 'Keen and Empowered (crit chance and attack up) for 3 and 2 turns' }
+    { ans: 'dodge', cue: 'It lunges low and fast!' }, { ans: 'dodge', cue: 'A flurry of claws streaks toward you!' }, { ans: 'dodge', cue: 'It coils, ready to pounce!' }, { ans: 'dodge', cue: 'Something whistles in from the side!' }, { ans: 'dodge', cue: 'It spins, blades flashing!' },
+    { ans: 'brace', cue: 'It rears back to smash down!' }, { ans: 'brace', cue: 'It hoists a massive weapon overhead!' }, { ans: 'brace', cue: 'The ground shakes as it charges!' }, { ans: 'brace', cue: 'Energy gathers for a crushing blow!' }, { ans: 'brace', cue: 'It howls and braces to ram you!' },
+    { ans: 'counter', cue: 'Its guard drops wide open!' }, { ans: 'counter', cue: 'It overextends and stumbles!' }, { ans: 'counter', cue: 'It telegraphs a wild swing!' }, { ans: 'counter', cue: 'A gap opens in its defence!' }, { ans: 'counter', cue: 'It lunges and misses by a mile!' },
+    { ans: 'focus', cue: 'The air hums with unstable mana!' }, { ans: 'focus', cue: 'Everything goes quiet. Breathe.' }, { ans: 'focus', cue: 'A strange calm settles before the storm.' }, { ans: 'focus', cue: 'Your pulse slows; time seems to stretch.' }, { ans: 'focus', cue: 'Motes of light drift past you.' }
   ];
   function rollQte(S) {
     if (!S.feat || !S.feat.qte || S.qte || S.over || !aliveEnemies(S).length) return;
     if (rnd(S) >= FT.qteChance) return;
     var c = QTE_CUES[Math.floor(rnd(S) * QTE_CUES.length) % QTE_CUES.length];
-    S.qte = { id: c.id, cue: c.cue, round: S.round + 1 };
+    var order = ['dodge', 'brace', 'counter', 'focus'];
+    for (var i = order.length - 1; i > 0; i--) { var j = Math.floor(rnd(S) * (i + 1)); var tmp = order[i]; order[i] = order[j]; order[j] = tmp; }
+    S.qte = { id: c.ans, cue: c.cue, round: S.round + 1, order: order };
   }
+  // streak: a run of correct reads makes every boon stronger (up to +75%); a miss resets it
+  function qteBoost(S) { return 1 + 0.25 * Math.min(3, S.qteStreak || 0); }
   function qteAnswer(S, id) {
     var ev = [], q = S.qte; if (!q || S.over) return ev;
     S.qte = null;
-    var P = S.player, ok = q.id === id;
-    ev.push({ t: 'qte', ok: ok, id: id, right: q.id });
+    var P = S.player, ok = q.id === id, k = ok ? qteBoost(S) : 1;
+    ev.push({ t: 'qte', ok: ok, id: id, right: q.id, streak: ok ? (S.qteStreak || 0) + 1 : 0 });
     if (ok) {
-      if (q.id === 'dodge') addStatus(P, 'blur', 3, 0);
-      else if (q.id === 'brace') { addStatus(P, 'shield', 3, r1(P.maxHP * 0.12)); addStatus(P, 'defup', 2, 0); }
-      else { addStatus(P, 'keen', 3, 0); addStatus(P, 'atkup', 2, 0); }
+      S.qteStreak = (S.qteStreak || 0) + 1;
+      if (id === 'dodge') { addStatus(P, 'blur', 3, 0); P.fatigue = Math.min(99, P.fatigue + FT.qteDodgeFat); }
+      else if (id === 'brace') { addStatus(P, 'shield', 3, r1(P.maxHP * 0.12 * k)); addStatus(P, 'defup', 2, 0); addStatus(P, 'weaken', 1, 0); }
+      else if (id === 'focus') { P.mana = Math.min(P.maxMana, P.mana + P.maxMana * 0.2 * k); addStatus(P, 'marked', 1, 0); gainLimit(S, 14 * k - 8); }
+      else { S.qtePick = { mult: FT.qteCounter * k }; }
       gainLimit(S, 8);
-    } else addStatus(P, 'weaken', 1, 0);
+    } else {
+      S.qteStreak = 0;
+      addStatus(P, 'weaken', 1, 0); P.fatigue = Math.min(99, P.fatigue + FT.qteWrongFat);
+    }
+    return ev;
+  }
+  // The COUNTER answer: pick a strike now. It lands before the round begins, so the target can still be hit by what it was about to do.
+  function qteStrike(S, type, targetUid, weapon) {
+    var ev = [], pk = S.qtePick; if (!pk || S.over) return ev;
+    S.qtePick = null;
+    var P = S.player; if (!P.alive) return ev;
+    if (type !== 'basic' && type !== 'power' && type !== 'crit') type = 'basic';
+    var tgt = targetOf(S, targetUid); if (!tgt) return ev;
+    var w = wpnOf(P, weapon);
+    P.fatigue = Math.min(99, P.fatigue + Math.max(1, Math.round(fatGain(P, type, weapon) * 0.5)));
+    ev.push({ t: 'act', who: 'P', type: type, counter: true, weapon: (w || {}).name || null });
+    S._cm = null;
+    if (type === 'power') playerHit(S, ev, tgt, T.powerMult * pk.mult, ['power', 'phys'], { how: 'power', weapon: w });
+    else if (type === 'crit') playerHit(S, ev, tgt, pk.mult, ['crit', 'phys'], { how: 'crit', critBonus: T.critBonus, critOnlyScaling: true, weapon: w });
+    else playerHit(S, ev, tgt, pk.mult, ['basic', 'phys'], { how: 'basic', weapon: w });
+    checkPhases(S, ev);
+    if (!aliveEnemies(S).length && !(S.reserve && S.reserve.length)) { S.over = 'victory'; ev.push({ t: 'over', result: 'victory' }); }
     return ev;
   }
 
@@ -3010,7 +3057,7 @@
     if (S.over) return [];
     var ev = [], P = S.player;
     var a = sanitise(S, action);
-    S.qte = null;
+    S.qte = null; S.qtePick = null;
     if (a.downgraded) ev.push({ t: 'illegal', msg: S.seal > 0 && action && (action.type === 'power' || action.type === 'ability' || action.type === 'limit') ? 'Your techniques are sealed — Basic Attack used.' : 'Not enough resource — Basic Attack used.' });
 
     S.round++;
@@ -3387,13 +3434,24 @@
       } catch (err) { throw new Error('catalog line ' + (ln + 1) + ': ' + err.message + ' :: ' + raw.slice(0, 60)); }
     });
   }
+  // Every named creature has its own toughness: the same role is not the same HP. Fixed per creature, so a hunter learns who is frail and who is a wall.
+  function hpVariety(d) {
+    if (!VARIETY.on) return 1;
+    var h = hash01('hp|' + d.id), r = d.kind === 'b' ? VARIETY.boss : (d.kind === 'e' ? VARIETY.elite : VARIETY.common);
+    return r[0] + (r[1] - r[0]) * h;
+  }
+  var VARIETY = { on: true, common: [0.65, 1.45], elite: [0.85, 1.2], boss: [0.92, 1.1] };
+  function traitOf(d) {
+    var f = hpVariety(d);
+    return f <= 0.8 ? 'FRAIL' : (f >= 1.3 ? 'HARDY' : (f >= 1.18 ? 'STURDY' : null));
+  }
   // Builds a live combatant from a catalog entry, scaled to its rank.
   function makeCat(id, rank, opts, depth) {
     var d = CATALOG.byId[id]; if (!d) return makeEnemy('grunt', rank, opts);
     opts = opts || {}; depth = depth || 0;
     var o = {
       name: d.name, id: d.id, weak: d.weak.slice(), resist: d.resist.slice(),
-      hpMult: d.t.h * ((CATALOG.cal[id] || {}).h || 1) * (opts.hpMult || 1), atkMult: d.t.a * ((CATALOG.cal[id] || {}).a || 1) * (opts.atkMult || 1), defMult: d.t.d, spdMult: d.t.s,
+      hpMult: d.t.h * ((CATALOG.cal[id] || {}).h || 1) * (opts.hpMult || 1) * hpVariety(d), atkMult: d.t.a * ((CATALOG.cal[id] || {}).a || 1) * (opts.atkMult || 1), defMult: d.t.d, spdMult: d.t.s,
       vsRank: opts.vsRank, hunterLevel: opts.hunterLevel, level: opts.level
     };
     var sub = { hunterLevel: opts.hunterLevel };
@@ -3416,7 +3474,7 @@
     }
     var e = makeEnemy(d.role, rank, o);
     if (opts.level) e.level = opts.level;
-    e.catalogId = d.id; e.fam = d.fam; e.catalog = true; e.grantsAbility = !!d.ability;
+    e.catalogId = d.id; e.fam = d.fam; e.catalog = true; e.grantsAbility = !!d.ability; if (d.kind === 'c') { var tr = traitOf(d); if (tr) e.trait = tr; }
     if (d.ability && depth === 0) { e.abilityId = 'a_' + d.id; e.grantChance = d.role === 'boss' ? ABILITY_DROP.boss : ABILITY_DROP.elite; }
     return e;
   }
@@ -3741,6 +3799,7 @@
   function matMake(rank, tier, name, mult) {
     return { id: 'm|' + rank + '|' + slug(name), name: name, rank: rank, tier: tier, value: Math.max(1, Math.round(MAT_VALUE[rank] * mult)) };
   }
+  var LOOT_K_GILD = 2.5;
   function rollLootDrops(S, seed) {
     var mats = [], gold = 0, commons = 0;
     (S.enemies || []).forEach(function (e) {
@@ -3752,6 +3811,11 @@
       var nm = d ? d.name : (e.name || 'Creature'), h = function (k) { return hash01(k + '|' + seed + '|' + e.uid); };
       var junk = function (k) { return MAT_JUNK[Math.floor(h(k) * MAT_JUNK.length)]; };
       var part = function (k) { return parts[Math.floor(h(k) * parts.length)]; };
+      if (e.gilded) {   // a Gilded creature always pays: a fat purse and a prized part
+        gold += Math.max(3, Math.round(LOOT_K_GILD * LOOT_GOLD_K * LOOT_GOLD_MID[rank] * (0.8 + 0.5 * h('la'))));
+        mats.push(matMake(rank, 'part', 'Gilded ' + nm + ' ' + part('lp'), 4));
+        return;
+      }
       if (tier === 'common') {
         if (commons >= LOOT_CH.commonCap || h('lc') >= LOOT_CH.common) return;
         commons++;
@@ -4063,6 +4127,40 @@
     return { bonus: bonus, foe: foe, gold: gold, lim: Math.min(60, lim) };
   }
   // Weaken the enemies a piece of gear frowns upon (fractions: -0.05 = 5% lower).
+  // ---- Live difficulty ----
+  // Enemies are built for a hunter of average strength for their level. A hunter whose stats run far ahead of that
+  // (a real-life training streak) meets tougher enemies, nearly in step with that surplus, so levels and stats still help but never trivialise a fight.
+  // On top of that, the gap between ranks is widened: a gate above your rank hits much harder, one below it is gentler.
+  var DIFF = { base: { hp: 1.2, atk: 1.05 }, powHp: 0.9, powAtk: 0.55, powMax: 8, up: { hp: 1.45, atk: 1.22 }, down: { hp: 0.8, atk: 0.9 }, gildedChance: 0.05, gilded: { hp: 1.8, atk: 1.1 } };
+  var DIFF_ORDER = ['E', 'D', 'C', 'B', 'A', 'S'];
+  function powerRatio(ds, level) {
+    var ref = refPlayer(Math.max(1, level | 0));
+    var r = Math.sqrt((ds.atk / Math.max(1, ref.atk)) * (ds.maxHP / Math.max(1, ref.maxHP)));
+    return Math.min(DIFF.powMax, Math.max(1, r));
+  }
+  function scaleEnemy(e, hpM, atkM) {
+    e.hp = Math.max(1, e.hp * hpM); e.atk = Math.max(1, e.atk * atkM);
+    (e.phases || []).forEach(function (ph) { (ph.spawn || []).forEach(function (s) { scaleEnemy(s, hpM, atkM); }); });
+    (e.moves || []).forEach(function (mv) { (mv.spawn || []).forEach(function (s) { scaleEnemy(s, hpM, atkM); }); });
+  }
+  function applyLive(enemies, ds, level, hunterRank, seed, noGap) {
+    var P = powerRatio(ds, level), hi = DIFF_ORDER.indexOf(hunterRank || 'E');
+    var gildedDone = false, info = { power: P };
+    var hash = function (s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10000) / 10000; };
+    (enemies || []).forEach(function (e, idx) {
+      if (e.liveDone) return;
+      e.liveDone = true;
+      var gap = DIFF_ORDER.indexOf(e.rank || hunterRank) - hi, hpM = DIFF.base.hp * Math.pow(P, DIFF.powHp), atkM = DIFF.base.atk * Math.pow(P, DIFF.powAtk);
+      if (noGap) { hpM = Math.pow(P, DIFF.powHp); atkM = Math.pow(P, DIFF.powAtk); gap = 0; }
+      if (gap > 0) { hpM *= Math.pow(DIFF.up.hp, gap); atkM *= Math.pow(DIFF.up.atk, gap); }
+      else if (gap < 0) { hpM *= Math.pow(DIFF.down.hp, -gap); atkM *= Math.pow(DIFF.down.atk, -gap); }
+      if (!gildedDone && !e.boss && e.role !== 'elite' && e.role !== 'boss' && !e.noGild && hash('gild|' + seed + '|' + idx) < DIFF.gildedChance) {
+        gildedDone = true; e.gilded = true; e.trait = 'GILDED'; hpM *= DIFF.gilded.hp; atkM *= DIFF.gilded.atk;
+      }
+      scaleEnemy(e, hpM, atkM);
+    });
+    return info;
+  }
   function applyFoeMods(enemies, foe) {
     (enemies || []).forEach(function (e) {
       if (foe.atk) e.atk = Math.max(1, r1(e.atk * (1 + foe.atk)));
@@ -4420,7 +4518,7 @@
     hashSeed: hashSeed, deriveStats: deriveStats, makePlayer: makePlayer, refPlayer: refPlayer,
     makeEnemy: makeEnemy, start: start, act: act, legalActions: legalActions,
     registerAbilities: registerAbilities, abilities: ABILITIES, reduction: reduction,
-    policy: policy, simulate: simulate, opening: opening, EQUIP: EQUIP, EQ_SLOTS: EQ_SLOTS, EQ_SLOT_NAMES: EQ_SLOT_NAMES, EQ_CLOTHING_MAX: EQ_CLOTHING_MAX, eqDef: eqDef, shopEquip: shopEquip, lootEquip: lootEquip, equipTotals: equipTotals, applyFoeMods: applyFoeMods, eqText: eqText, combatUse: combatUse, describeCombat: describeCombat, ITEM_COMBAT: ITEM_COMBAT, isFast: isFast, FT: FT, equipSets: equipSets, RELICS: RELICS, relicOffer: relicOffer, qteAnswer: qteAnswer, QTE_CUES: QTE_CUES, limitInfo: limitInfo, ROOMS: ROOMS, forkOptions: forkOptions, resolveRoom: resolveRoom, MERCHANT: MERCHANT, moveInfo: moveInfo, SPECIAL_TXT: SPECIAL_TXT, fxText: fxText, stTxt: stNameTxt, ST_GIST: ST_GIST, ST_NAME: ST_NAME, RIVALS: RIVALS, rivalFor: rivalFor, rivalEnemy: rivalEnemy, relicEffects: relicEffects, comboHint: comboHint, ARENAS: ARENAS, LIMITS: LIMITS, limitDef: limitDef, aliveEnemies: aliveEnemies, aliveAllies: aliveAllies,
+    policy: policy, simulate: simulate, opening: opening, EQUIP: EQUIP, EQ_SLOTS: EQ_SLOTS, EQ_SLOT_NAMES: EQ_SLOT_NAMES, EQ_CLOTHING_MAX: EQ_CLOTHING_MAX, eqDef: eqDef, shopEquip: shopEquip, lootEquip: lootEquip, equipTotals: equipTotals, applyFoeMods: applyFoeMods, eqText: eqText, combatUse: combatUse, describeCombat: describeCombat, ITEM_COMBAT: ITEM_COMBAT, isFast: isFast, FT: FT, equipSets: equipSets, RELICS: RELICS, relicOffer: relicOffer, qteAnswer: qteAnswer, qteStrike: qteStrike, QTE_CUES: QTE_CUES, QTE_ANS: QTE_ANS, applyLive: applyLive, powerRatio: powerRatio, DIFF: DIFF, VARIETY: VARIETY, limitInfo: limitInfo, ROOMS: ROOMS, forkOptions: forkOptions, resolveRoom: resolveRoom, MERCHANT: MERCHANT, moveInfo: moveInfo, SPECIAL_TXT: SPECIAL_TXT, fxText: fxText, stTxt: stNameTxt, ST_GIST: ST_GIST, ST_NAME: ST_NAME, RIVALS: RIVALS, rivalFor: rivalFor, rivalEnemy: rivalEnemy, relicEffects: relicEffects, comboHint: comboHint, ARENAS: ARENAS, LIMITS: LIMITS, limitDef: limitDef, aliveEnemies: aliveEnemies, aliveAllies: aliveAllies,
     TUNE_POL: TUNE_POL, WEAPONS: WEAPONS, weaponDef: weaponDef, shopWeapons: shopWeapons, rollWeaponDrops: rollWeaponDrops, rollLootDrops: rollLootDrops, JOBS: JOBS, JOB_ORDER: JOB_ORDER, JOB_LEVELS: JOB_LEVELS, JOB_QUEST_LEVEL: JOB_QUEST_LEVEL, JOB_RES: JOB_RES, JOB_DIMS: JOB_DIMS, jobOf: jobOf, SHADOW: SHADOW, extractChance: extractChance, makeShadow: makeShadow, deployShadow: deployShadow, shadowPower: shadowPower, shadowActive: shadowActive, canExtract: canExtract, jobAbilitiesFor: jobAbilitiesFor, assignJob: assignJob, fightProfile: fightProfile, planTrial: planTrial, TRIAL: TRIAL, trialRankFor: trialRankFor, MAT_VALUE: MAT_VALUE, LOOT_GOLD_MID: LOOT_GOLD_MID, LOOT_CH: LOOT_CH, W_DROP: W_DROP, W_REQ: W_REQ, abilityOf: abilityOf, rollAbilityDrops: rollAbilityDrops, ABILITY_DROP: ABILITY_DROP, fatGain: fatGain, fatMult: fatMult, manaCost: manaCost, staScale: staScale, manaScale: manaScale, fatigueTier: fatigueTier, recoverBetween: recoverBetween,
     CATALOG: CATALOG, catalogReport: catalogReport, catalogPick: catalogPick, makeCatalogEnemy: makeCat, trialRoster: trialRoster, planThemes: planThemes
   };
@@ -5001,7 +5099,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-14-news';
+  var APP_VERSION = '2026-10-14-harder-qte';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -9500,6 +9598,7 @@
           case 'illegal': out.push(['sys', ev.msg]); break;
           case 'act':
             var wp = ev.weapon ? ' with ' + ev.weapon : '';
+            if (ev.counter) out.push(['good', 'COUNTER! You hit first.']);
             if (ev.type === 'basic') out.push(['you', 'You strike' + wp + '.']);
             else if (ev.type === 'power') out.push(['you', 'You unleash a POWER STRIKE' + wp + '!']);
             else if (ev.type === 'crit') out.push(['you', 'You aim a CRITICAL STRIKE' + wp + '!']);
@@ -9755,7 +9854,7 @@
         var e = p[0], i = p[1], pct = Math.max(0, Math.round(e.hp / e.maxHP * 100)); nextPct[e.uid] = pct;
         var role = e.boss ? 'boss' : (e.role || 'grunt');
         return '<div class="bt-card' + (i === cur.sel ? ' sel' : '') + (e.boss ? ' boss' : '') + (e.uid === actingUid ? ' acting' : '') + '" data-i="' + i + '" data-uid="' + e.uid + '" style="--rc:' + rankColor(e.rank) + '">' +
-          '<div class="bt-chead">' + portraitHtml(e, role) + '<div style="min-width:0"><div class="bt-name">' + esc(e.name) + '</div><div class="bt-sub">' + (e.boss ? 'BOSS' : (e.role === 'elite' ? 'ELITE' : (e.anom ? 'ANOMALY' : 'LV ' + e.level))) + ' &middot; ' + e.rank + '-RANK</div></div></div>' +
+          '<div class="bt-chead">' + portraitHtml(e, role) + '<div style="min-width:0"><div class="bt-name">' + esc(e.name) + (e.trait ? '<span class="bt-trait t-' + e.trait + '">' + e.trait + '</span>' : '') + '</div><div class="bt-sub">' + (e.boss ? 'BOSS' : (e.role === 'elite' ? 'ELITE' : (e.anom ? 'ANOMALY' : 'LV ' + e.level))) + ' &middot; ' + e.rank + '-RANK</div></div></div>' +
           '<div class="bt-bar bt-ebar"><u style="width:' + (prevPct[e.uid] != null ? prevPct[e.uid] : pct) + '%" data-to="' + pct + '"></u><i style="width:' + (prevPct[e.uid] != null ? prevPct[e.uid] : pct) + '%" data-to="' + pct + '"></i></div><div class="bt-num bt-enum"><span>HP</span><span>' + Math.ceil(e.hp) + ' / ' + e.maxHP + '</span></div>' +
           brkHtml(S, e) + intentHtml(S, e) + chipsHtml(S, e) + '</div>';
       }).join('') + '</div>';
@@ -9840,13 +9939,21 @@
       if (!subOpen && S.qte && !busy && !S.over) {
         qteOn = true;
         var qlim = (C().FT && C().FT.qteLimit) || 8;
+        var QTAG = { dodge: '+DODGE &middot; +FATIGUE', brace: '+SHIELD &middot; WEAKENED', counter: 'FREE STRIKE', focus: '+MANA &middot; MARKED' };
+        var qorder = S.qte.order || ['dodge', 'brace', 'counter'];
         html += '<div class="bt-qte"><div class="bt-qte-cue">&#9888; ' + esc(S.qte.cue) + '</div><div class="bt-qte-bar"><i style="animation-duration:' + qlim + 's"></i></div><div class="bt-qte-row">' +
-          C().QTE_CUES.map(function(c) { return '<button class="bt-act" data-act="qte:' + c.id + '">' + c.label + '</button>'; }).join('') + '</div>' +
-          '<div class="stats-note" style="margin:4px 0 0;">READ THE CUE. A right answer grants a boon (+8% Limit too). Ignoring it costs nothing.</div></div>';
+          qorder.map(function(id) { var an = C().QTE_ANS[id]; return '<button class="bt-act" data-act="qte:' + id + '">' + an.label + '<small>' + QTAG[id] + '</small></button>'; }).join('') + '</div>' +
+          '<div class="stats-note" style="margin:4px 0 0;">READ THE CUE and pick the answer that fits. ' + ((S.qteStreak || 0) ? 'STREAK x' + S.qteStreak + ' (boons +' + Math.min(75, 25 * S.qteStreak) + '%). ' : '') + 'A right answer pays a boon with a small price; a wrong one weakens you. Ignoring it costs nothing.</div></div>';
         if (qteKey !== S.qte.round) {
           qteKey = S.qte.round; clearTimeout(qteTimer);
           qteTimer = setTimeout(function() { if (cur && cur.S.qte && cur.S.qte.round === qteKey) { cur.S.qte = null; save(); renderActs(); } }, qlim * 1000);
         }
+      }
+      if (S.qtePick && !busy && !S.over) {
+        over = true;
+        var pc = function(t, nm, mult) { var l = L[t]; var okk = t === 'basic' || (l && S.seal <= 0); return '<button class="bt-act" data-act="strike:' + t + '"' + (okk ? '' : ' disabled') + '><span>' + nm + '</span><small>x' + (Math.round(mult * 100) / 100) + ' &middot; +' + Math.max(1, Math.round(((l && l.cost) || 8) * 0.5)) + '% FATIGUE</small></button>'; };
+        html += '<div class="bt-pick"><div class="bt-qte-cue" style="color:#4be39a;">&#9876; COUNTER! STRIKE NOW</div><div class="stats-note" style="margin:4px 0 6px;">A free hit before the round begins, on the enemy you have selected. Choose how.</div><div class="bt-qte-row">' +
+          pc('basic', 'BASIC', S.qtePick.mult) + pc('power', 'POWER', T.powerMult * S.qtePick.mult) + pc('crit', 'CRIT', S.qtePick.mult) + '</div><button class="bt-act" data-act="strikeskip" style="width:100%;margin-top:6px;opacity:.7;">SKIP THE STRIKE</button></div>';
       }
       if (subOpen === 'items') {
         var its = battleItems(), selIt = its.filter(function(x) { return x.name === itemSel; })[0] || null;
@@ -10033,11 +10140,11 @@
         var me = $('btMe'); me.classList.remove('flash'); void me.offsetWidth; me.classList.add('flash');
       }
     }
-    async function play(pre, evs) {
+    async function play(pre, evs, label) {
       V = clone(pre); busy = true; actingUid = null; fast = false;
       var enr = '';
       if (cur.S.rules && cur.S.rules.enrageStart != null) { var left = cur.S.rules.enrageStart - cur.S.round; enr = left > 0 ? ' · enrage in ' + left : ' · ENRAGED +' + Math.round(cur.S.rules.enrageStep * (cur.S.round - cur.S.rules.enrageStart) * 100) + '%'; }
-      pushLog([['sys', cur.S.round === 0 ? '— they strike first —' : '— round ' + cur.S.round + enr + ' —']]);
+      pushLog([['sys', label || (cur.S.round === 0 ? '— they strike first —' : '— round ' + cur.S.round + enr + ' —')]]);
       renderAll();
       var segs = segments(evs), pIdx = segs.length;
       for (var q = 0; q < segs.length; q++) { if (segs[q].who === 'P' && segs[q].evs.length) { pIdx = q; break; } }
@@ -10097,6 +10204,7 @@
       var Cm = C();
       try { var foe = Eqp.totals().foe; if (foe && Object.keys(foe).length) Cm.applyFoeMods(o.enemies, foe); } catch (e) {}
       var ds = Cm.deriveStats(o.stats, o.level, o.power || {});
+      try { if (o.kind === 'gate' || o.kind === 'ranktrial') { Cm.applyLive(o.enemies, ds, o.level, hunterGateRank(), o.seed || '', o.kind === 'ranktrial'); if (o.enemies.some(function(e) { return e.gilded; })) o.note = ((o.note || '') + ' A GILDED creature is among them: tougher than the rest, but it pays a fortune.').trim(); } } catch (e) {}
       var feat = (o.kind === 'gate' || o.kind === 'practice' || o.kind === 'ranktrial');
       var player = Cm.makePlayer(ds, { name: o.name || 'YOU', hp: o.hp, fatigue: o.fatigue, mana: o.mana, abilities: o.abilities || [], weapons: o.weapons || [], job: hunterProfile.job || null, evo: feat ? Abil.evoMap() : {} });
       var S = Cm.start({ seed: o.seed || String(Date.now()), player: player, enemies: o.enemies, features: feat, allies: (o.kind === 'gate' || o.kind === 'practice' || o.kind === 'ranktrial') ? Shadows.deploy(ds) : [] });
@@ -10155,11 +10263,21 @@
       }
       if (a.indexOf('qte:') === 0) {
         if (busy || locked || !cur.S.qte) return;
-        var qev = C().qteAnswer(cur.S, a.slice(4)), q0 = qev[0], cue = null; C().QTE_CUES.forEach(function(c) { if (q0 && c.id === q0.right) cue = c; });
+        var qev = C().qteAnswer(cur.S, a.slice(4)), q0 = qev[0], an = q0 ? C().QTE_ANS[q0.right] : null;
         clearTimeout(qteTimer); save();
-        if (q0 && q0.ok) { pushLog([['good', 'AMBUSH READ! You answered it with ' + cue.label + ': ' + cue.fx + '.']]); flash('PERFECT READ', ''); Fx.play('combo'); }
-        else { pushLog([['foe', 'You misread it. It was a ' + (cue ? cue.label : '?') + ' moment. You are Weakened for 1 turn.']]); flash('MISREAD', 'react'); Fx.play('debuff'); }
+        if (q0 && q0.ok) {
+          var yan = C().QTE_ANS[q0.id];
+          pushLog([['good', 'AMBUSH READ! ' + yan.label + (q0.streak > 1 ? ' (streak x' + q0.streak + ')' : '') + ': ' + yan.fx]]);
+          flash(q0.streak > 1 ? 'PERFECT READ x' + q0.streak : 'PERFECT READ', ''); Fx.play('combo');
+        } else { pushLog([['foe', 'You misread it. It called for ' + (an ? an.label : '?') + '. You are Weakened for 1 turn and a little winded (+' + C().FT.qteWrongFat + '% fatigue).']]); flash('MISREAD', 'react'); Fx.play('debuff'); }
         renderAll(); return;
+      }
+      if (a === 'strikeskip') { cur.S.qtePick = null; save(); renderActs(); return; }
+      if (a.indexOf('strike:') === 0) {
+        if (busy || locked || !cur.S.qtePick) return;
+        locked = true;
+        var spre = clone(cur.S), sev = C().qteStrike(cur.S, a.slice(7), cur.sel, cur.wsel);
+        learn(sev, { type: a.slice(7) }); save(); play(spre, sev, '\u2014 COUNTER-STRIKE \u2014'); return;
       }
       if (a === 'back') { subOpen = false; renderActs(); return; }
       if (a.indexOf('ab:') === 0) { perform({ type: 'ability', id: a.slice(3) }); return; }
