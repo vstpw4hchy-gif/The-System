@@ -1792,6 +1792,12 @@
   .bt-trait.t-HARDY { color: #ffb08f; border-color: #c06a4a; }
   .bt-qte-row button small { display: block; font-size: 9px; font-weight: 600; opacity: .8; letter-spacing: 0; margin-top: 2px; }
   .bt-pick { grid-column: 1 / -1; border: 1px solid #4be39a; border-radius: 8px; padding: 8px; margin-bottom: 6px; background: rgba(75,227,154,0.08); }
+
+  .gym-block { margin-top: 10px; }
+  .gym-btn { width: 100%; padding: 12px; font-weight: 800; letter-spacing: 2px; color: #ffd76a; background: rgba(255,215,106,0.08); border: 1px solid #ffd76a; border-radius: 8px; cursor: pointer; }
+  .gym-btn.arm { background: #ffd76a; color: #1a1200; }
+  .gym-note { font-size: 11px; opacity: .75; margin-top: 4px; text-align: center; }
+  .gym-done { font-size: 12px; text-align: center; color: #ffd76a; padding: 6px; border: 1px dashed #ffd76a; border-radius: 8px; }
 </style>
 </head>
 <body>
@@ -1880,6 +1886,7 @@
       </div>
     </div>
       <div class="trade-block" id="tradeBlock"></div>
+      <div class="gym-block" id="gymBlock"></div>
       <div class="quest-caution">CAUTION: FAILING THE DAILY QUEST ENFORCES A PENALTY.</div>
     </div>
   </section>
@@ -5099,7 +5106,7 @@
   // ---- Backup, restore and automatic snapshots -------------------------------
   // Bump this on every release: the first time a new version opens, the
   // progress that was saved by the old one is snapshotted before anything else runs.
-  var APP_VERSION = '2026-10-14-harder-qte';
+  var APP_VERSION = '2026-10-17-gym-side-quest';
   var VERSION_KEY = 'the-system-version';
   var SNAP_KEY = 'the-system-snapshot';
   var SNAP_PREV_KEY = 'the-system-snapshot-prev';
@@ -5572,6 +5579,7 @@
       tradeInfo: null,
       waivedAll: false,
       waiveRewards: false,
+      gym: false,
       log: []
     };
   }
@@ -5742,7 +5750,30 @@
     }
   }
 
+  // ---- Gym Side Quest: finish the day's quest from a gym session for half the gold and half the stat points. The loot drop is still rolled. ----
+  var gymArm = 0, gymArmTimer = null;
+  function gymAvailable() { return questModifiable() && !state.mods.waivedAll && !state.mods.gym; }
+  function renderGymBlock() {
+    var el = document.getElementById('gymBlock'); if (!el) return;
+    if (state.mods.gym) { el.innerHTML = '<div class="gym-done">GYM SIDE QUEST DONE &middot; half gold and half stat points earned. Your loot drop is still yours.</div>'; return; }
+    if (!gymAvailable()) { el.innerHTML = ''; return; }
+    el.innerHTML = '<button class="gym-btn' + (gymArm ? ' arm' : '') + '" id="gymBtn">' + (gymArm ? 'TAP AGAIN TO CONFIRM' : '&#127947; GYM SIDE QUEST COMPLETE') + '</button>' +
+      '<div class="gym-note">Counts today\'s quest as done. Pays half the gold and half the stat points, and still gives a random loot box.</div>';
+    document.getElementById('gymBtn').addEventListener('click', function() {
+      if (!gymAvailable()) return;
+      if (!gymArm) { gymArm = 1; clearTimeout(gymArmTimer); gymArmTimer = setTimeout(function() { gymArm = 0; renderGymBlock(); }, 3500); renderGymBlock(); return; }
+      gymArm = 0; clearTimeout(gymArmTimer);
+      state.mods.gym = true;
+      EXS.forEach(function(ex) { var t = effectiveTarget(ex); if (t > 0) state.values[ex.id] = Math.max(state.values[ex.id] || 0, t); });
+      state.mods.log.push('Gym Side Quest: requirements fulfilled for half gold and half stat points.');
+      try { Hist.log('side', 'Completed the daily quest as a Gym Side Quest (half gold and stat points).'); } catch (e) {}
+      saveState(); render(); updateBanner();
+      showToast('Gym Side Quest complete. Half the gold and stat points, and your loot box is ready.');
+    });
+  }
+
   function render() {
+    try { renderGymBlock(); } catch (e) {}
     renderTradeBlock();
     EXS.forEach(function(ex) {
       var val = state.values[ex.id] || 0;
@@ -5872,6 +5903,7 @@
     state.penaltyCountdownEnd = null;
     state.mods.tradeUsed = false;
     state.mods.tradeInfo = null;
+    state.mods.gym = false;
     tradeStep = null;
     saveState();
     render();
@@ -5980,6 +6012,7 @@
     var base = projectedStats(false);
     var baseTotal = STAT_KEYS.reduce(function(sum, k) { return sum + base[k]; }, 0);
     var gains = projectedStats(true);
+    if (state.mods.gym) STAT_KEYS.forEach(function(k) { gains[k] = Math.round(gains[k] * 0.5 * 100) / 100; });   // Gym Side Quest: half the stat points
     if (baseTotal > 0 && buffs.gainMults.some(function(g) { return g.remaining > 0; })) {
       buffs.gainMults = spendMults(buffs.gainMults);
       saveBuffs();
@@ -6014,6 +6047,7 @@
 
     var goldBase = 30 + Math.floor(Math.random() * 21);
     var gold = Math.round(goldBase * sumMult(buffs.goldMults) * (1 + workBonus()));
+    if (state.mods.gym) gold = Math.max(1, Math.round(gold * 0.5));   // Gym Side Quest: half the gold
     if (buffs.goldMults.some(function(g) { return g.remaining > 0; })) {
       buffs.goldMults = spendMults(buffs.goldMults);
       saveBuffs();
